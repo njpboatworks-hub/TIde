@@ -116,6 +116,29 @@ def water_for_cell(lat, lon):
     return None if g.is_empty else g
 
 
+_crm = {}
+
+
+def tidal_elevation_ok(p, la, lo):
+    """Median Coastal Relief Model elevation inside the piece is below +1 m (water connected to the tide)."""
+    from scripts.bathymetry import crm_grid
+    key = (la, lo)
+    if key not in _crm:
+        _crm[key] = crm_grid(la, la + 1, lo, lo + 1, 0.0025)
+    z, lat_c, lon_c = _crm[key]
+    if np.isnan(z).all():
+        return True  # no elevation data here: keep the hydrography's answer
+    minx, miny, maxx, maxy = p.bounds
+    pts = []
+    for x in np.linspace(minx, maxx, 12):
+        for y in np.linspace(miny, maxy, 12):
+            if p.contains(shapely.Point(x, y)):
+                j, i = int((y - lat_c[0]) / 0.0025 + 0.5), int((x - lon_c[0]) / 0.0025 + 0.5)
+                if 0 <= j < len(lat_c) and 0 <= i < len(lon_c) and not np.isnan(z[j, i]):
+                    pts.append(z[j, i])
+    return not pts or float(np.median(pts)) < 1.0
+
+
 def us_region(lat, lon):
     pts = [(lat + a, lon + b) for a in (0, 0.5, 1) for b in (0, 0.5, 1)]
     if any(REGIONS["lakes"]["in_region"](*p) for p in pts):
@@ -161,10 +184,30 @@ def main():
         # only coastal water: big bodies (> 5 km2) or ones touching the sea already in the tile; inland ponds stay land
         sea = box(lo, la, lo + 1, la + 1).difference(landg)
         km2 = (111.32 ** 2) * math.cos(math.radians(la + 0.5))
-        parts = [p for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon" and (p.area * km2 > 5 or p.buffer(0.003).intersects(sea))]
+        # keep: water that really joins the sea (within ~30 m), or a big lagoon (> 5 km2) lying within ~4 km of the sea.
+        # Inland ponds and lakes stay land (they are not tidal, and the wind/current model is for sea water).
+        def coastal(p):
+            if sea.is_empty:
+                return False
+            if p.buffer(0.0003).intersects(sea):
+                return True
+            return p.area * km2 > 5 and p.distance(sea) < 0.04
+        parts = [p for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon" and coastal(p)]
         if not parts:
             continue
         g = shapely.unary_union(parts)
+        # Only add water the shoreline is really missing: pieces of it that lie on "land" and are big (> 1 km2) and wide
+        # (> ~300 m). The original OpenStreetMap shoreline is far more exact; the hydrography image is only trusted for
+        # whole lagoons it lacks (e.g. Florida's Indian River), never for slivers, coves or edges.
+        add = g.intersection(landg)
+        add = [p for p in (add.geoms if hasattr(add, "geoms") else [add]) if p.geom_type == "Polygon" and p.area * km2 > 1.0 and not p.buffer(-0.0015).is_empty]
+        # Elevation check (NOAA Coastal Relief Model): tidal water lies at or below sea level; ponds and lakes sit above it.
+        add = [p for p in add if tidal_elevation_ok(p, la, lo)]
+        if not add:
+            continue
+        g = shapely.unary_union([p.buffer(-0.0003).buffer(0.0003) for p in add])
+        if g.is_empty:
+            continue
         water[k] = g
         new = landg.difference(g)
         if new.area > landg.area - 1e-6:

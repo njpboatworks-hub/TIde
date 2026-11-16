@@ -1,6 +1,7 @@
 # Refreshes the wind forecast, station readings and tide/current predictions every day,
 # rebuilds the website folder and publishes it to Netlify.
 # Needs two repository secrets: NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID (see deploy/AUTO_UPDATE.md).
+# The AI coach also needs ANTHROPIC_API_KEY set as an environment variable in Netlify (not in GitHub).
 name: Refresh wind data
 
 on:
@@ -50,8 +51,11 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Publish to Netlify
+      - name: Install the AI coach function's package (Anthropic SDK)
+        run: npm ci --omit=dev
+
+      - name: Publish to Netlify (website + AI coach function)
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx --yes netlify-cli@17 deploy --prod --dir deploy/sailiq-wind-site --message "Daily data refresh"
+        run: npx --yes netlify-cli@17 deploy --prod --dir deploy/sailiq-wind-site --functions netlify/functions --message "Daily data refresh"

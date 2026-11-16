@@ -801,6 +801,28 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 .item .meta { color: var(--muted); font-size: 12.5px; }
 .item .tag { margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--axis); border-radius: 999px; padding: 2px 8px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.race-ico { background: none; border: none; }
+.buoy { width: 26px; height: 26px; border-radius: 50%; background: #F27A48; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); font: 700 11px/22px var(--f-body); text-align: center; }
+.buoy.big { width: 44px; height: 44px; font-size: 18px; line-height: 40px; border-width: 3px; }
+.rc-boat { width: 34px; height: 20px; border-radius: 4px 12px 12px 4px; background: #0F2A45; color: #fff; border: 2px solid #fff; font: 700 10px/16px var(--f-body); text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+.rc-boat.big { width: 54px; height: 30px; font-size: 15px; line-height: 26px; }
+.pin-mark, .fin-mark { width: 24px; height: 24px; border-radius: 50%; background: #ffd23f; color: #0F2A45; border: 2px solid #fff; font: 700 9px/20px var(--f-body); text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+.fin-mark { background: #1baf7a; color: #fff; font-size: 11px; }
+.pin-mark.big, .fin-mark.big { width: 40px; height: 40px; font-size: 14px; line-height: 36px; }
+.leg-lab { transform: translate(-50%, -50%); white-space: nowrap; background: rgba(15,42,69,.85); color: #fff; padding: 2px 6px; border-radius: 6px; font: 600 11px/1.3 var(--f-body); width: max-content; }
+.leg-lab.big { font-size: 18px; padding: 4px 10px; }
+.sim-boat { width: 0; height: 0; margin: 1px 0 0 3px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid var(--c); filter: drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.chat #chat-log { max-height: 280px; overflow-y: auto; display: grid; gap: 6px; margin-bottom: 8px; }
+.chat .msg { padding: 8px 10px; border-radius: 10px; line-height: 1.4; }
+.chat .msg.user { background: var(--accent); color: var(--accent-ink); justify-self: end; max-width: 85%; }
+.chat .msg.assistant { background: var(--surface); border: 1px solid var(--border); max-width: 95%; }
+.chat form { display: flex; gap: 6px; margin: 8px 0 4px; } .chat input { flex: 1; min-width: 0; }
+body.board header, body.board main > .panel { display: none; }
+body.board main { display: block; }
+body.board .mapwrap { position: fixed; inset: 0; height: 100vh !important; z-index: 1000; }
+body.board #race-board-exit { display: block; }
+#race-board-exit { display: none; position: absolute; top: 10px; left: 60px; z-index: 600; }
 .region-pick { display: grid; gap: 4px; font-weight: 600; margin: 0 0 10px; max-width: 320px; }
 .seg { display: inline-flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-top: 12px; flex-wrap: wrap; }
 
@@ -907,6 +929,7 @@ main.wide .panel { border-right: 0; }
   </div>
   <nav class="tabs" aria-label="Sections">
     <a href="#coast" data-tab="coast" class="active">Coast Map</a>
+    <a href="#race" data-tab="race">Race Planning</a>
     <a href="#debrief" data-tab="debrief">Coach Debrief</a>
     <a href="#accuracy" data-tab="accuracy">Model Accuracy</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
@@ -1010,6 +1033,59 @@ main.wide .panel { border-right: 0; }
         <p class="hint">Worked out from the GPS track (upwind legs only), compared with the NOAA station at Newport harbor when that day is in the dataset.</p>
         <div class="chart"><canvas id="twd-chart"></canvas></div>
         <p class="caveat">GPS records course over ground, not compass heading, so tidal current and leeway mix into the inferred wind. Steering changes also show up as small shifts. Read the pattern, not single readings.</p>
+      </div>
+    </div>
+
+    <!-- RACE PLANNING (sits above the Coast Map controls, which set the conditions) -->
+    <div class="tab" id="tab-race" hidden>
+      <h1>Race planning</h1>
+      <p class="lede">Lay a course on top of the wind and current, move the marks, then race simulated boats around it. Conditions (typical, set wind, or live and forecast) come from the settings further down this panel.</p>
+      <div class="form">
+        <div class="row">
+          <label for="race-type">Course<select id="race-type">
+            <option value="wl">Windward–leeward</option><option value="wlg">Windward–leeward with gate</option>
+            <option value="tri">Triangle</option><option value="trap">Trapezoid</option><option value="custom">Custom (add your own marks)</option></select></label>
+          <label for="race-finish">Finish<select id="race-finish"><option value="down">At the start line (downwind)</option><option value="up">Upwind, near mark 1</option></select></label>
+        </div>
+        <div class="row">
+          <label for="race-rounding">Marks to<select id="race-rounding"><option value="port">Port</option><option value="starboard">Starboard</option></select></label>
+          <label for="race-boat">Boats<select id="race-boat"></select></label>
+        </div>
+        <label for="race-len">Beat length: <b id="race-len-label"></b><input type="range" id="race-len" min="0.2" max="2.5" step="0.05" value="0.8"></label>
+        <label for="race-laps">Laps: <b id="race-laps-label"></b><input type="range" id="race-laps" min="1" max="4" step="1" value="2"></label>
+        <label for="race-line">Start line: <b id="race-line-label"></b><input type="range" id="race-line" min="40" max="500" step="10" value="150"></label>
+        <label for="race-axis">Course axis: <b id="race-axis-label"></b><input type="range" id="race-axis" min="0" max="355" step="5" value="0"></label>
+        <label class="check" for="race-auto"><input type="checkbox" id="race-auto" checked> Square the course to the wind at the course</label>
+        <div class="btnrow">
+          <button type="button" id="race-here" class="primary">Put the course here</button>
+          <button type="button" id="race-place">Tap to place the start</button>
+          <button type="button" id="race-addmark">Add a mark</button>
+          <button type="button" id="race-clear">Clear</button>
+        </div>
+        <p class="hint" id="race-summary"></p>
+        <p class="hint" style="margin:0">Drag the committee boat, the pin and any mark to move it; distances update as you go.</p>
+      </div>
+      <h2>Simulate the race</h2>
+      <div class="form">
+        <div class="chips" id="race-strats">
+          <label><input type="checkbox" value="best"> Fastest route</label><label><input type="checkbox" value="left"> Goes left</label>
+          <label><input type="checkbox" value="right"> Goes right</label><label><input type="checkbox" value="shifts"> Plays the shifts</label>
+        </div>
+        <div class="row">
+          <label for="race-speed">Replay speed<select id="race-speed"><option value="30">30×</option><option value="60" selected>60×</option><option value="120">120×</option><option value="300">300×</option></select></label>
+          <div style="display:grid;align-items:end"><button type="button" id="race-run" class="primary">Run the race</button></div>
+        </div>
+        <div class="note info" id="race-sim-msg" hidden></div>
+        <div id="race-results" class="table-wrap"></div>
+        <p class="hint" style="margin:0">Boats use the wind at the start time and the tidal current as it changes during the race. Boat speeds are approximate tables made for this planner, not official class polars. Mark rounding, starts and boat-on-boat tactics are not modelled.</p>
+      </div>
+      <button type="button" id="race-board" style="margin-top:10px">Big screen (smartboard)</button>
+      <h2>Ask the AI coach</h2>
+      <div class="chat">
+        <div id="chat-log" aria-live="polite"></div>
+        <div class="chips" id="chat-chips"><button type="button">Which side of the course is favored?</button><button type="button">Where is the current strongest?</button><button type="button">Why are some spots lifted?</button></div>
+        <form id="chat-form"><input id="chat-input" type="text" maxlength="500" placeholder="Ask about the wind, current or your course" aria-label="Question for the AI coach"><button type="submit" id="chat-send" class="primary">Ask</button></form>
+        <p class="hint" style="margin:0">Answers come from Claude (an AI) using the map's estimates. They can be wrong; check with your coach.</p>
       </div>
     </div>
 
@@ -1129,6 +1205,7 @@ main.wide .panel { border-right: 0; }
   </section>
 
   <section class="mapwrap">
+    <button type="button" id="race-board-exit" class="primary" onclick="toggleBoard()">Exit big screen</button>
     <div id="map" role="region" aria-label="Map of Newport and Narragansett Bay"></div>
     <div class="legend" id="map-legend" hidden></div>
     <div class="probe" id="probe" hidden></div>
@@ -1444,7 +1521,7 @@ function toggleLiftMap(force) {
 
 /* =================== wind arrows (simplified land-effect model) =================== */
 // Assumptions, shown to the user in the legend. Rough rules of thumb, not calibrated for Newport.
-const FIELD = { backDeg: 15, slowFrac: 0.35, reachKm: 3 };
+const FIELD = { backDeg: 10, slowFrac: 0.35, reachKm: 3 };
 let landGrid = null, arrowTack = "stbd", arrowLayer = null, fieldCache = null;
 function pip(x, y, ring) { let inside = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside; } return inside; }
 function buildLandGrid() {
@@ -1470,12 +1547,30 @@ function isLand(lat, lon) {
 let currentIsLand = (lat, lon) => isLand(lat, lon);
 let currentLandFrac = (lat, lon) => (isLand(lat, lon) ? 1 : 0);
 function landInfluence(lat, lon, dirFrom) {
-  const b = rad(dirFrom); let w = 0, l = 0;
-  for (let d = 0.25; d <= FIELD.reachKm; d += 0.25) {
-    const wt = Math.exp(-d / 1.2), la = lat + (d * Math.cos(b)) / 111.32, lo = lon + (d * Math.sin(b)) / (111.32 * Math.cos(rad(lat)));
-    w += wt; l += wt * currentLandFrac(la, lo);
+  const b = rad(dirFrom), cl = Math.cos(rad(lat)); let w = 0, l = 0;
+  for (let d = 0.25; d <= 8; d += d < 3 ? 0.25 : 0.5) {
+    const st = d < 3 ? 1 : 2, la = lat + (d * Math.cos(b)) / 111.32, lo = lon + (d * Math.sin(b)) / (111.32 * cl), fr = currentLandFrac(la, lo);
+    w += Math.exp(-d / 1.2) * st; l += shelter(d, fr, fr > 0 ? terrainAt(la, lo) : 0) * st;
   }
-  return l / w;
+  return Math.min(1.2, l / w);
+}
+function terrainAt(lat, lon) { // metres above the water, 0 if unknown
+  const t = activeTab === "coast" && COAST && COAST.terr; if (!t) return 0;
+  const i = Math.floor((lon - t.lon0) / t.res), j = t.ny - 1 - Math.floor((lat - t.lat0) / t.res);
+  if (i < 0 || j < 0 || i >= t.nx || j >= t.ny) return 0;
+  const v = t.h[j * t.nx + i]; return (v / 6) * (v / 6);
+}
+async function loadTerrain(c, path) {
+  try {
+    const [m, r] = await Promise.all([fetch(path + "terrain.json"), fetch(path + "terrain.png")]); if (!m.ok || !r.ok) return;
+    const meta = await m.json(), bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+    const cv = document.createElement("canvas"); cv.width = bmp.width; cv.height = bmp.height;
+    const x = cv.getContext("2d", { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
+    const d = x.getImageData(0, 0, bmp.width, bmp.height).data, h = new Uint8Array(bmp.width * bmp.height);
+    for (let k = 0; k < h.length; k++) h[k] = d[k * 4];
+    c.terr = { lat0: meta.lat0, lon0: meta.lon0, res: meta.res, nx: bmp.width, ny: bmp.height, h };
+    if (COAST === c && activeTab === "coast") refreshArrows();
+  } catch (_) {}
 }
 function fieldSetup(i) {
   // Station winds at this moment, with each station's own land effect removed so we can spread an "open water" wind.
@@ -1517,7 +1612,7 @@ const HEAT_STEP = 6;
 // out on fixed latitude/longitude lattices and interpolated, so colors do not jump as you zoom or pan.
 let fieldGen = 0, obsBuckets = null, refBuckets = null;
 const baseCache = new Map(), refCache = new Map();
-function bumpField() { fieldGen++; baseCache.clear(); refCache.clear(); obsBuckets = null; refBuckets = null; }
+function bumpField() { fieldGen++; baseCache.clear(); refCache.clear(); obsBuckets = null; refBuckets = null; obsPrep = null; }
 function bucketize(pts) { const B = new Map(); for (const p of pts) { const k = Math.floor(p.lat) * 1000 + Math.floor(p.lon); let a = B.get(k); if (!a) B.set(k, (a = [])); a.push(p); } return B; }
 function knn(B, lat, lon, K) {
   const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon), out = [];
@@ -1536,19 +1631,46 @@ function knn(B, lat, lon, K) {
   return out;
 }
 // Open-water wind (land effect not yet applied) at one lattice node: inverse-distance blend of the 6 nearest stations.
+// Open-water wind (land effect not yet applied) at one lattice node:
+//   a smooth regional wind (Gaussian blend of all stations, ~60 km scale)
+//   + each nearby station's own difference from that regional wind, fading out over ~10 km.
+// So a station's local quirk (an airport behind a hill, a buoy in a bay) shows near it, not 50 km out to sea.
+const REG_SIGMA_KM = 60, LOCAL_KM = 10;
+let obsPrep = null;
+// How much to trust a station's typical direction: steadiness is how often the wind really blows from that direction
+// (low at sheltered or valley sites and in variable sea-breeze hours). Live readings and forecasts count fully.
+const trustOf = (o) => (Number.isNaN(o.steady) || o.steady == null ? 1 : Math.max(0.05, Math.min(1, (o.steady - 0.2) / 0.6)) ** 2);
+function regionalAt(lat, lon) {
+  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon);
+  let su = 0, sv = 0, sw = 0, st = 0, sn = 0;
+  for (let a = i0 - 2; a <= i0 + 2; a++) for (let b = j0 - 3; b <= j0 + 3; b++) {
+    const arr = obsBuckets.get(a * 1000 + b); if (!arr) continue;
+    for (const o of arr) {
+      const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy;
+      if (d2 > 40000) continue;
+      const w = Math.exp(-d2 / (2 * REG_SIGMA_KM * REG_SIGMA_KM)) * trustOf(o);
+      su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; }
+    }
+  }
+  if (sw < 1e-3) { // far from everything: use the nearest few stations
+    const near = knn(obsBuckets, lat, lon, 4); if (!near.length) return null;
+    su = sv = sw = st = sn = 0;
+    for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
+  }
+  return [su / sw, sv / sw, sn ? st / sn : NaN];
+}
 function baseNode(lat, lon) {
   if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
-  const near = knn(obsBuckets, lat, lon, 9);
+  if (!obsPrep) { obsPrep = true; for (const o of coastField.obs) { const r = regionalAt(o.lat, o.lon); o.au = r ? o.u - r[0] : 0; o.av = r ? o.v - r[1] : 0; } }
+  const near = knn(obsBuckets, lat, lon, 6);
   if (!near.length || near[0].d2 > 350 * 350) return null;
-  // Inverse-distance blend of the 8 nearest, with weights tapered to zero at the 9th: no seams where the nearest set changes.
-  const dK = near.length > 8 ? near[8].d2 : near[near.length - 1].d2 * 1.5 + 1;
-  let su = 0, sv = 0, sw = 0, st = 0, sn = 0;
-  for (const { o, d2 } of near.slice(0, 8)) { const tp = Math.max(0, 1 - d2 / dK), w = (tp * tp) / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
-  if (sw <= 0) return null;
+  const r = regionalAt(lat, lon); if (!r) return null;
+  let au = 0, av = 0, aw = 0;
+  for (const { o, d2 } of near) { const t = trustOf(o), w = Math.exp(-Math.sqrt(d2) / LOCAL_KM); au += o.au * w * t; av += o.av * w * t; aw += w; }
+  const k = aw > 1 ? 1 / aw : 1; // overlapping stations share, they do not add up
   const dn = Math.sqrt(near[0].d2);
-  // last value: coverage. Full within 120 km of a station; beyond that the wind is carried out over open water from the
-  // nearest stations (drawn a little fainter), fading out by ~350 km.
-  return [su / sw, sv / sw, sn ? st / sn : NaN, dn < 120 ? 1 : dn < 320 ? 1 - ((dn - 120) / 200) * 0.4 : 0.6 * (350 - dn) / 30];
+  // last value: coverage. Full within 120 km of a station; farther out the wind is the regional blend (drawn a little fainter).
+  return [r[0] + au * k, r[1] + av * k, r[2], dn < 120 ? 1 : dn < 320 ? 1 - ((dn - 120) / 200) * 0.4 : 0.6 * (350 - dn) / 30];
 }
 function lattice(cache, sp, lat, lon, node) {
   const fx = lon / sp, fy = lat / sp, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
@@ -1563,28 +1685,31 @@ function lattice(cache, sp, lat, lon, node) {
 }
 // "Average wind within about 40 km": Gaussian blend of the wind at all stations/forecast points (with their land effect).
 function refNode(lat, lon) {
-  if (!refBuckets) {
-    const smp = [];
-    for (const o of coastField.obs) { const w = coastAt(o.lat, o.lon, true); if (w) smp.push({ lat: o.lat, lon: o.lon, u: Math.sin(rad(w.dir)) * w.spd, v: Math.cos(rad(w.dir)) * w.spd }); }
-    refBuckets = bucketize(smp);
+  // "Usual wind around here": stations within ~15 km (Gaussian), blended with the regional open-water wind so that
+  // open sea far from stations reads neutral and inside a bay the bay's own average is the reference.
+  if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
+  const r = regionalAt(lat, lon); if (!r) return null;
+  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon), w0 = 0.35;
+  let su = r[0] * w0, sv = r[1] * w0;
+  for (let a = i0 - 1; a <= i0 + 1; a++) for (let b = j0 - 1; b <= j0 + 1; b++) {
+    const arr = obsBuckets.get(a * 1000 + b); if (!arr) continue;
+    for (const o of arr) { const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy; if (d2 > 2025) continue; const g = Math.exp(-d2 / 450) * trustOf(o); su += o.u * g; sv += o.v * g; }
   }
-  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon); let su = 0, sv = 0, sw = 0;
-  for (let a = i0 - 2; a <= i0 + 2; a++) for (let b = j0 - 3; b <= j0 + 3; b++) {
-    const arr = refBuckets.get(a * 1000 + b); if (!arr) continue;
-    for (const q of arr) { const dy = (lat - q.lat) * 111.32, dx = (lon - q.lon) * 111.32 * cl, d2 = dx * dx + dy * dy; if (d2 > 25600) continue; const g = Math.exp(-d2 / 3200); su += q.u * g; sv += q.v * g; sw += g; }
-  }
-  return sw > 1e-4 ? [su, sv, NaN] : null;
+  return [su, sv, NaN];
 }
 // Upwind land share for one shading cell. Zoomed in, it reads the drawn shoreline pixels (exact); otherwise the ~600 m grid.
+// Land upwind shelters the water. Flat land: the effect fades over ~1-3 km. Higher land (NOAA ETOPO 2022 heights) shelters
+// farther (roughly 10x its height) and more strongly. Rule of thumb, not a measured or modelled airflow.
+function shelter(d, fr, h) { return fr > 0 ? fr * Math.exp(-d / (1.2 + h / 150)) * (1 + h / 300) : 0; }
 function landInfluenceAt(lat, lon, dirFrom, cx, cy, mPerPx) {
-  const b = rad(dirFrom), sb = Math.sin(b), cb = Math.cos(b), usePx = landMask && mPerPx < 60; let w = 0, l = 0;
-  for (let d = 0.25; d <= FIELD.reachKm; d += 0.25) {
-    const wt = Math.exp(-d / 1.2); let fr = null;
+  const b = rad(dirFrom), sb = Math.sin(b), cb = Math.cos(b), usePx = landMask && mPerPx < 60, cl = Math.cos(rad(lat)); let w = 0, l = 0;
+  for (let d = 0.25; d <= 8; d += d < 3 ? 0.25 : 0.5) {
+    const st = d < 3 ? 1 : 2, la = lat + (d * cb) / 111.32, lo = lon + (d * sb) / (111.32 * cl); let fr = null;
     if (usePx) { const px = (d * 1000) / mPerPx, v = onLandPx(cx + sb * px, cy - cb * px); if (v !== null) fr = v ? 1 : 0; }
-    if (fr === null) fr = currentLandFrac(lat + (d * cb) / 111.32, lon + (d * sb) / (111.32 * Math.cos(rad(lat))));
-    w += wt; l += wt * fr;
+    if (fr === null) fr = currentLandFrac(la, lo);
+    w += Math.exp(-d / 1.2) * st; l += shelter(d, fr, fr > 0 ? terrainAt(la, lo) : 0) * st;
   }
-  return l / w;
+  return Math.min(1.2, l / w);
 }
 
 function fieldActive() { return (activeTab === "planner" && !!fieldCache) || (activeTab === "coast" && !!coastField); }
@@ -1963,6 +2088,7 @@ async function loadCoast() {
   c.layer = L.geoJSON(c.land, { pane: "landPane", interactive: false, renderer: L.canvas({ pane: "landPane", padding: 0.3 }), style: shoreStyle });
   c.effMap = c.effects ? Object.fromEntries(c.effects.stations.map((e) => [e.id, e])) : {};
   rd.coast = c; activateCoast(c);
+  loadTerrain(c, REGION.path);
   return c;
 }
 function isCoastLand(lat, lon) {
@@ -2013,17 +2139,9 @@ function computeCoastField() {
 }
 function coastAt(lat, lon, anyLand) {
   if (!anyLand && isCoastLand(lat, lon)) return null;
-  const cl = Math.cos(rad(lat)), K = 6, near = [];
-  for (const o of coastField.obs) {
-    const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy;
-    if (near.length < K || d2 < near[near.length - 1].d2) { near.push({ o, d2 }); near.sort((a, b) => a.d2 - b.d2); if (near.length > K) near.pop(); }
-  }
-  if (!near.length || near[0].d2 > 120 * 120) return null;
-  let su = 0, sv = 0, sw = 0, st = 0;
-  for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; st += o.steady * w; sw += w; }
-  const u = su / sw, v = sv / sw, baseDir = (deg(Math.atan2(u, v)) + 360) % 360, baseSpd = Math.hypot(u, v);
-  const L0 = landInfluence(lat, lon, baseDir), dir = (baseDir - FIELD.backDeg * L0 + 360) % 360;
-  return { dir, spd: baseSpd * (1 - FIELD.slowFrac * L0), steady: st / sw };
+  const b = baseNode(lat, lon); if (!b) return null;
+  const baseDir = (deg(Math.atan2(b[0], b[1])) + 360) % 360, L0 = landInfluence(lat, lon, baseDir);
+  return { dir: (baseDir - FIELD.backDeg * L0 + 360) % 360, spd: Math.hypot(b[0], b[1]) * (1 - FIELD.slowFrac * L0), steady: Number.isNaN(b[2]) ? 0 : b[2] };
 }
 function coastLegend() {
   if (coastMode === "live") return LIVE ? liveLegend() : null;
@@ -2038,9 +2156,9 @@ function coastLegend() {
   }
   const { m, h } = coastTime();
   return divLegend(`Typical wind, ${MONTHS[m]} ${hourLabel(h)}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
-    `<div class="ends"><span>compared with the average wind within about 40 km</span></div>
+    `<div class="ends"><span>compared with the usual wind within about 15 km</span></div>
      <div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
-     <div class="fine">Average of ${COAST.years[0]} to ${COAST.years[1]} at ${COAST.stations.length} ${REGION.stations} stations, spread across the water and adjusted near shore with the rough land-friction rule. More than about 120 km from a station (far offshore) the wind is carried over from the nearest stations and is less reliable. Model estimate, not measured at each spot, and not a forecast.</div>`;
+     <div class="fine">Average of ${COAST.years[0]} to ${COAST.years[1]} at ${COAST.stations.length} ${REGION.stations} stations, spread across the water and adjusted near shore with a rough land-shelter rule that grows with land height (NOAA ETOPO 2022). More than about 120 km from a station (far offshore) the wind is carried over from the nearest stations and is less reliable. Model estimate, not measured at each spot, and not a forecast.</div>`;
 }
 const hourLabel = (h) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`;
 function drawCoastStations() {
@@ -2218,6 +2336,12 @@ function liveField() {
   return obs;
 }
 // Smooth (cosine) curve between predicted events: [[minute, value], ...]
+// Current at a station: NOAA's 30-minute prediction series where it exists (exact shape), otherwise a smooth curve
+// between the predicted slack and maximum-current times.
+function curAt(s, t) {
+  if (s.ts) { const f = (t - s.ts0) / 30, i = Math.floor(f); if (i >= 0 && i < s.ts.length - 1) return s.ts[i] + (s.ts[i + 1] - s.ts[i]) * (f - i); }
+  return evAt(s.ev, t);
+}
 function evAt(ev, t) {
   if (!ev.length || t < ev[0][0] || t > ev[ev.length - 1][0]) return null;
   let i = 0; while (i < ev.length - 2 && ev[i + 1][0] <= t) i++;
@@ -2251,7 +2375,7 @@ function stationStates(t, bounds) {
   const out = [];
   for (const s of TIDES.currents) {
     if (!bounds.contains([s.lat, s.lon])) continue;
-    const v100 = evAt(s.ev, t); if (v100 == null) continue;
+    const v100 = curAt(s, t); if (v100 == null) continue;
     const v = v100 / 100, dir = v > 0 ? s.flood : s.ebb;
     const u = dir == null ? 0 : Math.sin(rad(dir)) * Math.abs(v), w = dir == null ? 0 : Math.cos(rad(dir)) * Math.abs(v);
     out.push({ s, v, u, w, lat: s.lat, lon: s.lon });
@@ -2468,7 +2592,17 @@ const CurrentLayer = L.Layer.extend({
       const e = flowAt(ll.lat, ll.lng, curStates, true, quick, windHere(jx, jy, ll.lat, ll.lng), jx, jy, mpp);
       if (!e || e.sp < 0.05) continue;
       const th = rad(e.dir), sp = e.sp;
-      this._flow.push({ x: jx, y: jy, dx: Math.sin(th), dy: -Math.cos(th), len: Math.min(22, 6 + sp * 6), wd: sp < 0.5 ? 1.2 : sp < 1.5 ? 1.8 : 2.5,
+      let dx = Math.sin(th), dy = -Math.cos(th);
+      // water can't flow into the shore: if the arrow tip lands on the drawn shoreline, turn it to run along the shore
+      if (onLandPx(jx + dx * 10, jy + dy * 10) === true) {
+        let nx = 0, ny = 0;
+        for (let k = 0; k < 12; k++) { const a = (k * Math.PI) / 6, ux = Math.sin(a), uy = -Math.cos(a); if (onLandPx(jx + ux * 10, jy + uy * 10) === true) { nx += ux; ny += uy; } }
+        const nl = Math.hypot(nx, ny);
+        if (nl > 0) { nx /= nl; ny /= nl; const into = dx * nx + dy * ny; if (into > 0) { dx -= into * nx; dy -= into * ny; } }
+        const dl = Math.hypot(dx, dy); if (dl < 0.25) continue; dx /= dl; dy /= dl;
+        if (onLandPx(jx + dx * 10, jy + dy * 10) === true) continue;
+      }
+      this._flow.push({ x: jx, y: jy, dx, dy, len: Math.min(22, 6 + sp * 6), wd: sp < 0.5 ? 1.2 : sp < 1.5 ? 1.8 : 2.5,
         pxs: 5 + sp * 14, phase: ((jx * 0.37 + jy * 0.61) % 1 + 1) % 1, col: e.kind === "flood" ? flood : e.kind === "ebb" ? ebb : drift,
         alpha: 0.35 + 0.55 * e.conf, ab: Math.round(e.conf * 4) });
     }
@@ -2580,7 +2714,7 @@ function drawTideMarkers(ctx, t, size) {
 function liveLegend() {
   const tackName = arrowTack === "stbd" ? "starboard" : "port";
   const head = arrowTack === "off" ? "" : divLegend(`${useObs() ? "Live wind" : "Forecast wind"}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
-    `<div class="ends"><span>compared with the average wind within about 40 km</span></div>`;
+    `<div class="ends"><span>compared with the usual wind within about 15 km</span></div>`;
   return liveLegendBody(head);
 }
 function tideLegendKey() {
@@ -2632,13 +2766,13 @@ function renderTidePanel() {
       scales: { x: { ticks: { maxTicksLimit: 9 } }, y: { title: { display: true, text: tideUnits() === "m" ? "metres" : "feet" } } } } });
   }
   if (nc) {
-    const ev = nc.s.ev, v = evAt(ev, t), nxt = ev.find((e) => e[0] > t);
+    const ev = nc.s.ev, v = curAt(nc.s, t), nxt = ev.find((e) => e[0] > t);
     const state = v == null ? "–" : Math.abs(v) < 15 ? "Slack" : v > 0 ? "Flooding" : "Ebbing";
     const dir = v == null ? null : v > 0 ? nc.s.flood : nc.s.ebb;
     tiles.push(`<div class="tile"><div class="k">Current</div><div class="v">${v == null ? "–" : Math.abs(v / 100).toFixed(1) + " kt"}</div><div class="s">${state}${dir != null && Math.abs(v) >= 15 ? " toward " + dir + "°" : ""} · next ${nxt ? (nxt[1] === 0 ? "slack" : "max " + (nxt[1] > 0 ? "flood " : "ebb ") + Math.abs(nxt[1] / 100).toFixed(1) + " kt") + " at " + hourLabelMin(nxt[0]) : "–"}</div></div>`);
     const flood = css("--flood"), ebb = css("--ebb");
     makeChart("current-chart", { type: "line", data: { labels, datasets: [
-      { label: "Current (kt, + flood / − ebb)", data: steps.map((m) => { const x = evAt(ev, m); return x == null ? null : +(x / 100).toFixed(2); }),
+      { label: "Current (kt, + flood / − ebb)", data: steps.map((m) => { const x = curAt(nc.s, m); return x == null ? null : +(x / 100).toFixed(2); }),
         segment: { borderColor: (cx) => (cx.p0.parsed.y + cx.p1.parsed.y >= 0 ? flood : ebb) }, borderColor: flood },
       { label: "Selected time", data: steps.map((m) => (Math.abs(m - t) < 5 && v != null ? +(v / 100).toFixed(2) : null)), borderColor: css("--ink"), backgroundColor: css("--ink"), pointRadius: 5, showLine: false },
     ] }, options: { plugins: { legend: { display: false }, title: { display: true, text: `Current at ${nc.s.name} (${Math.round(nc.km)} km away)`, align: "start" } },
@@ -2904,6 +3038,444 @@ function initProbe() {
   map.on("movestart zoomstart", () => { probePinned = false; $("#probe").hidden = true; });
 }
 
+/* =================== Race planning: course, committee boat, marks, simulated boats =================== */
+// Boat speed tables. These are APPROXIMATIONS made for this planner from typical published class performance, not
+// official polars or VPP output. Speeds in knots at true wind speeds TWS; beatTWA = best upwind angle.
+const BOATS = {
+  opti:  { name: "Optimist", pen: 6, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [48, 46, 45, 45, 45, 46, 47],
+           beat: [1.8, 2.4, 2.9, 3.2, 3.4, 3.5, 3.4], reach: [2.6, 3.3, 3.9, 4.2, 4.4, 4.6, 4.6], broad: [2.4, 3.1, 3.6, 4.0, 4.2, 4.4, 4.5], run: [2.0, 2.7, 3.2, 3.5, 3.7, 3.9, 4.0] },
+  ilca:  { name: "ILCA / Laser", pen: 5, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [46, 44, 43, 42, 42, 43, 44],
+           beat: [2.6, 3.4, 4.0, 4.4, 4.7, 4.9, 5.0], reach: [3.4, 4.4, 5.2, 6.0, 6.8, 7.8, 8.5], broad: [3.2, 4.2, 5.0, 5.8, 6.5, 7.6, 8.4], run: [2.6, 3.5, 4.3, 5.0, 5.6, 6.6, 7.4] },
+  b420:  { name: "420", pen: 6, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [43, 42, 41, 40, 40, 41, 42],
+           beat: [2.8, 3.6, 4.3, 4.8, 5.1, 5.3, 5.4], reach: [3.8, 4.8, 5.8, 6.8, 7.6, 8.8, 9.5], broad: [3.6, 4.6, 5.6, 6.6, 7.4, 8.6, 9.4], run: [3.0, 3.9, 4.8, 5.6, 6.2, 7.0, 7.6] },
+  b29er: { name: "29er", pen: 8, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [44, 42, 40, 39, 39, 40, 41],
+           beat: [3.5, 4.6, 5.5, 6.2, 6.6, 7.0, 7.2], reach: [5.0, 6.5, 8.0, 9.5, 11.0, 13.0, 14.0], broad: [5.0, 6.8, 8.5, 10.5, 12.0, 14.0, 15.0], run: [3.0, 4.0, 5.0, 6.0, 6.8, 7.8, 8.5] },
+  m15:   { name: "Melges 15", pen: 6, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [44, 42, 41, 40, 40, 41, 42],
+           beat: [3.2, 4.2, 5.0, 5.5, 5.9, 6.2, 6.3], reach: [4.5, 5.8, 7.0, 8.2, 9.2, 10.5, 11.5], broad: [4.4, 5.8, 7.2, 8.6, 9.8, 11.2, 12.0], run: [3.0, 4.0, 4.8, 5.6, 6.2, 7.0, 7.6] },
+  keel:  { name: "Keelboat (J/70-type)", pen: 8, tws: [4, 6, 8, 10, 12, 16, 20], beatTWA: [45, 42, 40, 39, 39, 40, 41],
+           beat: [3.6, 4.8, 5.6, 6.0, 6.2, 6.4, 6.5], reach: [5.0, 6.3, 7.2, 7.8, 8.3, 9.5, 11.0], broad: [4.8, 6.2, 7.4, 8.4, 9.4, 11.5, 13.0], run: [3.4, 4.5, 5.4, 6.1, 6.6, 7.4, 8.0] },
+};
+function interpTws(arr, tws, bins) {
+  if (tws <= bins[0]) return arr[0] * Math.max(0, tws / bins[0]);
+  for (let i = 1; i < bins.length; i++) if (tws <= bins[i]) { const f = (tws - bins[i - 1]) / (bins[i] - bins[i - 1]); return arr[i - 1] + f * (arr[i] - arr[i - 1]); }
+  return arr[arr.length - 1];
+}
+// boat speed (kt) at true wind speed tws and true wind angle twa (0..180)
+function polar(b, tws, twa) {
+  const B = BOATS[b], bt = interpTws(B.beatTWA, tws, B.tws);
+  if (twa < bt - 8) return 0;
+  const pts = [[bt - 8, 0], [bt, interpTws(B.beat, tws, B.tws)], [90, interpTws(B.reach, tws, B.tws)], [135, interpTws(B.broad, tws, B.tws)], [180, interpTws(B.run, tws, B.tws)]];
+  for (let i = 1; i < pts.length; i++) if (twa <= pts[i][0]) { const f = (twa - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0]); return pts[i - 1][1] + f * (pts[i][1] - pts[i - 1][1]); }
+  return pts[pts.length - 1][1];
+}
+
+let raceMode = false, raceLayer = null, raceSimLayer = null;
+const RACE = { type: "wl", laps: 2, lenNm: 0.8, lineM: 150, gateM: 80, offsetM: 90, autoAxis: true, axis: 0, finish: "down", rounding: "port",
+               boat: "ilca", center: null, marks: null, seq: [], strategies: ["best", "left", "right", "shifts"], speed: 60 };
+const MARK_STYLE = { rc: "RC", pin: "Pin", m: "" };
+const KT = 0.514444;
+function dest(p, brg, m) { const b = rad(brg); return { lat: p.lat + (m * Math.cos(b)) / 110540, lon: p.lon + (m * Math.sin(b)) / (111320 * Math.cos(rad(p.lat))) }; }
+function distM(a, b) { const dy = (b.lat - a.lat) * 110540, dx = (b.lon - a.lon) * 111320 * Math.cos(rad((a.lat + b.lat) / 2)); return Math.hypot(dx, dy); }
+function brgOf(a, b) { const dy = (b.lat - a.lat) * 110540, dx = (b.lon - a.lon) * 111320 * Math.cos(rad((a.lat + b.lat) / 2)); return (deg(Math.atan2(dx, dy)) + 360) % 360; }
+function raceSave() { try { localStorage.setItem("nockdRace", JSON.stringify({ ...RACE, sim: undefined })); } catch (_) {} }
+function raceLoad() { try { const j = JSON.parse(localStorage.getItem("nockdRace") || "null"); if (j && j.marks) Object.assign(RACE, j); } catch (_) {} }
+function windAtCourse() {
+  if (!RACE.center || !coastField) return null;
+  const w = coastAt(RACE.center.lat, RACE.center.lon, true); return w;
+}
+// Lay out the chosen course type around the start-line centre, square to the wind axis.
+function buildCourse() {
+  const S = RACE.center; if (!S) return;
+  if (RACE.autoAxis) { const w = windAtCourse(); if (w) RACE.axis = Math.round(w.dir); }
+  const up = RACE.axis, L = RACE.lenNm * 1852, side = RACE.rounding === "port" ? -1 : 1; // offset marks go to the left (port rounding)
+  const M = {};
+  M.rc = { kind: "rc", ...dest(S, up + 90, RACE.lineM / 2) };
+  M.pin = { kind: "pin", ...dest(S, up - 90, RACE.lineM / 2) };
+  const m1 = dest(S, up, L);
+  M["1"] = { kind: "m", ...m1 };
+  let seq = [];
+  if (RACE.type === "wl" || RACE.type === "wlg") {
+    M["1a"] = { kind: "m", ...dest(m1, up + 90 * side, RACE.offsetM) };
+    const g = dest(S, up, Math.min(150, L * 0.12));
+    if (RACE.type === "wlg") { M["2s"] = { kind: "m", ...dest(g, up - 90, RACE.gateM / 2) }; M["2p"] = { kind: "m", ...dest(g, up + 90, RACE.gateM / 2) }; }
+    else M["2"] = { kind: "m", ...g };
+    const bottom = RACE.type === "wlg" ? "2s|2p" : "2";
+    for (let k = 0; k < RACE.laps; k++) { seq.push("1", "1a"); if (k < RACE.laps - 1 || RACE.finish === "up") seq.push(bottom); }
+  } else if (RACE.type === "tri") {
+    M["2"] = { kind: "m", ...dest(dest(S, up, L / 2), up + 90 * side, L * 0.5) };
+    M["3"] = { kind: "m", ...dest(S, up, Math.min(150, L * 0.12)) };
+    seq.push("1", "2", "3");
+    for (let k = 1; k < RACE.laps; k++) seq.push("1", "3");
+    if (RACE.finish === "down") seq.pop();
+  } else if (RACE.type === "trap") {
+    M["2"] = { kind: "m", ...dest(m1, up + 180 + 60 * side, L * 0.67) };
+    const g = dest(M["2"], up + 180, L * 0.85);
+    M["3s"] = { kind: "m", ...dest(g, up - 90, RACE.gateM / 2) }; M["3p"] = { kind: "m", ...dest(g, up + 90, RACE.gateM / 2) };
+    seq.push("1", "2", "3s|3p");
+    for (let k = 1; k < RACE.laps; k++) seq.push("2", "3s|3p");
+  } else if (RACE.type === "custom") {
+    const keep = RACE.marks || {};
+    for (const [k, v] of Object.entries(keep)) if (v.kind === "m") M[k] = v;
+    if (!M["1"]) M["1"] = { kind: "m", ...m1 };
+    const ids = Object.keys(M).filter((k) => M[k].kind === "m").sort((a, b) => parseFloat(a) - parseFloat(b) || a.localeCompare(b));
+    for (let k = 0; k < RACE.laps; k++) seq.push(...ids);
+  }
+  if (RACE.finish === "up") { M.fin = { kind: "fin", ...dest(m1, up + 180, Math.min(120, L * 0.1)) }; seq.push("fin"); }
+  else seq.push("finish");
+  RACE.marks = M; RACE.seq = seq;
+  raceSave(); drawCourse(); renderRacePanel();
+}
+// Waypoint positions in order: start line centre, then each mark (a gate is its midpoint), then the finish.
+function legPoints() {
+  const M = RACE.marks, pts = [{ id: "start", lat: (M.rc.lat + M.pin.lat) / 2, lon: (M.rc.lon + M.pin.lon) / 2, r: 0 }];
+  for (const id of RACE.seq) {
+    if (id === "finish") { pts.push({ id: "finish", lat: (M.rc.lat + M.pin.lat) / 2, lon: (M.rc.lon + M.pin.lon) / 2, r: distM(M.rc, M.pin) / 2 }); continue; }
+    if (id.includes("|")) { const [a, b] = id.split("|"); if (!M[a] || !M[b]) continue; pts.push({ id, lat: (M[a].lat + M[b].lat) / 2, lon: (M[a].lon + M[b].lon) / 2, r: distM(M[a], M[b]) / 2 }); continue; }
+    if (id === "fin") { pts.push({ id: "finish", lat: M.fin.lat, lon: M.fin.lon, r: 30 }); continue; }
+    if (M[id]) pts.push({ id, lat: M[id].lat, lon: M[id].lon, r: 0 });
+  }
+  return pts;
+}
+function markIcon(id, m) {
+  const big = document.body.classList.contains("board");
+  if (m.kind === "rc") return L.divIcon({ className: "race-ico", html: `<div class="rc-boat${big ? " big" : ""}">RC</div>`, iconSize: [big ? 54 : 34, big ? 30 : 20], iconAnchor: [big ? 27 : 17, big ? 15 : 10] });
+  if (m.kind === "pin") return L.divIcon({ className: "race-ico", html: `<div class="pin-mark${big ? " big" : ""}">Pin</div>`, iconSize: [big ? 40 : 26, big ? 40 : 26], iconAnchor: [big ? 20 : 13, big ? 20 : 13] });
+  if (m.kind === "fin") return L.divIcon({ className: "race-ico", html: `<div class="fin-mark${big ? " big" : ""}">F</div>`, iconSize: [big ? 40 : 24, big ? 40 : 24], iconAnchor: [big ? 20 : 12, big ? 20 : 12] });
+  return L.divIcon({ className: "race-ico", html: `<div class="buoy${big ? " big" : ""}">${esc(id)}</div>`, iconSize: [big ? 44 : 26, big ? 44 : 26], iconAnchor: [big ? 22 : 13, big ? 22 : 13] });
+}
+function drawCourse() {
+  if (!raceLayer) return;
+  raceLayer.clearLayers();
+  if (!raceMode || !RACE.marks) return;
+  const M = RACE.marks, pts = legPoints(), big = document.body.classList.contains("board");
+  raceLayer.addLayer(L.polyline([[M.rc.lat, M.rc.lon], [M.pin.lat, M.pin.lon]], { pane: "racePane", color: "#ffffff", weight: big ? 5 : 3, opacity: 0.95 }));
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    raceLayer.addLayer(L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { pane: "racePane", color: "#0b1d33", weight: big ? 6 : 4, opacity: 0.55 }));
+    raceLayer.addLayer(L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { pane: "racePane", color: "#F27A48", weight: big ? 3 : 2, dashArray: "8 7", opacity: 0.95 }));
+  }
+  // distance and bearing on each distinct leg (repeated laps share labels)
+  const seen = new Set();
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], key = [a.id, b.id].join(">"); if (seen.has(key)) continue; seen.add(key);
+    const d = distM(a, b) / 1852; if (d < 0.05) continue;
+    const mid = { lat: a.lat + (b.lat - a.lat) * 0.38, lon: a.lon + (b.lon - a.lon) * 0.38 }; // off-centre so up and down legs on the same line don't overlap
+    raceLayer.addLayer(L.marker([mid.lat, mid.lon], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="leg-lab${big ? " big" : ""}">${d.toFixed(2)} nm · ${String(Math.round(brgOf(a, b))).padStart(3, "0")}°</div>`, iconSize: [0, 0] }) }));
+  }
+  for (const [id, m] of Object.entries(M)) {
+    const mk = L.marker([m.lat, m.lon], { pane: "racePane", draggable: true, icon: markIcon(id, m), title: m.kind === "rc" ? "Committee boat (drag to move)" : m.kind === "pin" ? "Pin end (drag to move)" : `Mark ${id} (drag to move)` });
+    mk.on("drag", (e) => { const p = e.target.getLatLng(); m.lat = p.lat; m.lon = p.lng; drawCourseLines(); });
+    mk.on("dragend", () => { raceSave(); drawCourse(); renderRacePanel(); });
+    raceLayer.addLayer(mk);
+  }
+}
+function drawCourseLines() { clearTimeout(drawCourseLines._t); drawCourseLines._t = setTimeout(drawCourse, 60); }
+function fitCourse() {
+  if (!RACE.marks) return;
+  const pts = Object.values(RACE.marks).map((m) => [m.lat, m.lon]);
+  map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [document.body.classList.contains("board") ? 40 : 30, 60], paddingBottomRight: [30, 40], maxZoom: 16 });
+}
+function placeCourse(lat, lon) { RACE.center = { lat, lon }; if (RACE.type !== "custom") RACE.marks = null; buildCourse(); fitCourse(); }
+
+/* ----- simulation ----- */
+function simGrids(pts) {
+  let s = 90, n = -90, w = 180, e = -180;
+  for (const p of pts) { s = Math.min(s, p.lat); n = Math.max(n, p.lat); w = Math.min(w, p.lon); e = Math.max(e, p.lon); }
+  const padLat = Math.max(0.01, (n - s) * 0.35), padLon = Math.max(0.012, (e - w) * 0.35);
+  s -= padLat; n += padLat; w -= padLon; e += padLon;
+  const N = 36, lat0 = s, lon0 = w, dlat = (n - s) / (N - 1), dlon = (e - w) / (N - 1);
+  const wu = new Float32Array(N * N), wv = new Float32Array(N * N), land = new Uint8Array(N * N);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const la = lat0 + j * dlat, lo = lon0 + i * dlon, k = j * N + i, cp = map.latLngToContainerPoint([la, lo]);
+    const lp = onLandPx(cp.x, cp.y); land[k] = (lp === null ? isCoastLand(la, lo) : lp) ? 1 : 0;
+    const wd = coastAt(la, lo, true);
+    if (wd) { const th = rad(wd.dir); wu[k] = Math.sin(th) * wd.spd; wv[k] = Math.cos(th) * wd.spd; } // wind FROM vector (kt)
+  }
+  const G = { N, lat0, lon0, dlat, dlon, wu, wv, land, cur: new Map(), bounds: L.latLngBounds([s, w], [n, e]) };
+  const sz = map.getSize();
+  G.mpp = map.distance(map.containerPointToLatLng([0, sz.y / 2]), map.containerPointToLatLng([100, sz.y / 2])) / 100;
+  return G;
+}
+function curSlice(G, tMin) {
+  const key = Math.round(tMin / 10);
+  if (G.cur.has(key)) return G.cur.get(key);
+  const N = G.N, cu = new Float32Array(N * N), cw = new Float32Array(N * N);
+  if (TIDES && tidesOn !== null) {
+    const pad = (CUR_RADIUS_KM + 2) / 111.32, b = G.bounds, wide = L.latLngBounds([b.getSouth() - pad, b.getWest() - pad * 1.4], [b.getNorth() + pad, b.getEast() + pad * 1.4]);
+    const states = TIDES.currents.length ? stationStates(key * 10, wide) : [];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const k = j * N + i; if (G.land[k]) continue;
+      const la = G.lat0 + j * G.dlat, lo = G.lon0 + i * G.dlon, cp = map.latLngToContainerPoint([la, lo]);
+      const spd = Math.hypot(G.wu[k], G.wv[k]), wind = spd ? { dir: (deg(Math.atan2(G.wu[k], G.wv[k])) + 360) % 360, spd } : null;
+      const f = flowAt(la, lo, states, true, false, wind, cp.x, cp.y, G.mpp);
+      if (f) { cu[k] = f.u; cw[k] = f.w; }
+    }
+  }
+  const out = { cu, cw }; G.cur.set(key, out); return out;
+}
+function gridAt(G, arr, lat, lon) {
+  const fx = (lon - G.lon0) / G.dlon, fy = (lat - G.lat0) / G.dlat, N = G.N;
+  const i = Math.max(0, Math.min(N - 2, Math.floor(fx))), j = Math.max(0, Math.min(N - 2, Math.floor(fy))), tx = Math.max(0, Math.min(1, fx - i)), ty = Math.max(0, Math.min(1, fy - j));
+  return (arr[j * N + i] * (1 - tx) + arr[j * N + i + 1] * tx) * (1 - ty) + (arr[(j + 1) * N + i] * (1 - tx) + arr[(j + 1) * N + i + 1] * tx) * ty;
+}
+function landAtG(G, lat, lon) {
+  const i = Math.round((lon - G.lon0) / G.dlon), j = Math.round((lat - G.lat0) / G.dlat);
+  if (i < 0 || j < 0 || i >= G.N || j >= G.N) return false;
+  return G.land[j * G.N + i] === 1;
+}
+function envAt(G, lat, lon, tMin) {
+  const u = gridAt(G, G.wu, lat, lon), v = gridAt(G, G.wv, lat, lon), c = curSlice(G, tMin);
+  return { twd: (deg(Math.atan2(u, v)) + 360) % 360, tws: Math.hypot(u, v), cu: gridAt(G, c.cu, lat, lon), cw: gridAt(G, c.cw, lat, lon) };
+}
+const twaOf = (h, twd) => Math.abs(wrap180(h - twd));
+// Move a boat for dt seconds on heading h (through the water), plus the current.
+function stepBoat(G, b, p, h, tMin, dt) {
+  const E = envAt(G, p.lat, p.lon, tMin), bsp = polar(b, E.tws, twaOf(h, E.twd));
+  const vx = (Math.sin(rad(h)) * bsp + E.cu) * KT, vy = (Math.cos(rad(h)) * bsp + E.cw) * KT;
+  return { lat: p.lat + (vy * dt) / 110540, lon: p.lon + (vx * dt) / (111320 * Math.cos(rad(p.lat))), bsp, E };
+}
+// Best heading pair (both tacks) toward a target: velocity-made-good including current.
+function vmgOptions(G, b, p, tgt, tMin) {
+  const E = envAt(G, p.lat, p.lon, tMin), brg = brgOf(p, tgt), opts = { L: null, R: null };
+  for (let h = 0; h < 360; h += 3) {
+    const twa = twaOf(h, E.twd), bsp = polar(b, E.tws, twa); if (bsp <= 0) continue;
+    const vx = Math.sin(rad(h)) * bsp + E.cu, vy = Math.cos(rad(h)) * bsp + E.cw, vmg = vx * Math.sin(rad(brg)) + vy * Math.cos(rad(brg));
+    const side = wrap180(h - E.twd) < 0 ? "L" : "R"; // L = wind on the starboard side? we only need two families
+    if (!opts[side] || vmg > opts[side].vmg) opts[side] = { h, vmg, bsp };
+  }
+  return { ...opts, E, brg };
+}
+function sailLegHeuristic(G, boat, strat, from, to, t0, track) {
+  let p = { lat: from.lat, lon: from.lon }, t = t0, side = null, lastTack = -1e9, minD = Infinity;
+  const dt = 6, pen = BOATS[boat].pen, maxT = t0 + 240 * 60;
+  while (t < maxT) {
+    const d = distM(p, to);
+    if (d < Math.max(18, to.r)) break;
+    if (d > minD + 40 && minD < 60) break; // passed it
+    minD = Math.min(minD, d);
+    const O = vmgOptions(G, boat, p, to, t / 60);
+    // can we lay the mark directly (reach)?
+    let pick;
+    const best = !O.L ? "R" : !O.R ? "L" : O.L.vmg >= O.R.vmg ? "L" : "R";
+    if (side == null) side = strat === "left" ? "L" : strat === "right" ? "R" : best;
+    if (strat === "best" || strat === "shifts") { if (side !== best && O[best] && O[side] && O[best].vmg > O[side].vmg * 1.12 && t - lastTack > 120) { side = best; lastTack = t; t += pen; } }
+    else { // stay on one side until the other tack lays (or nearly lays) the mark, then tack once
+      const other = side === "L" ? "R" : "L";
+      // tack onto the layline once the other tack points at (or just above) the mark
+      if (O[other] && O[side] && Math.abs(wrap180(O[other].h - O.brg)) < 6 && t - lastTack > 120) { side = other; lastTack = t; t += pen; }
+      else if (O[side] && O[side].vmg < 0.05 && O[other] && t - lastTack > 60) { side = other; lastTack = t; t += pen; }
+    }
+    pick = O[side] || O[side === "L" ? "R" : "L"];
+    if (!pick) break;
+    let nx = stepBoat(G, boat, p, pick.h, t / 60, dt);
+    if (landAtG(G, nx.lat, nx.lon)) { side = side === "L" ? "R" : "L"; lastTack = t; t += pen; const alt = O[side]; if (!alt) break; nx = stepBoat(G, boat, p, alt.h, t / 60, dt); if (landAtG(G, nx.lat, nx.lon)) break; }
+    p = { lat: nx.lat, lon: nx.lon }; t += dt;
+    track.push([t, p.lat, p.lon, pick.h, nx.bsp]);
+  }
+  return t;
+}
+// Fastest route for one leg: isochrones (expand all headings every 15 s, keep the farthest boat in each direction).
+function sailLegBest(G, boat, from, to, t0, track) {
+  const dt = 15, pen = BOATS[boat].pen, cosL = Math.cos(rad(from.lat));
+  let front = [{ lat: from.lat, lon: from.lon, t: t0, h: null, side: 0, par: null }];
+  const total = distM(from, to);
+  for (let step = 0; step < 900; step++) {
+    const cand = new Map();
+    let done = null;
+    for (const n of front) {
+      const E = envAt(G, n.lat, n.lon, n.t / 60);
+      for (let h = 0; h < 360; h += 5) {
+        const sw = wrap180(h - E.twd), side = sw < 0 ? -1 : 1, twa = Math.abs(sw), bsp = polar(boat, E.tws, twa); if (bsp <= 0.2) continue;
+        const man = n.h != null && side !== n.side && (twa < 80 || twa > 110) ? pen : 0, eff = Math.max(0, dt - man);
+        const vx = (Math.sin(rad(h)) * bsp * eff + E.cu * dt) * KT, vy = (Math.cos(rad(h)) * bsp * eff + E.cw * dt) * KT;
+        const p = { lat: n.lat + vy / 110540, lon: n.lon + vx / (111320 * cosL), t: n.t + dt, h, side, par: n, bsp };
+        if (landAtG(G, p.lat, p.lon)) continue;
+        const dTo = distM(p, to);
+        if (dTo < Math.max(20, to.r, bsp * KT * dt * 0.55)) { if (!done || p.t < done.t || (p.t === done.t && dTo < done.dTo)) done = { ...p, dTo }; continue; }
+        const sec = Math.round(brgOf(from, p) / 2.5), dFrom = distM(from, p), cur = cand.get(sec);
+        if (!cur || dFrom > cur.dFrom) cand.set(sec, { ...p, dFrom, dTo });
+      }
+    }
+    if (done) { const path = []; for (let q = done; q; q = q.par) path.push(q); path.reverse(); for (const q of path.slice(1)) track.push([q.t, q.lat, q.lon, q.h, q.bsp]); return done.t; }
+    front = [...cand.values()];
+    if (!front.length) return null;
+    // keep the search focused: drop candidates far behind the best progress toward the mark
+    const bestTo = Math.min(...front.map((c) => c.dTo));
+    if (front.length > 60) front = front.filter((c) => c.dTo < bestTo + total * 0.6);
+  }
+  return null;
+}
+const STRATS = { best: { name: "Fastest route", col: "#F27A48" }, left: { name: "Goes left", col: "#2a78d6" }, right: { name: "Goes right", col: "#1baf7a" }, shifts: { name: "Plays the shifts", col: "#a35cf0" } };
+async function runRace() {
+  if (!RACE.marks) return;
+  const msg = $("#race-sim-msg"); showMsg(msg, "Working out the race... (wind and current across the course)");
+  await new Promise((r) => setTimeout(r, 30));
+  const pts = legPoints(), G = simGrids(pts), t0 = (TIDES ? tideTimeMin() : 0) * 60;
+  const res = [];
+  for (const sid of RACE.strategies) {
+    const track = [[t0, pts[0].lat, pts[0].lon, RACE.axis, 0]], legs = []; let t = t0, ok = true;
+    for (let i = 1; i < pts.length; i++) {
+      await new Promise((r) => setTimeout(r, 0));
+      const tEnd = sid === "best" ? sailLegBest(G, RACE.boat, pts[i - 1], pts[i], t, track) : sailLegHeuristic(G, RACE.boat, sid, pts[i - 1], pts[i], t, track);
+      if (tEnd == null) { ok = false; break; }
+      legs.push(tEnd - t); t = tEnd;
+    }
+    res.push({ sid, track, legs, total: ok ? t - t0 : null });
+  }
+  RACE.sim = { res, t0, G, pts, shown: 0 };
+  showMsg(msg, "");
+  renderSimResults(); animateRace();
+}
+let raceAnim = null;
+function animateRace() {
+  if (!raceSimLayer) return;
+  raceSimLayer.clearLayers();
+  const S = RACE.sim; if (!S) return;
+  const end = Math.max(...S.res.map((r) => r.track[r.track.length - 1][0]));
+  const boats = S.res.map((r) => {
+    const line = L.polyline([], { pane: "racePane", color: STRATS[r.sid].col, weight: 2.5, opacity: 0.9 }).addTo(raceSimLayer);
+    const mk = L.marker([r.track[0][1], r.track[0][2]], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="sim-boat" style="--c:${STRATS[r.sid].col}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(raceSimLayer);
+    return { r, line, mk, k: 0 };
+  });
+  let simT = S.t0, last = performance.now();
+  cancelAnimationFrame(raceAnim);
+  const frame = (now) => {
+    simT += ((now - last) / 1000) * RACE.speed; last = now;
+    for (const b of boats) {
+      const tr = b.r.track; while (b.k < tr.length - 1 && tr[b.k + 1][0] <= simT) b.k++;
+      const p = tr[b.k]; b.mk.setLatLng([p[1], p[2]]);
+      const el = b.mk.getElement(); if (el && el.firstChild) el.firstChild.style.transform = `rotate(${p[3]}deg)`;
+      b.line.setLatLngs(tr.slice(0, b.k + 1).map((q) => [q[1], q[2]]));
+    }
+    const el = $("#race-clock"); if (el) el.textContent = `Race time ${fmtDur(simT - S.t0)}`;
+    if (simT < end && raceMode) raceAnim = requestAnimationFrame(frame);
+  };
+  raceAnim = requestAnimationFrame(frame);
+}
+const fmtDur = (s) => { s = Math.max(0, Math.round(s)); const m = Math.floor(s / 60); return `${m}:${String(s % 60).padStart(2, "0")}`; };
+function renderSimResults() {
+  const S = RACE.sim, box = $("#race-results"); if (!S) { box.innerHTML = ""; return; }
+  const ok = S.res.filter((r) => r.total != null).sort((a, b) => a.total - b.total);
+  const best = ok[0];
+  box.innerHTML = `<table><thead><tr><th></th><th>Boat</th><th>Finish</th><th>Behind</th></tr></thead><tbody>${S.res.slice().sort((a, b) => (a.total ?? 1e9) - (b.total ?? 1e9)).map((r) =>
+    `<tr><td><i class="swatch" style="background:${STRATS[r.sid].col}"></i></td><td>${STRATS[r.sid].name}</td><td>${r.total == null ? "did not finish" : fmtDur(r.total)}</td><td>${r.total == null || !best ? "" : r === best ? "winner" : "+" + fmtDur(r.total - best.total)}</td></tr>`).join("")}</tbody></table>
+    <p class="hint" id="race-clock"></p>${raceSideNote()}`;
+}
+function raceSideNote() {
+  const S = RACE.sim; if (!S) return "";
+  const l = S.res.find((r) => r.sid === "left"), r = S.res.find((r) => r.sid === "right");
+  if (!l || !r || !l.legs.length || !r.legs.length) return "";
+  const d = l.legs[0] - r.legs[0];
+  if (Math.abs(d) < 5) return `<p class="hint">First beat: left and right are about even (within 5 seconds).</p>`;
+  return `<p class="hint">First beat: the <b>${d < 0 ? "left" : "right"}</b> side was faster by ${fmtDur(Math.abs(d))} in this simulation.</p>`;
+}
+function renderRacePanel() {
+  const M = RACE.marks;
+  $("#race-axis-label").textContent = RACE.autoAxis ? `${RACE.axis}° (from the wind at the course)` : `${RACE.axis}°`;
+  $("#race-len-label").textContent = `${RACE.lenNm.toFixed(2)} nm`;
+  $("#race-line-label").textContent = `${RACE.lineM} m`;
+  $("#race-laps-label").textContent = RACE.laps === 1 ? "once around" : RACE.laps === 2 ? "twice around" : `${RACE.laps} times around`;
+  if (!M) { $("#race-summary").textContent = "Click “Put the course here” (or tap the map in place mode) to lay a course."; return; }
+  const pts = legPoints(); let tot = 0; for (let i = 1; i < pts.length; i++) tot += distM(pts[i - 1], pts[i]);
+  const w = windAtCourse();
+  $("#race-summary").innerHTML = `${pts.length - 1} legs, ${(tot / 1852).toFixed(2)} nm sailed in total. Start line ${Math.round(distM(M.rc, M.pin))} m.` +
+    (w ? ` Wind at the course: ${Math.round(w.dir)}° at ${r1(w.spd)} kt; course axis ${RACE.axis}°${Math.abs(wrap180(w.dir - RACE.axis)) > 5 ? ` (${Math.round(Math.abs(wrap180(w.dir - RACE.axis)))}° off the wind)` : ""}.` : "");
+}
+let racePlacing = false;
+function initRace() {
+  map.createPane("racePane").style.zIndex = 470;
+  raceLayer = L.layerGroup().addTo(map); raceSimLayer = L.layerGroup().addTo(map);
+  raceLoad();
+  const sel = $("#race-boat"); sel.innerHTML = Object.entries(BOATS).map(([k, b]) => `<option value="${k}">${b.name}</option>`).join(""); sel.value = RACE.boat;
+  $("#race-type").value = RACE.type; $("#race-finish").value = RACE.finish; $("#race-rounding").value = RACE.rounding;
+  $("#race-len").value = RACE.lenNm; $("#race-line").value = RACE.lineM; $("#race-laps").value = RACE.laps; $("#race-axis").value = RACE.axis; $("#race-auto").checked = RACE.autoAxis;
+  const rebuild = () => { if (RACE.center) buildCourse(); else renderRacePanel(); };
+  $("#race-type").addEventListener("change", (e) => { RACE.type = e.target.value; rebuild(); });
+  $("#race-finish").addEventListener("change", (e) => { RACE.finish = e.target.value; rebuild(); });
+  $("#race-rounding").addEventListener("change", (e) => { RACE.rounding = e.target.value; rebuild(); });
+  $("#race-len").addEventListener("input", (e) => { RACE.lenNm = +e.target.value; rebuild(); });
+  $("#race-line").addEventListener("input", (e) => { RACE.lineM = +e.target.value; rebuild(); });
+  $("#race-laps").addEventListener("input", (e) => { RACE.laps = +e.target.value; rebuild(); });
+  $("#race-axis").addEventListener("input", (e) => { RACE.axis = +e.target.value; RACE.autoAxis = false; $("#race-auto").checked = false; rebuild(); });
+  $("#race-auto").addEventListener("change", (e) => { RACE.autoAxis = e.target.checked; rebuild(); });
+  $("#race-boat").addEventListener("change", (e) => { RACE.boat = e.target.value; raceSave(); });
+  $("#race-here").addEventListener("click", () => { const c = map.getCenter(); placeCourse(c.lat, c.lng); });
+  $("#race-place").addEventListener("click", () => { racePlacing = !racePlacing; $("#race-place").classList.toggle("active", racePlacing); $("#race-place").textContent = racePlacing ? "Tap the map for the start line…" : "Tap to place the start"; });
+  $("#race-addmark").addEventListener("click", () => {
+    if (!RACE.marks) return;
+    RACE.type = "custom"; $("#race-type").value = "custom";
+    const ids = Object.keys(RACE.marks).filter((k) => RACE.marks[k].kind === "m"), n = String(ids.filter((k) => /^\d+$/.test(k)).length + 1), c = map.getCenter();
+    RACE.marks[n] = { kind: "m", lat: c.lat, lon: c.lng }; buildCourse();
+  });
+  $("#race-clear").addEventListener("click", () => { RACE.marks = null; RACE.center = null; RACE.sim = null; raceSave(); drawCourse(); raceSimLayer.clearLayers(); renderSimResults(); renderRacePanel(); });
+  $("#race-run").addEventListener("click", runRace);
+  $("#race-speed").addEventListener("change", (e) => { RACE.speed = +e.target.value; });
+  document.querySelectorAll("#race-strats input").forEach((el) => { el.checked = RACE.strategies.includes(el.value); el.addEventListener("change", () => { RACE.strategies = [...document.querySelectorAll("#race-strats input:checked")].map((x) => x.value); raceSave(); }); });
+  $("#race-board").addEventListener("click", toggleBoard);
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("board")) toggleBoard(); });
+  map.on("click", (e) => { if (raceMode && racePlacing) { racePlacing = false; $("#race-place").classList.remove("active"); $("#race-place").textContent = "Tap to place the start"; placeCourse(e.latlng.lat, e.latlng.lng); } });
+  initRaceChat();
+}
+function toggleBoard() {
+  const on = !document.body.classList.contains("board");
+  document.body.classList.toggle("board", on);
+  $("#race-board").textContent = on ? "Exit big screen" : "Big screen (smartboard)";
+  try { if (on && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen(); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (_) {}
+  if (on) { toggleBoard.legendWas = legendMin; legendMin = true; } else if (toggleBoard.legendWas !== undefined) legendMin = toggleBoard.legendWas;
+  setTimeout(() => { map.invalidateSize(); drawCourse(); fitCourse(); if (activeTab === "coast") setLegend(arrowLegend()); }, 250);
+}
+function enterRace() { raceMode = true; if (RACE.marks && RACE.center && RACE.autoAxis) { /* keep coach's placement */ } drawCourse(); renderRacePanel(); }
+function leaveRace() { raceMode = false; raceLayer && raceLayer.clearLayers(); raceSimLayer && raceSimLayer.clearLayers(); cancelAnimationFrame(raceAnim); if (document.body.classList.contains("board")) toggleBoard(); }
+
+/* ----- AI coach chat: sends a short summary of the map and course to a small server function that asks Claude ----- */
+const CHAT = [];
+function raceContext() {
+  const c = map.getCenter(), b = map.getBounds(), sample = (lat, lon) => {
+    const w = coastAt(lat, lon, true); let cur = null;
+    if (TIDES) { const t = tideTimeMin(), pad = (CUR_RADIUS_KM + 2) / 111.32, cp = map.latLngToContainerPoint([lat, lon]);
+      const st = TIDES.currents.length ? stationStates(t, L.latLngBounds([lat - pad, lon - pad * 1.4], [lat + pad, lon + pad * 1.4])) : [];
+      const f = flowAt(lat, lon, st, false, false, w, cp.x, cp.y, 50); if (f) cur = { kt: r1(f.sp), toward: Math.round(f.dir), kind: f.kind, depth_m: f.depth ? Math.round(f.depth.h) : null }; }
+    return { lat: +lat.toFixed(4), lon: +lon.toFixed(4), wind: w ? { from: Math.round(w.dir), kt: r1(w.spd) } : null, current: cur };
+  };
+  const tide = TIDES ? tideAt(c.lat, c.lng, tideTimeMin()) : null;
+  const ctx = {
+    region: REGION.name, mode: coastMode === "live" ? (useObs() ? "live readings" : "forecast") : coastMode === "custom" ? "wind direction set by the coach" : "typical wind for the month and hour",
+    when: coastMode === "live" ? `${$("#live-day").selectedOptions[0]?.textContent || ""} ${hourLabel(+$("#live-hour").value)}` : coastMode === "typical" ? `${MONTHS[coastTime().m]} ${hourLabel(coastTime().h)}` : "now",
+    map_view: { center: sample(c.lat, c.lng), north: +b.getNorth().toFixed(3), south: +b.getSouth().toFixed(3), west: +b.getWest().toFixed(3), east: +b.getEast().toFixed(3) },
+    tide_here: tide ? { height: r1(tide.h), units: tideUnits(), rising: tide.rising } : null,
+  };
+  if (RACE.marks) {
+    const pts = legPoints();
+    ctx.course = { type: { wl: "windward-leeward", wlg: "windward-leeward with gate", tri: "triangle", trap: "trapezoid", custom: "custom" }[RACE.type], laps: RACE.laps, axis_deg: RACE.axis,
+      boat: BOATS[RACE.boat].name, marks: Object.fromEntries(Object.entries(RACE.marks).map(([k, m]) => [k, sample(m.lat, m.lon)])),
+      legs: pts.slice(1).map((p, i) => ({ to: p.id, nm: +(distM(pts[i], p) / 1852).toFixed(2), bearing: Math.round(brgOf(pts[i], p)) })) };
+    if (RACE.sim) ctx.simulation = RACE.sim.res.map((r) => ({ boat: STRATS[r.sid].name, finish_min: r.total == null ? null : +(r.total / 60).toFixed(1), first_leg_min: r.legs[0] ? +(r.legs[0] / 60).toFixed(1) : null }));
+  }
+  return ctx;
+}
+function renderChat() {
+  $("#chat-log").innerHTML = CHAT.map((m) => `<div class="msg ${m.role}">${esc(m.content).replace(/\n/g, "<br>")}</div>`).join("");
+  $("#chat-log").scrollTop = 1e9;
+}
+async function askChat(q) {
+  q = q.trim(); if (!q) return;
+  CHAT.push({ role: "user", content: q }); renderChat();
+  $("#chat-input").value = ""; $("#chat-send").disabled = true;
+  CHAT.push({ role: "assistant", content: "Thinking…" }); renderChat();
+  try {
+    const r = await fetch("/.netlify/functions/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: CHAT.slice(0, -1).slice(-10), context: raceContext() }) });
+    const j = await r.json().catch(() => ({}));
+    CHAT[CHAT.length - 1].content = r.ok && j.answer ? j.answer : (j.error || "The AI coach is not set up on this website yet. (It needs the site published through the GitHub auto-update with an Anthropic API key added in Netlify.)");
+  } catch (_) { CHAT[CHAT.length - 1].content = "Could not reach the AI coach. Check the internet connection and try again."; }
+  $("#chat-send").disabled = false; renderChat();
+}
+function initRaceChat() {
+  $("#chat-form").addEventListener("submit", (e) => { e.preventDefault(); askChat($("#chat-input").value); });
+  document.querySelectorAll("#chat-chips button").forEach((b) => b.addEventListener("click", () => askChat(b.textContent)));
+}
+
+
 /* =================== Coach kits =================== */
 // One entry per kit: name, price (text), image (a file published next to the page), url (its Etsy or Amazon page), store.
 const KITS = [];
@@ -3114,7 +3686,9 @@ function renderModel() {
 /* =================== routing & boot =================== */
 let activeTab = "planner";
 function showTab(name) {
-  if (!["coast", "debrief", "accuracy", "kits"].includes(name)) name = "coast";
+  if (!["coast", "race", "debrief", "accuracy", "kits"].includes(name)) name = "coast";
+  const race = name === "race"; if (race) name = "coast";
+  if (raceMode && !race) leaveRace();
   document.querySelector("main").classList.toggle("wide", name === "kits");
   if (name !== "kits") map.invalidateSize({ animate: false });  // the map may have been hidden
   const wasCoast = activeTab === "coast";
@@ -3122,8 +3696,9 @@ function showTab(name) {
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
   $("#liftmap-btn").hidden = name === "coast";
   $("#brand-venue").textContent = "Lift / Header / Tide Guide";
-  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === name));
-  document.querySelectorAll(".tab").forEach((t) => (t.hidden = t.id !== `tab-${name}`));
+  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === (race ? "race" : name)));
+  document.querySelectorAll(".tab").forEach((t) => (t.hidden = !(t.id === `tab-${name}` || (race && t.id === "tab-race"))));
+  if (race) setTimeout(enterRace, 0);
   layers.track.clearLayers(); if (liftOn) toggleLiftMap(false); setLegend(null);
   if (name === "planner") { planResult ? updateSlider() : drawStations({}); fitStations(); }
   else if (name === "coast") { layers.stations.clearLayers(); enterCoast(); }
@@ -3155,7 +3730,7 @@ async function boot() {
   }
   $("#loading").hidden = true;
   renderKits();
-  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initTideToggle(); initProbe(); initDepth(); initPlanner(); initDebrief(); renderModel();
+  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initTideToggle(); initProbe(); initDepth(); initRace(); initPlanner(); initDebrief(); renderModel();
   $("#liftmap-btn").addEventListener("click", () => toggleLiftMap());
   window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
   showTab(location.hash.slice(1) || "coast");

@@ -23,3 +23,17 @@ expired Netlify token or a data service being temporarily down (the next run usu
 
 Your Mapbox key (if you add one) goes in `scripts/build_deploy.py` (the `mapboxToken` line in CONFIG),
 because the website folder is rebuilt on every run.
+
+## AI coach (Race Planning tab)
+The "Ask the AI coach" box calls a small server function (`netlify/functions/ask.mjs`) that asks Claude
+(Anthropic's AI). It only works when the site is published by this GitHub workflow (drag-and-drop uploads
+cannot run server code), and it needs your Anthropic API key stored in Netlify:
+
+1. Create an API key at console.anthropic.com (Settings → API keys). Add a payment method there; each
+   question is billed to that account. You can set a monthly spend limit in the same console.
+2. In Netlify: your site → **Site configuration → Environment variables → Add a variable**.
+   Key: `ANTHROPIC_API_KEY`, value: the key. Never put the key in GitHub or in the website files.
+3. Run the workflow once (Actions → Refresh wind data → Run workflow). The Race Planning tab's chat then answers.
+
+The function only accepts requests from njpboatworks.com, www.njpboatworks.com and *.netlify.app pages.
+To allow another domain, add a Netlify environment variable `ALLOWED_ORIGINS` with a comma-separated list.

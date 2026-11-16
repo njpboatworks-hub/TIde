@@ -64,8 +64,17 @@ def main(days_ahead: int = 8, in_region=None, out=None, tz="America/New_York"):
         if not cp:
             return None
         ev = [[mins(e["Time"]), int(round(float(e["Velocity_Major"]) * 100))] for e in cp]
-        return {"id": s["id"], "name": s["name"], "lat": round(s["lat"], 5), "lon": round(s["lng"], 5),
-                "flood": cp[0].get("meanFloodDir"), "ebb": cp[0].get("meanEbbDir"), "ev": ev}
+        out = {"id": s["id"], "name": s["name"], "lat": round(s["lat"], 5), "lon": round(s["lng"], 5),
+               "flood": cp[0].get("meanFloodDir"), "ebb": cp[0].get("meanEbbDir"), "ev": ev}
+        if s["type"] == "H":
+            # Harmonic stations: NOAA's full prediction every 30 minutes, so the page uses the real curve shape
+            # (slack-to-max is often not a smooth wave) instead of a cosine between slack and max times.
+            d2 = get(f"{API}?product=currents_predictions&station={s['id']}&bin={s['currbin']}&interval=30&{q}")
+            ts = (d2 or {}).get("current_predictions", {}).get("cp")
+            if ts and len(ts) > 48:
+                out["ts"] = [int(round(float(e["Velocity_Major"]) * 100)) for e in ts]
+                out["ts0"] = mins(ts[0]["Time"])
+        return out
 
     # ---- tides: high/low events
     tide_st = [s for s in get(MD + "tidepredictions")["stations"] if inside(s["lat"], s["lng"])]
