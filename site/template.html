@@ -145,6 +145,11 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 .legend { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 500; background: var(--surface); color: var(--ink);
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; max-width: 270px; }
+.legend { padding-right: 30px; }
+.legend .legend-toggle { position: absolute; top: 4px; right: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 7px; min-width: 24px; height: 22px; padding: 0 6px; font: 600 12px/1 var(--f-body); cursor: pointer; }
+.legend.min { padding: 4px; }
+.legend.min .legend-body { display: none; }
+.legend.min .legend-toggle { position: static; }
 .legend .bar { height: 8px; border-radius: 4px; margin: 4px 0 2px; }
 .legend .ends { display: flex; justify-content: space-between; gap: 8px; color: var(--ink-2); }
 .legend .fine { color: var(--muted); margin-top: 4px; }
@@ -745,7 +750,16 @@ function drawStations(vals) {
 }
 function hex(h) { h = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); }
 function divergingColor(x, max, neg, pos) { const t = Math.max(-1, Math.min(1, x / max)), mid = hex(css("--neutral")), end = hex(t < 0 ? neg : pos), a = Math.abs(t); return `rgb(${mid.map((m, i) => Math.round(m + (end[i] - m) * a)).join(",")})`; }
-function setLegend(html) { const el = $("#map-legend"); el.innerHTML = html || ""; el.hidden = !html; }
+let legendMin = (() => { try { return localStorage.getItem("legendMin") === "1"; } catch (_) { return false; } })();
+function setLegend(html) {
+  const el = $("#map-legend"); el.hidden = !html; if (!html) { el.innerHTML = ""; return; }
+  el.classList.toggle("min", legendMin);
+  el.innerHTML = `<button type="button" class="legend-toggle" aria-expanded="${!legendMin}" title="${legendMin ? "Show the map key" : "Hide the map key"}">${legendMin ? "Map key ▸" : "–"}</button><div class="legend-body">${html}</div>`;
+  el.querySelector(".legend-toggle").addEventListener("click", () => {
+    legendMin = !legendMin; try { localStorage.setItem("legendMin", legendMin ? "1" : "0"); } catch (_) {}
+    setLegend(html);
+  });
+}
 function divLegend(title, l, r, negVar, posVar) { return `<b>${title}</b><div class="bar" style="background:linear-gradient(90deg, ${css(negVar)}, ${css("--neutral")}, ${css(posVar)})"></div><div class="ends"><span>${l}</span><span>${r}</span></div>`; }
 
 let liftOn = false;
@@ -846,7 +860,7 @@ function bumpField() { fieldGen++; baseCache.clear(); refCache.clear(); obsBucke
 function bucketize(pts) { const B = new Map(); for (const p of pts) { const k = Math.floor(p.lat) * 1000 + Math.floor(p.lon); let a = B.get(k); if (!a) B.set(k, (a = [])); a.push(p); } return B; }
 function knn(B, lat, lon, K) {
   const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon), out = [];
-  for (let r = 0; r <= 3; r++) {
+  for (let r = 0; r <= 5; r++) {
     for (let a = i0 - r; a <= i0 + r; a++) for (let b = j0 - r; b <= j0 + r; b++) {
       if (Math.max(Math.abs(a - i0), Math.abs(b - j0)) !== r) continue;
       const arr = B.get(a * 1000 + b); if (!arr) continue;
@@ -863,12 +877,17 @@ function knn(B, lat, lon, K) {
 // Open-water wind (land effect not yet applied) at one lattice node: inverse-distance blend of the 6 nearest stations.
 function baseNode(lat, lon) {
   if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
-  const near = knn(obsBuckets, lat, lon, 6);
-  if (!near.length || near[0].d2 > 120 * 120) return null;
+  const near = knn(obsBuckets, lat, lon, 9);
+  if (!near.length || near[0].d2 > 350 * 350) return null;
+  // Inverse-distance blend of the 8 nearest, with weights tapered to zero at the 9th: no seams where the nearest set changes.
+  const dK = near.length > 8 ? near[8].d2 : near[near.length - 1].d2 * 1.5 + 1;
   let su = 0, sv = 0, sw = 0, st = 0, sn = 0;
-  for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
+  for (const { o, d2 } of near.slice(0, 8)) { const tp = Math.max(0, 1 - d2 / dK), w = (tp * tp) / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
+  if (sw <= 0) return null;
   const dn = Math.sqrt(near[0].d2);
-  return [su / sw, sv / sw, sn ? st / sn : NaN, dn < 80 ? 1 : (120 - dn) / 40]; // last: coverage, fading out 80-120 km from a station
+  // last value: coverage. Full within 120 km of a station; beyond that the wind is carried out over open water from the
+  // nearest stations (drawn a little fainter), fading out by ~350 km.
+  return [su / sw, sv / sw, sn ? st / sn : NaN, dn < 120 ? 1 : dn < 320 ? 1 - ((dn - 120) / 200) * 0.4 : 0.6 * (350 - dn) / 30];
 }
 function lattice(cache, sp, lat, lon, node) {
   const fx = lon / sp, fy = lat / sp, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
@@ -979,7 +998,7 @@ function computeCoastHeat() {
     COV[k] = Math.max(0, Math.min(1, b[3]));
     let ref = fixedRef;
     if (ref == null) { const r = lattice(refCache, rsp, ll.lat, ll.lng, refNode); ref = r ? (deg(Math.atan2(r[0], r[1])) + 360) % 360 : DIR[k]; }
-    LIFT[k] = signedLift(DIR[k], ref);
+    LIFT[k] = signedLift(DIR[k], ref) * COV[k] * COV[k]; // far offshore the comparison means little: fade toward neutral
   }
   heat = { gx, gy, LIFT, DIR, SPD, ST, OK, COV };
 }
@@ -1360,7 +1379,7 @@ function coastLegend() {
   return divLegend(`Typical wind, ${MONTHS[m]} ${hourLabel(h)}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
     `<div class="ends"><span>compared with the average wind within about 40 km</span></div>
      <div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
-     <div class="fine">Average of ${COAST.years[0]} to ${COAST.years[1]} at ${COAST.stations.length} ${REGION.stations} stations, spread across the water and adjusted near shore with the rough land-friction rule. Model estimate, not measured at each spot, and not a forecast.</div>`;
+     <div class="fine">Average of ${COAST.years[0]} to ${COAST.years[1]} at ${COAST.stations.length} ${REGION.stations} stations, spread across the water and adjusted near shore with the rough land-friction rule. More than about 120 km from a station (far offshore) the wind is carried over from the nearest stations and is less reliable. Model estimate, not measured at each spot, and not a forecast.</div>`;
 }
 const hourLabel = (h) => `${((h + 11) % 12) + 1}:00 ${h < 12 ? "AM" : "PM"}`;
 function drawCoastStations() {
