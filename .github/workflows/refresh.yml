@@ -11,7 +11,7 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +27,10 @@ jobs:
 
       - name: Download tide and current predictions
         run: python -m scripts.tides_snapshot
+
+      - name: West Coast, Great Lakes and Hawaii - latest readings, NWS forecast, NOAA tides and currents
+        run: |
+          for r in west lakes hawaii; do python -m scripts.us_build $r live tides; done
 
       - name: Spain and Portugal - latest readings and MET Norway forecast
         run: python -m scripts.iberia_build live

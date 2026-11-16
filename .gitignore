@@ -10,3 +10,8 @@ data/asos/
 data/coast_hourly.npz
 .venv/
 data/iberia/gauges/
+data/ndbc/
+data/depth_cache/
+data/west/tiles/
+data/lakes/tiles/
+data/hawaii/tiles/

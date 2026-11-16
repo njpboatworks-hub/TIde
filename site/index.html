@@ -1,8 +1,8 @@
-<title>SailIQ Wind Newport</title>
+<title>Nockd Tide Guide</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Cinzel:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Poppins:wght@600;700&display=swap">
 <style>
 /* required styles */
 
@@ -719,7 +719,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .brand { gap: 10px; }
 .brand .logo { width: 40px; height: 40px; border-radius: 9px; flex: none; display: block; }
 .brand-text { display: grid; gap: 3px; }
-.brand .name { font: 700 19px/1 "Cinzel", Georgia, "Times New Roman", serif; letter-spacing: .06em; text-transform: uppercase; color: var(--ink); }
+.brand .name { font: 700 24px/0.9 "Poppins", system-ui, sans-serif; letter-spacing: -.01em; text-transform: lowercase; color: var(--ink); }
+.brand .name .d { color: #F27A48; }
 .brand .venue { font: 600 12px/1 var(--f-body); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 .tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .tabs a, .seg button {
@@ -800,6 +801,7 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 .item .meta { color: var(--muted); font-size: 12.5px; }
 .item .tag { margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--axis); border-radius: 999px; padding: 2px 8px; }
+.region-pick { display: grid; gap: 4px; font-weight: 600; margin: 0 0 10px; max-width: 320px; }
 .seg { display: inline-flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; margin-top: 12px; flex-wrap: wrap; }
 
 .legend { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 500; background: var(--surface); color: var(--ink);
@@ -834,7 +836,7 @@ main.wide .panel { border-right: 0; }
 #tab-kits { max-width: 1100px; margin: 0 auto; }
 .kits-hero { display: flex; gap: 16px; align-items: center; margin-bottom: 8px; }
 .kits-hero img { border-radius: 14px; flex: none; }
-.kits-hero h1 { font-family: "Cinzel", Georgia, serif; letter-spacing: .04em; }
+.kits-hero h1 { font-family: "Poppins", system-ui, sans-serif; letter-spacing: -.01em; }
 .kit-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 16px 0 8px; }
 .kit-grid:empty { display: none; }
 .kit { display: grid; grid-template-rows: auto 1fr; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; color: inherit; text-decoration: none; }
@@ -853,7 +855,7 @@ main.wide .panel { border-right: 0; }
 .kit-feature { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: center; margin-top: 24px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
 .kit-feature img { width: 100%; height: auto; border-radius: 12px; display: block; background: #fff; }
-.kit-copy h2 { margin-top: 0; font-family: "Cinzel", Georgia, serif; font-size: 24px; letter-spacing: .03em; }
+.kit-copy h2 { margin-top: 0; font-family: "Poppins", system-ui, sans-serif; font-size: 24px; letter-spacing: -.01em; }
 .kit-copy p { margin: 0 0 10px; max-width: 62ch; color: var(--ink-2); }
 .kit-copy .kit-tag { color: var(--ink); font-weight: 600; font-size: 17px; }
 .kit-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
@@ -882,7 +884,8 @@ main.wide .panel { border-right: 0; }
   .mapwrap { height: 55vh; order: -1; }
   .tabs { margin-left: 0; }
   .row { grid-template-columns: 1fr; }
-  .legend { max-width: 210px; font-size: 11.5px; padding: 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+  .legend { max-width: 210px; font-size: 11.5px; padding: 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 34%; overflow-y: auto; overscroll-behavior: contain; }
+  .legend .fine { display: none; }  /* phones: keep the key, drop the long notes (they are on the hover card and in the side panel) */
   .legend .fine, #field-readout, #tide-readout { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
@@ -890,8 +893,8 @@ main.wide .panel { border-right: 0; }
 
 <header class="top">
   <div class="brand">
-    <img class="logo" src="logo-mark.png" width="40" height="40" alt="NJP Boatworks">
-    <span class="brand-text"><span class="name">NJP Boatworks</span><span class="venue" id="brand-venue">Lift / Header / Tide Guide</span></span>
+    <img class="logo" src="logo-mark.png" width="40" height="40" alt="Nockd">
+    <span class="brand-text"><span class="name">nock<span class="d">d</span></span><span class="venue" id="brand-venue">Lift / Header / Tide Guide</span></span>
   </div>
   <div class="search" role="search">
     <input type="search" id="place-search" placeholder="Search a town, harbor or station" aria-label="Search places" autocomplete="off">
@@ -1007,10 +1010,15 @@ main.wide .panel { border-right: 0; }
 
     <!-- EAST COAST -->
     <div class="tab" id="tab-coast" hidden>
-      <div class="seg" id="region-tools" role="group" aria-label="Region" style="margin:0 0 10px">
-        <button type="button" data-region="us" class="active">US East &amp; Gulf</button>
-        <button type="button" data-region="iberia">Spain &amp; Portugal</button>
-      </div>
+      <label class="region-pick" for="region-select">Region
+        <select id="region-select">
+          <option value="us">US East &amp; Gulf Coast</option>
+          <option value="west">US West Coast</option>
+          <option value="lakes">Great Lakes</option>
+          <option value="hawaii">Hawaii</option>
+          <option value="iberia">Spain &amp; Portugal</option>
+        </select>
+      </label>
       <div class="seg" id="coast-mode" role="group" aria-label="What the map shows">
         <button type="button" data-mode="typical" class="active">Typical wind</button>
         <button type="button" data-mode="custom">Set the wind direction</button>
@@ -1070,7 +1078,7 @@ main.wide .panel { border-right: 0; }
         <img src="logo-mark.png" width="72" height="72" alt="">
         <div>
           <h1>Coach Kits</h1>
-          <p class="lede">Coach kits from NJP Boatworks, available on Etsy and Amazon.</p>
+          <p class="lede">Sailing coach kits, available on Etsy and Amazon.</p>
         </div>
       </div>
       <div class="kit-grid" id="kit-grid"></div>
@@ -1129,7 +1137,7 @@ main.wide .panel { border-right: 0; }
         <button type="button" data-tack="off">Hide wind</button>
       </div>
       <div class="seg" id="tide-tools" role="group" aria-label="Tides on the map">
-        <button type="button" id="tide-toggle" class="active" aria-pressed="true">Tides on</button>
+        <button type="button" id="tide-toggle" class="active" aria-pressed="true">Tides &amp; currents on</button>
       </div>
     </div>
   </section>
@@ -1490,7 +1498,75 @@ function liftOf(dir) { return signedLift(dir, fieldCache.ref); }
 // Both sit BELOW the land layer, so the shading stops exactly at the shoreline.
 let dashPts = [], dashColors = [], dashCell = 14, animId = null, heat = null;
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-const HEAT_STEP = 8;
+const HEAT_STEP = 6;
+// Geographic caches for the coast map. The wind at a spot and the "average wind nearby" used for lift/header are worked
+// out on fixed latitude/longitude lattices and interpolated, so colors do not jump as you zoom or pan.
+let fieldGen = 0, obsBuckets = null, refBuckets = null;
+const baseCache = new Map(), refCache = new Map();
+function bumpField() { fieldGen++; baseCache.clear(); refCache.clear(); obsBuckets = null; refBuckets = null; }
+function bucketize(pts) { const B = new Map(); for (const p of pts) { const k = Math.floor(p.lat) * 1000 + Math.floor(p.lon); let a = B.get(k); if (!a) B.set(k, (a = [])); a.push(p); } return B; }
+function knn(B, lat, lon, K) {
+  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon), out = [];
+  for (let r = 0; r <= 3; r++) {
+    for (let a = i0 - r; a <= i0 + r; a++) for (let b = j0 - r; b <= j0 + r; b++) {
+      if (Math.max(Math.abs(a - i0), Math.abs(b - j0)) !== r) continue;
+      const arr = B.get(a * 1000 + b); if (!arr) continue;
+      for (const o of arr) {
+        const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy;
+        if (out.length < K || d2 < out[out.length - 1].d2) { out.push({ o, d2 }); out.sort((x, y) => x.d2 - y.d2); if (out.length > K) out.pop(); }
+      }
+    }
+    const reach = r * 111.32 * cl;
+    if (out.length >= K && out[out.length - 1].d2 <= reach * reach) break;
+  }
+  return out;
+}
+// Open-water wind (land effect not yet applied) at one lattice node: inverse-distance blend of the 6 nearest stations.
+function baseNode(lat, lon) {
+  if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
+  const near = knn(obsBuckets, lat, lon, 6);
+  if (!near.length || near[0].d2 > 120 * 120) return null;
+  let su = 0, sv = 0, sw = 0, st = 0, sn = 0;
+  for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
+  const dn = Math.sqrt(near[0].d2);
+  return [su / sw, sv / sw, sn ? st / sn : NaN, dn < 80 ? 1 : (120 - dn) / 40]; // last: coverage, fading out 80-120 km from a station
+}
+function lattice(cache, sp, lat, lon, node) {
+  const fx = lon / sp, fy = lat / sp, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+  let u = 0, v = 0, s = 0, w = 0, ws = 0, cv = 0;
+  for (const [a, b, wt] of [[j, i, (1 - tx) * (1 - ty)], [j, i + 1, tx * (1 - ty)], [j + 1, i, (1 - tx) * ty], [j + 1, i + 1, tx * ty]]) {
+    const key = sp + "|" + a + "|" + b; let n = cache.get(key);
+    if (n === undefined) { n = node(a * sp, b * sp); cache.set(key, n); }
+    if (!n || wt <= 0) continue;
+    u += n[0] * wt; v += n[1] * wt; w += wt; cv += (n[3] ?? 1) * wt; if (!Number.isNaN(n[2])) { s += n[2] * wt; ws += wt; }
+  }
+  return w > 0.01 ? [u / w, v / w, ws ? s / ws : NaN, cv] : null;
+}
+// "Average wind within about 40 km": Gaussian blend of the wind at all stations/forecast points (with their land effect).
+function refNode(lat, lon) {
+  if (!refBuckets) {
+    const smp = [];
+    for (const o of coastField.obs) { const w = coastAt(o.lat, o.lon, true); if (w) smp.push({ lat: o.lat, lon: o.lon, u: Math.sin(rad(w.dir)) * w.spd, v: Math.cos(rad(w.dir)) * w.spd }); }
+    refBuckets = bucketize(smp);
+  }
+  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon); let su = 0, sv = 0, sw = 0;
+  for (let a = i0 - 2; a <= i0 + 2; a++) for (let b = j0 - 3; b <= j0 + 3; b++) {
+    const arr = refBuckets.get(a * 1000 + b); if (!arr) continue;
+    for (const q of arr) { const dy = (lat - q.lat) * 111.32, dx = (lon - q.lon) * 111.32 * cl, d2 = dx * dx + dy * dy; if (d2 > 25600) continue; const g = Math.exp(-d2 / 3200); su += q.u * g; sv += q.v * g; sw += g; }
+  }
+  return sw > 1e-4 ? [su, sv, NaN] : null;
+}
+// Upwind land share for one shading cell. Zoomed in, it reads the drawn shoreline pixels (exact); otherwise the ~600 m grid.
+function landInfluenceAt(lat, lon, dirFrom, cx, cy, mPerPx) {
+  const b = rad(dirFrom), sb = Math.sin(b), cb = Math.cos(b), usePx = landMask && mPerPx < 60; let w = 0, l = 0;
+  for (let d = 0.25; d <= FIELD.reachKm; d += 0.25) {
+    const wt = Math.exp(-d / 1.2); let fr = null;
+    if (usePx) { const px = (d * 1000) / mPerPx, v = onLandPx(cx + sb * px, cy - cb * px); if (v !== null) fr = v ? 1 : 0; }
+    if (fr === null) fr = currentLandFrac(lat + (d * cb) / 111.32, lon + (d * sb) / (111.32 * Math.cos(rad(lat))));
+    w += wt; l += wt * fr;
+  }
+  return l / w;
+}
 
 function fieldActive() { return (activeTab === "planner" && !!fieldCache) || (activeTab === "coast" && !!coastField); }
 // Wind estimate at a point. anyLand=true also returns values over land (used for shading, which land then covers).
@@ -1503,6 +1579,7 @@ function signedLift(dir, ref) { const d = wrap180(dir - ref); return arrowTack =
 function computeHeat() {
   heat = null;
   if (arrowTack === "off" || liftOn || !fieldActive()) return;
+  if (activeTab === "coast") return computeCoastHeat();
   const size = map.getSize(), gx = Math.ceil(size.x / HEAT_STEP), gy = Math.ceil(size.y / HEAT_STEP), n = gx * gy;
   const U = new Float32Array(n), V = new Float32Array(n), DIR = new Float32Array(n), SPD = new Float32Array(n), OK = new Uint8Array(n), ST = new Float32Array(n).fill(NaN);
   for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) {
@@ -1545,6 +1622,28 @@ function computeHeat() {
   }
   heat = { gx, gy, LIFT, DIR, SPD, ST, OK };
 }
+function computeCoastHeat() {
+  const size = map.getSize(), gx = Math.ceil(size.x / HEAT_STEP), gy = Math.ceil(size.y / HEAT_STEP), n = gx * gy;
+  const DIR = new Float32Array(n), SPD = new Float32Array(n), OK = new Uint8Array(n), ST = new Float32Array(n).fill(NaN), LIFT = new Float32Array(n).fill(NaN), COV = new Float32Array(n);
+  const c = size.y / 2, mPerPx = map.distance(map.containerPointToLatLng([0, c]), map.containerPointToLatLng([100, c])) / 100;
+  const degPerCell = (mPerPx * HEAT_STEP) / 111320;
+  let sp = 0.01; while (sp < degPerCell * 0.75 && sp < 1.28) sp *= 2;      // lattice spacing: about one shading cell, on fixed levels
+  const rsp = Math.max(0.08, sp);                                          // the 40 km average changes slowly
+  const fixedRef = coastMode === "custom" ? customWind().dir : null, g = COAST.grid, gN = g.lat0 + g.ny * g.res, gE = g.lon0 + g.nx * g.res;
+  for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) {
+    const cx = (i + 0.5) * HEAT_STEP, cy = (j + 0.5) * HEAT_STEP, ll = map.containerPointToLatLng([cx, cy]);
+    if (ll.lat < g.lat0 || ll.lat > gN || ll.lng < g.lon0 || ll.lng > gE) continue; // outside this region's shoreline data
+    const b = lattice(baseCache, sp, ll.lat, ll.lng, baseNode); if (!b) continue;
+    const k = j * gx + i, baseDir = (deg(Math.atan2(b[0], b[1])) + 360) % 360, L0 = landInfluenceAt(ll.lat, ll.lng, baseDir, cx, cy, mPerPx);
+    OK[k] = 1; DIR[k] = (baseDir - FIELD.backDeg * L0 + 360) % 360; SPD[k] = Math.hypot(b[0], b[1]) * (1 - FIELD.slowFrac * L0);
+    if (!Number.isNaN(b[2])) ST[k] = b[2];
+    COV[k] = Math.max(0, Math.min(1, b[3]));
+    let ref = fixedRef;
+    if (ref == null) { const r = lattice(refCache, rsp, ll.lat, ll.lng, refNode); ref = r ? (deg(Math.atan2(r[0], r[1])) + 360) % 360 : DIR[k]; }
+    LIFT[k] = signedLift(DIR[k], ref);
+  }
+  heat = { gx, gy, LIFT, DIR, SPD, ST, OK, COV };
+}
 function heatSample(x, y) {
   if (!heat) return null;
   const i = Math.min(heat.gx - 1, Math.max(0, Math.floor(x / HEAT_STEP))), j = Math.min(heat.gy - 1, Math.max(0, Math.floor(y / HEAT_STEP))), k = j * heat.gx + i;
@@ -1561,7 +1660,7 @@ function renderHeat(canvas) {
     if (!heat.OK[k]) continue;
     const t = Math.max(-1, Math.min(1, heat.LIFT[k] / 8)), a = Math.abs(t), end = t < 0 ? head : lift;
     img.data[k * 4] = neu[0] + (end[0] - neu[0]) * a; img.data[k * 4 + 1] = neu[1] + (end[1] - neu[1]) * a; img.data[k * 4 + 2] = neu[2] + (end[2] - neu[2]) * a;
-    img.data[k * 4 + 3] = basemap !== "drawn" ? 15 + 115 * a : 25 + 150 * a;
+    img.data[k * 4 + 3] = (basemap !== "drawn" ? 15 + 115 * a : 25 + 150 * a) * (heat.COV ? heat.COV[k] : 1);
   }
   oc.putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
@@ -1579,6 +1678,7 @@ function computeDashes() {
     const ll = map.containerPointToLatLng([jx, jy]);
     const lp = onLandPx(jx, jy); if (lp === true || (lp === null && currentIsLand(ll.lat, ll.lng))) continue;
     const w = heatSample(jx, jy); if (!w) continue;
+    if (heat.COV) { const cv = heat.COV[Math.min(heat.gy - 1, Math.floor(jy / HEAT_STEP)) * heat.gx + Math.min(heat.gx - 1, Math.floor(jx / HEAT_STEP))]; if (cv < Math.random()) continue; }
     const th = rad((w.dir + 180) % 360);
     const bin = Math.abs(w.lift) < 1.5 ? mid : Math.round(Math.max(-1, Math.min(1, w.lift / 8)) * mid) + mid;
     dashPts.push({ x: jx, y: jy, dx: Math.sin(th), dy: -Math.cos(th), spd: w.spd, len: Math.min(11, 4 + w.spd * 0.4), phase: Math.random(), bin });
@@ -1634,17 +1734,31 @@ function onLandPx(x, y) { // true/false from the drawn shoreline, null if outsid
 function sizeCanvas(c) {
   const s = map.getSize(), dpr = window.devicePixelRatio || 1;
   L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0]));
+  c._tl = map.containerPointToLatLng([0, 0]); c._z = map.getZoom();
   c.width = s.x * dpr; c.height = s.y * dpr; c.style.width = s.x + "px"; c.style.height = s.y + "px";
   c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
 }
+// Keep a drawn canvas glued to the map while it zooms (like Leaflet's own vector layers), then redraw once at the end.
+function zoomCanvas(c, center, zoom) {
+  if (!c || !c._tl) return;
+  L.DomUtil.setTransform(c, map._latLngToNewLayerPoint(c._tl, zoom, center).round(), map.getZoomScale(zoom, c._z));
+}
+const ZoomCanvasMixin = {
+  _zoomEvents() { return { moveend: this.redrawSoon, resize: this.redrawSoon, viewreset: this.redrawSoon, zoomanim: this._onAnim, zoom: this._onZoom }; },
+  _onAnim(e) { this._canvases().forEach((c) => zoomCanvas(c, e.center, e.zoom)); },
+  _onZoom() { if (!map._animatingZoom) this._canvases().forEach((c) => zoomCanvas(c, map.getCenter(), map.getZoom())); },
+  redrawSoon() { if (this._raf) return; this._raf = requestAnimationFrame(() => { this._raf = null; this.redraw(); }); },
+};
 const ArrowLayer = L.Layer.extend({
+  includes: ZoomCanvasMixin,
+  _canvases() { return [this._h, this._c]; },
   onAdd(m) {
     const pane = m.getPane("windPane");
-    this._h = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-hide", pane);
-    this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-hide", pane);
-    m.on("moveend zoomend resize", this.redraw, this); this.redraw();
+    this._h = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", pane);
+    this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", pane);
+    m.on(this._zoomEvents(), this); this.redraw();
   },
-  onRemove(m) { this._h.remove(); this._c.remove(); m.off("moveend zoomend resize", this.redraw, this); },
+  onRemove(m) { this._h.remove(); this._c.remove(); m.off(this._zoomEvents(), this); },
   redraw() {
     if (!this._c) return;
     if (!map.getSize().x) return;  // map hidden
@@ -1658,7 +1772,7 @@ function referenceDir() {
   return null; // typical mode: smoothed field
 }
 function arrowLegend() {
-  if (activeTab === "coast") { const base = coastLegend(); return coastMode === "live" ? base : ((base || "") + tideLegendKey()) || null; }
+  if (activeTab === "coast") { const base = coastLegend(); return coastMode === "live" ? base : ((base || "") + tideLegendKey() + currentLegendKey()) || null; }
   if (!fieldCache || arrowTack === "off") return null;
   const tackName = arrowTack === "stbd" ? "starboard" : "port";
   return divLegend(`Wind flow, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
@@ -1726,7 +1840,7 @@ async function updateTiles() {
   const before = layers.detail.getLayers().length;
   layers.detail.clearLayers();
   want.forEach((k) => tileCache.has(k) && layers.detail.addLayer(tileCache.get(k)));
-  if (layers.detail.getLayers().length !== before || fetched) { if (arrowLayer) arrowLayer.redraw(); if (currentLayer) currentLayer.redraw(); }
+  if (layers.detail.getLayers().length !== before || fetched) { if (arrowLayer) arrowLayer.redrawSoon(); if (currentLayer) currentLayer.redrawSoon(); }
   if (want.every((k) => tileCache.has(k))) { if (layers.land) map.removeLayer(layers.land); if (layers.coastLand) map.removeLayer(layers.coastLand); }
 }
 const tileStyle = () => ({ stroke: false, fillColor: css("--land"), fillOpacity: basemap !== "drawn" ? 0 : 1 });
@@ -1749,20 +1863,50 @@ const IBERIA_VENUES = [
   ["Bay of Cádiz", 36.53, -6.27, 11], ["Strait of Gibraltar", 36.00, -5.55, 10], ["Málaga", 36.70, -4.40, 11],
   ["Cartagena", 37.58, -0.98, 11], ["Alicante", 38.33, -0.47, 11], ["Valencia", 39.45, -0.30, 11], ["Barcelona", 41.35, 2.20, 11],
 ];
+const WEST_VENUES = [
+  ["San Diego Bay", 32.68, -117.20, 11], ["Long Beach & LA Harbor", 33.72, -118.20, 11], ["Santa Barbara", 34.40, -119.70, 11],
+  ["Monterey Bay", 36.80, -121.95, 10], ["San Francisco Bay", 37.84, -122.40, 11], ["Columbia River mouth", 46.22, -123.90, 11],
+  ["Puget Sound (Seattle)", 47.65, -122.42, 11], ["San Juan Islands", 48.55, -123.00, 10],
+];
+const LAKES_VENUES = [
+  ["Chicago", 41.88, -87.58, 11], ["Milwaukee", 43.04, -87.88, 11], ["Traverse City", 44.85, -85.55, 11], ["Straits of Mackinac", 45.82, -84.75, 10],
+  ["Lake St. Clair", 42.45, -82.75, 10], ["Cleveland", 41.52, -81.72, 11], ["Erie, PA", 42.15, -80.10, 11], ["Toronto", 43.62, -79.38, 11],
+  ["Rochester, NY", 43.28, -77.58, 11], ["Duluth", 46.75, -92.05, 11],
+];
+const HAWAII_VENUES = [
+  ["Honolulu & Waikiki", 21.27, -157.85, 12], ["Kaneohe Bay", 21.47, -157.80, 12], ["Maui (Kahului & Kihei)", 20.82, -156.45, 10],
+  ["Hilo", 19.73, -155.05, 11], ["Kauai", 22.00, -159.45, 10],
+];
+function lakesTz(lat, lon) { // Central time on the Wisconsin, Illinois, NW Indiana and western Lake Superior shores
+  if (lat < 45.9) return lon < -86.6 && !(lat > 45.55 && lon > -87.55) ? "America/Chicago" : "America/New_York";
+  return lon < -90.3 || (lon < -89.6 && lat < 48.05) ? "America/Chicago" : "America/New_York";
+}
 function iberiaTz(lat, lon) {
   if (lon < -6.18 && lat > 36.9 && lat < 42.2) { if (lat > 41.88 || (lat < 37.6 && lon > -7.42)) return "Europe/Madrid"; return "Europe/Lisbon"; }
   return "Europe/Madrid";
 }
 const REGIONS = {
-  us: { id: "us", name: "US East & Gulf", path: "", bounds: [[24.3, -97.6], [45.3, -66]], venues: COAST_VENUES, tz: () => "America/New_York",
+  us: { id: "us", name: "US East & Gulf", path: "", bounds: [[24.3, -97.6], [45.3, -66]], venues: COAST_VENUES, tz: () => "America/New_York", noaa: true,
+        has: (a, o) => a > 24 && a < 46 && o > -98 && o < -65 && !(a > 40.8 && o < -75.6),
         forecast: "National Weather Service", stations: "buoy, lighthouse and coastal airport", tideNote: "NOAA predictions for the tide and current stations nearest the map center." },
+  west: { id: "west", name: "US West Coast", path: "west/", bounds: [[32.45, -125], [49.05, -116.8]], venues: WEST_VENUES, tz: () => "America/Los_Angeles", noaa: true,
+        has: (a, o) => a > 32.3 && a < 49.3 && o > -126 && o < -116.5,
+        forecast: "National Weather Service", stations: "buoy, lighthouse and coastal airport", tideNote: "NOAA predictions for the tide and current stations nearest the map center." },
+  lakes: { id: "lakes", name: "Great Lakes", path: "lakes/", bounds: [[41.3, -92.4], [49.1, -75.7]], venues: LAKES_VENUES, tz: lakesTz, noaa: true,
+        has: (a, o) => a > 41.3 && a < 49.2 && o > -92.6 && o < -75.6 && !(a < 43 && o > -78.6),
+        forecast: "National Weather Service (MET Norway on the Canadian side)", stations: "buoy, lighthouse and lakeshore airport",
+        tideNote: "The Great Lakes have almost no tide (a few centimetres). Water levels there move with wind and air pressure (seiches), which NOAA does not predict as tides." },
+  hawaii: { id: "hawaii", name: "Hawaii", path: "hawaii/", bounds: [[18.7, -160.6], [22.45, -154.6]], venues: HAWAII_VENUES, tz: () => "Pacific/Honolulu", noaa: true,
+        has: (a, o) => a > 18.5 && a < 22.6 && o > -160.8 && o < -154.4,
+        forecast: "National Weather Service", stations: "buoy and coastal airport", tideNote: "NOAA predictions for the tide and current stations nearest the map center." },
   iberia: { id: "iberia", name: "Spain & Portugal", path: "iberia/", bounds: [[35.95, -9.9], [43.85, 3.35]], venues: IBERIA_VENUES, tz: iberiaTz,
+        has: (a, o) => a > 35.5 && a < 44.2 && o > -10.5 && o < 3.6,
         forecast: "MET Norway", stations: "coastal airport",
         tideNote: "Tide heights calculated from about five weeks of tide-gauge readings (IOC Sea Level Station Monitoring Facility), in metres above the lowest predicted tide. These are estimates, not official predictions; check official tide tables before relying on them. No tidal-current data is available for this region." },
 };
 let REGION = REGIONS.us, regionSwitching = false;
 const REGION_DATA = {};
-const TZ_NAMES = { "America/New_York": "local", "Europe/Madrid": "Spain time", "Europe/Lisbon": "Portugal time" };
+const TZ_NAMES = { "America/New_York": "local", "America/Chicago": "local", "America/Los_Angeles": "local", "Pacific/Honolulu": "local", "Europe/Madrid": "Spain time", "Europe/Lisbon": "Portugal time" };
 function regionTz() { const c = map ? map.getCenter() : { lat: 0, lng: 0 }; return REGION.tz(c.lat, c.lng); }
 const tideUnits = () => (TIDES && TIDES.units) || "ft";
 function buildVenues() {
@@ -1771,7 +1915,7 @@ function buildVenues() {
 }
 async function setRegion(id, keepView) {
   if (!REGIONS[id]) return;
-  document.querySelectorAll("#region-tools button").forEach((b) => b.classList.toggle("active", b.dataset.region === id));
+  $("#region-select").value = id;
   if (REGION.id === id) return;
   if (layers.coastLand && map.hasLayer(layers.coastLand)) map.removeLayer(layers.coastLand);
   REGION = REGIONS[id]; COAST = null; LIVE = null; TIDES = null; coastField = null;
@@ -1835,6 +1979,7 @@ function stationWind(s) {
   return d == null || v == null ? null : { d, v, steady: s.steady[m][h] ?? 0 };
 }
 function computeCoastField() {
+  bumpField();
   if (!COAST) return (coastField = null);
   if (coastMode === "live") { if (!LIVE) return (coastField = null); coastField = { obs: liveField() }; drawCoastStations(); return coastField; }
   const obs = [];
@@ -1969,7 +2114,7 @@ function initCoast() {
   });
   drawDial();
   buildVenues();
-  document.querySelectorAll("#region-tools button").forEach((b) => b.addEventListener("click", () => setRegion(b.dataset.region)));
+  $("#region-select").addEventListener("change", (e) => setRegion(e.target.value));
   map.on("moveend", renderCoastNear);
 }
 async function enterCoast() {
@@ -1980,7 +2125,7 @@ async function enterCoast() {
   layers.coastLand.addTo(map); layers.coastStations.addTo(map);
   if (!coastFitted) { map.fitBounds(REGION.bounds); coastFitted = true; }
   loadLive().then(() => { if (currentLayer) currentLayer.redraw(); if (activeTab === "coast") setLegend(arrowLegend()); }).catch(() => {});
-  refreshArrows(); renderCoastNear(); updateTiles();
+  refreshArrows(); renderCoastNear(); updateTiles(); updateDepth();
 }
 function leaveCoast() {
   currentIsLand = (lat, lon) => isLand(lat, lon); currentLandFrac = (lat, lon) => (isLand(lat, lon) ? 1 : 0);
@@ -2039,7 +2184,7 @@ function liveLabels() {
   const ageH = (Date.now() - LIVE.gen) / 3600e3, idx = Math.round((liveTimeMs() - LIVE.fcStart) / 3600e3);
   let src = useObs() ? `Live readings from ${LIVE.obs.length} stations at ${timeLabel(LIVE.gen)}, with the ${REGION.forecast} forecast filling the gaps between them.`
     : idx < 0 ? "This hour is before the forecast starts, so there is no wind data for it." : `${REGION.forecast} forecast for this hour.`;
-  src += ` Data was last refreshed ${ageH < 1.5 ? "within the last hour" : Math.round(ageH) + " hours ago"} (${dayLabel(...Object.values(nyParts(LIVE.gen)).slice(0, 3))} ${timeLabel(LIVE.gen)}). It does not update by itself.`;
+  src += ` Data was last refreshed ${ageH < 1.5 ? "within the last hour" : Math.round(ageH) + " hours ago"} (${dayLabel(...Object.values(nyParts(LIVE.gen)).slice(0, 3))} ${timeLabel(LIVE.gen)}). ${ageH > 30 ? "That is older than expected: the automatic daily refresh may have missed a day." : "It refreshes automatically every morning (around 5 to 6 AM Eastern); reload the page to get the newest."}`;
   $("#live-source").textContent = src;
 }
 function liveField() {
@@ -2069,7 +2214,7 @@ function nearest(list, lat, lon) {
 // Rules: use stations within CUR_RADIUS_KM whose straight line to the point stays on water;
 // inverse-distance weighting with a taper; near shore, remove the part of the flow heading into land
 // and slow it somewhat. Beyond the radius nothing is drawn.
-const CUR_RADIUS_KM = 10, TIDE_RADIUS_KM = 20;
+const CUR_RADIUS_KM = 15, TIDE_RADIUS_KM = 20;
 function waterPath(lat1, lon1, lat2, lon2) {
   // True when the straight line stays on water. The land grid is ~600 m, so land within 600 m of
   // either end (stations sit at the shoreline) and single-cell slivers (piers, pixelated channels) are ignored;
@@ -2094,7 +2239,7 @@ function stationStates(t, bounds) {
   }
   return out;
 }
-function shoreAdjust(lat, lon, u, w) {
+function shoreAdjust(lat, lon, u, w, noSlow) {
   // Look 600 m out in 8 directions; land there means we are near shore.
   let nx = 0, ny = 0, hits = 0; const cl = Math.cos(rad(lat));
   for (let k = 0; k < 8; k++) {
@@ -2104,12 +2249,12 @@ function shoreAdjust(lat, lon, u, w) {
   if (!hits) return [u, w, 1];
   const nl = Math.hypot(nx, ny);
   if (nl > 0) { const ex = nx / nl, ey = ny / nl, into = u * ex + w * ey; if (into > 0) { u -= into * ex; w -= into * ey; } }
-  const slow = 1 - 0.35 * Math.min(1, hits / 4);
+  const slow = noSlow ? 1 : 1 - 0.35 * Math.min(1, hits / 4);
   return [u * slow, w * slow, slow];
 }
-function currentAt(lat, lon, states, landChecked) {
+function currentAt(lat, lon, states, landChecked, quick) {
   if (!landChecked && isCoastLand(lat, lon)) return null;
-  const cl = Math.cos(rad(lat)); let su = 0, sw = 0, sg = 0, wt = 0, nearest = Infinity;
+  const cl = Math.cos(rad(lat)); let su = 0, sw = 0, sg = 0, wt = 0, sf = 0, nearest = Infinity;
   const cand = [];
   for (const st of states) {
     const km = Math.hypot((st.lat - lat) * 111.32, (st.lon - lon) * 111.32 * cl);
@@ -2119,16 +2264,26 @@ function currentAt(lat, lon, states, landChecked) {
   let used = 0;
   for (const [km, st] of cand) {
     if (used >= 5) break;
-    if (km > 0.3 && !waterPath(lat, lon, st.lat, st.lon)) continue;
+    if (!quick && km > 0.3 && !waterPath(lat, lon, st.lat, st.lon)) continue;
     const g = (1 / (km * km + 0.25)) * (1 - (km / CUR_RADIUS_KM) ** 2);
-    su += st.u * g; sw += st.w * g; sg += Math.sign(st.v) * Math.abs(st.v) * g; wt += g; used++;
+    su += st.u * g; sw += st.w * g; sg += Math.sign(st.v) * Math.abs(st.v) * g; sf += (st.s.df || 1) * g; wt += g; used++;
     nearest = Math.min(nearest, km);
   }
   if (!used) return null;
-  let u = su / wt, w = sw / wt;
-  [u, w] = shoreAdjust(lat, lon, u, w);
+  let u = su / wt, w = sw / wt, ratio = 1;
+  const dp = depthAt(lat, lon), useDepth = dp && !dp.land;
+  if (useDepth) {
+    // Carry the stations' speed here in proportion to the channel factor: deep channels and narrows faster, flats slower.
+    ratio = Math.max(0.3, Math.min(3, dp.f / (sf / wt)));
+    u *= ratio; w *= ratio;
+    if (dp.ax != null) { // turn the flow toward the channel's axis where the depth contours are clear
+      const m = Math.hypot(u, w), ax = rad(dp.ax), au = Math.sin(ax), aw = Math.cos(ax), sgn = u * au + w * aw >= 0 ? 1 : -1, k = Math.min(0.8, dp.str * 0.85);
+      if (m > 0) { let nu = (1 - k) * (u / m) + k * sgn * au, nw = (1 - k) * (w / m) + k * sgn * aw; const nl = Math.hypot(nu, nw) || 1; u = (nu / nl) * m; w = (nw / nl) * m; }
+    }
+  }
+  [u, w] = shoreAdjust(lat, lon, u, w, useDepth);
   const sp = Math.hypot(u, w);
-  return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, flood: sg >= 0, nearest, n: used, conf: Math.max(0.3, 1 - nearest / CUR_RADIUS_KM) };
+  return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, flood: sg >= 0, nearest, n: used, conf: Math.max(0.3, 1 - nearest / CUR_RADIUS_KM), depth: useDepth ? dp : null, ratio };
 }
 function tideAt(lat, lon, t) {
   const cl = Math.cos(rad(lat)), cand = [];
@@ -2156,15 +2311,18 @@ function drawArrow(ctx, x, y, dir, len, col, halo, width) {
 }
 let curStates = [];
 const CurrentLayer = L.Layer.extend({
-  onAdd(m) { this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-hide", m.getPane("currentPane")); m.on("moveend zoomend resize", this.redraw, this); this.redraw(); },
-  onRemove(m) { this._c.remove(); m.off("moveend zoomend resize", this.redraw, this); },
+  includes: ZoomCanvasMixin,
+  _canvases() { return [this._c]; },
+  onAdd(m) { this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("currentPane")); m.on(this._zoomEvents(), this); this.redraw(); },
+  onRemove(m) { this._c.remove(); m.off(this._zoomEvents(), this); },
   redraw() {
     if (!this._c) return;
     sizeCanvas(this._c);
     const ctx = this._c.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y); currentPts = []; curStates = [];
     if (!TIDES || !COAST || activeTab !== "coast") return;
-    if (coastMode !== "live" || !$("#show-currents").checked) { if (tidesOn) drawTideMarkers(ctx, tideTimeMin(), size); return; }
-    const t = liveNaiveMin(), padKm = CUR_RADIUS_KM + 2, c = map.getCenter();
+    const t = tideTimeMin();
+    if (!tidesOn || !TIDES.currents.length || (coastMode === "live" && !$("#show-currents").checked)) { if (tidesOn) drawTideMarkers(ctx, t, size); return; }
+    const padKm = CUR_RADIUS_KM + 2, c = map.getCenter();
     const b = map.getBounds(), padLat = padKm / 111.32, padLon = padKm / (111.32 * Math.cos(rad(c.lat)));
     const wide = L.latLngBounds([b.getSouth() - padLat, b.getWest() - padLon], [b.getNorth() + padLat, b.getEast() + padLon]);
     curStates = stationStates(t, wide);
@@ -2173,9 +2331,9 @@ const CurrentLayer = L.Layer.extend({
     // Station screen positions, to keep estimates from crowding them
     let stPx = curStates.map((st) => ({ st, p: map.latLngToContainerPoint([st.lat, st.lon]) }));
     const zoomedOut = map.getZoom() < 10;
-    if (zoomedOut) {
-      // Too many stations to draw them all: keep the strongest current in each ~34 px patch of the map.
-      const cell = 34, best = new Map();
+    if (map.getZoom() < 12) {
+      // Too many stations to draw them all: keep the strongest current in each patch of the map (~34 px, ~24 px closer in).
+      const cell = zoomedOut ? 34 : 24, best = new Map();
       for (const e of stPx) {
         if (e.p.x < 0 || e.p.y < 0 || e.p.x > size.x || e.p.y > size.y) continue;
         const key = Math.floor(e.p.x / cell) + "," + Math.floor(e.p.y / cell), cur = best.get(key);
@@ -2183,16 +2341,17 @@ const CurrentLayer = L.Layer.extend({
       }
       stPx = [...best.values()];
     }
-    // 1) Estimated arrows on a grid between stations
-    const step = size.x < 600 ? 20 : 22;
-    for (let y = step / 2; y < size.y && !zoomedOut; y += step) for (let x = step / 2; x < size.x; x += step) {
-      if (stPx.some(({ p }) => Math.abs(p.x - x) < 14 && Math.abs(p.y - y) < 14)) continue;
-      const lp = onLandPx(x, y); if (lp === true) continue;
-      const ll = map.containerPointToLatLng([x, y]), e = currentAt(ll.lat, ll.lng, curStates, lp === false);
+    // 1) Many small estimated arrows between stations (every ~15 px), at every zoom
+    const step = size.x < 600 ? 13 : 15, quick = map.getZoom() < 9, near = zoomedOut ? 9 : 13;
+    for (let y = step / 2; y < size.y; y += step) for (let x = step / 2; x < size.x; x += step) {
+      const jx = x + (((x * 7 + y * 13) % 5) - 2) * 0.6, jy = y + (((x * 11 + y * 3) % 5) - 2) * 0.6; // slight fixed jitter, no grid look
+      if (stPx.some(({ p }) => Math.abs(p.x - jx) < near && Math.abs(p.y - jy) < near)) continue;
+      const lp = onLandPx(jx, jy); if (lp === true) continue;
+      const ll = map.containerPointToLatLng([jx, jy]), e = currentAt(ll.lat, ll.lng, curStates, lp === false, quick);
       if (!e) continue;
-      ctx.globalAlpha = 0.35 + 0.5 * e.conf;
-      if (e.sp < 0.15) { ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(x, y, 1.6, 0, 7); ctx.fill(); continue; }
-      drawArrow(ctx, x, y, e.dir, Math.min(20, 6 + e.sp * 8), e.flood ? flood : ebb, null, 1.6);
+      ctx.globalAlpha = 0.3 + 0.55 * e.conf;
+      if (e.sp < 0.12) { ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(jx, jy, 1.1, 0, 7); ctx.fill(); continue; }
+      drawArrow(ctx, jx, jy, e.dir, Math.min(16, 7 + e.sp * 5), e.flood ? flood : ebb, null, 1.4);
     }
     ctx.globalAlpha = 1;
     // 2) NOAA prediction stations, bold with a halo
@@ -2211,10 +2370,67 @@ const CurrentLayer = L.Layer.extend({
   },
 });
 let tidePts = [], tidesOn = true;
+/* ---------- Water depth (NOAA CUDEM 1/9" and 1/3" where available, Coastal Relief Model 3" elsewhere), prepared by
+   scripts/bathymetry.py as PNG tiles: R = channel factor, G = depth code, B = channel axis. Loaded for the view when zoomed in. */
+let DEPTH = null;
+const depthTiles = new Map();
+async function initDepth() {
+  try {
+    const r = await fetch("depth/index.json"); if (!r.ok) return;
+    const j = await r.json();
+    DEPTH = { fine: new Set(j.fine), coarse: new Set(j.coarse), res: j.fine_res, cres: j.coarse_res, block: j.block, lf0: Math.log(j.fmin), lf1: Math.log(j.fmax) };
+    map.on("moveend", updateDepth); updateDepth();
+  } catch (_) {}
+}
+async function loadDepthTile(name, lat1, lon0, res) {
+  const r = await fetch(`depth/${name}.png`); if (!r.ok) throw new Error("depth tile " + r.status);
+  const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+  const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
+  return { d: x.getImageData(0, 0, bmp.width, bmp.height).data, w: bmp.width, h: bmp.height, lat1, lon0, res, used: performance.now() };
+}
+async function updateDepth() {
+  if (!DEPTH || activeTab !== "coast") return;
+  const z = map.getZoom(); if (z < 8) return;
+  const b = map.getBounds(), want = [];
+  if (z >= 11) {
+    for (let a = Math.floor(b.getSouth() * 4); a <= Math.floor(b.getNorth() * 4); a++) for (let o = Math.floor(b.getWest() * 4); o <= Math.floor(b.getEast() * 4); o++)
+      if (DEPTH.fine.has(`${a}_${o}`)) want.push([`f_${a}_${o}`, (a + 1) / 4, o / 4, DEPTH.res]);
+  }
+  if (z < 11 || want.length > 40) {
+    want.length = 0; const B = DEPTH.block;
+    for (let a = Math.floor(b.getSouth() / B) * B; a <= b.getNorth(); a += B) for (let o = Math.floor(b.getWest() / B) * B; o <= b.getEast(); o += B)
+      if (DEPTH.coarse.has(`${a}_${o}`)) want.push([`c_${a}_${o}`, a + B, o, DEPTH.cres]);
+    if (want.length > 16) return;
+  }
+  const missing = want.filter(([k]) => !depthTiles.has(k));
+  if (!missing.length) return;
+  missing.forEach(([k]) => depthTiles.set(k, null)); // loading
+  await Promise.all(missing.map(async ([k, lat1, lon0, res]) => { try { depthTiles.set(k, await loadDepthTile(k, lat1, lon0, res)); } catch (_) { depthTiles.delete(k); } }));
+  if (depthTiles.size > 70) { // forget the least recently used tiles
+    const keep = new Set(want.map(([k]) => k));
+    [...depthTiles.entries()].filter(([k, t]) => t && !keep.has(k)).sort((x, y) => x[1].used - y[1].used).slice(0, depthTiles.size - 60).forEach(([k]) => depthTiles.delete(k));
+  }
+  if (currentLayer) currentLayer.redrawSoon();
+}
+function depthAt(lat, lon) {
+  if (!DEPTH) return null;
+  let t = depthTiles.get(`f_${Math.floor(lat * 4)}_${Math.floor(lon * 4)}`);
+  if (!t) t = depthTiles.get(`c_${Math.floor(lat / DEPTH.block) * DEPTH.block}_${Math.floor(lon / DEPTH.block) * DEPTH.block}`);
+  if (!t) return null;
+  const i = Math.floor((lon - t.lon0) / t.res), j = Math.floor((t.lat1 - lat) / t.res);
+  if (i < 0 || j < 0 || i >= t.w || j >= t.h) return null;
+  t.used = performance.now();
+  const k = (j * t.w + i) * 4, R = t.d[k], G = t.d[k + 1], B = t.d[k + 2];
+  if (!R) return { land: true };
+  const out = { f: Math.exp(DEPTH.lf0 + ((R - 1) / 254) * (DEPTH.lf1 - DEPTH.lf0)), h: (G / 8) ** 2, ax: null, str: 0, fine: t.res < 0.001 };
+  if (B) { const v = B - 1; out.ax = (v % 60) * 3 + 1.5; out.str = 0.25 + (Math.floor(v / 60) + 0.5) * 0.1875; }
+  return out;
+}
 function drawTideMarkers(ctx, t, size) {
   tidePts = [];
   if (!TIDES || !TIDES.tides.length) return;
-  const b = map.getBounds().pad(0.02), cellW = 92, cellH = 34, taken = new Set(), u = tideUnits();
+  const b = map.getBounds().pad(0.02), far = map.getZoom() < 8, cellW = far ? 120 : 92, cellH = far ? 46 : 34, taken = new Set(), u = tideUnits();
   const flood = css("--flood"), ebb = css("--ebb"), sur = css("--surface"), ink = css("--ink"), border = css("--axis");
   ctx.font = "600 12px " + css("--f-body"); ctx.textBaseline = "middle";
   for (const s of TIDES.tides) {
@@ -2247,13 +2463,15 @@ function tideLegendKey() {
      <div class="ends"><span><i class="swatch" style="background:var(--flood)"></i>▲ rising</span><span><i class="swatch" style="background:var(--ebb)"></i>▼ falling</span><span>height in ${tideUnits() === "m" ? "metres" : "feet"}</span></div>
      <div class="fine">${TIDES.timebase === "utc" ? "Calculated from tide-gauge records (estimates, not official predictions). * = tiny tide (Mediterranean): wind and air pressure move the water more than the tide. No tidal-current data for this region." : "NOAA tide predictions; labels are thinned when stations crowd together."}</div>`;
 }
-function liveLegendBody(head) {
-  const cur = !$("#show-currents").checked || !(TIDES && TIDES.currents.length) ? "" : `<div style="margin-top:6px"><b>Tidal current</b></div>
+function currentLegendKey() {
+  if (!tidesOn || !TIDES || !TIDES.currents.length || (coastMode === "live" && !$("#show-currents").checked)) return "";
+  return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
      <div class="ends"><span><i class="swatch" style="background:var(--flood)"></i>flood</span><span><i class="swatch" style="background:var(--ebb)"></i>ebb</span><span><i class="swatch" style="background:var(--ink-2);border-radius:50%"></i>slack</span></div>
-     <div class="fine">${map.getZoom() < 10 ? "Zoomed out: the strongest NOAA current station in each area. Zoom in for estimates between stations." : "Bold arrows are NOAA prediction stations (numbers are knots). Thin arrows are estimates between them, fainter farther from a station."} Arrows point where the water flows; longer is faster.</div>
-     `;
-  return head + tideLegendKey() + cur + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
-     <div class="fine">Wind: ${REGION.forecast} forecast and station readings, spread across the water. Tides${TIDES && TIDES.currents.length ? " and currents" : ""}: ${REGION.id === "us" ? "NOAA predictions" : "calculated from tide-gauge records (estimates)"}. Model estimate, not for navigation.</div>`;
+     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Small arrows are estimates between them, fainter farther from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
+}
+function liveLegendBody(head) {
+  return head + tideLegendKey() + currentLegendKey() + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
+     <div class="fine">Wind: ${REGION.forecast} forecast and station readings, spread across the water. Tides${TIDES && TIDES.currents.length ? " and currents" : ""}: ${REGION.noaa ? "NOAA predictions" : "calculated from tide-gauge records (estimates)"}. Model estimate, not for navigation.</div>`;
 }
 function renderTidePanel() {
   const panel = $("#tide-panel");
@@ -2320,7 +2538,7 @@ function initLive() {
   map.on("moveend", () => {
     if (activeTab === "coast" && !regionSwitching) {
       const c = map.getCenter();
-      for (const r of Object.values(REGIONS)) if (r.id !== REGION.id && L.latLngBounds(r.bounds).pad(0.15).contains(c)) { regionSwitching = true; setRegion(r.id, true).finally(() => (regionSwitching = false)); return; }
+      if (!REGION.has(c.lat, c.lng)) for (const r of Object.values(REGIONS)) if (r.id !== REGION.id && r.has(c.lat, c.lng)) { regionSwitching = true; setRegion(r.id, true).finally(() => (regionSwitching = false)); return; }
     }
     if (activeTab !== "coast" || !LIVE) return;
     const tz = regionTz();
@@ -2333,8 +2551,10 @@ function initLive() {
       const n = nyParts(ms), v = `${n.y}-${n.m}-${n.d}`;
       if ([...$("#live-day").options].some((o) => o.value === v)) { $("#live-day").value = v; $("#live-hour").value = n.h; }
     }
+    const tzChanged = !!liveTz && tz !== liveTz;
     liveTz = tz;
-    if (coastMode === "live") { liveLabels(); refreshArrows(); if (currentLayer) currentLayer.redraw(); renderTidePanel(); setLegend(arrowLegend()); }
+    // the wind and current layers redraw themselves after a move; only a time-zone change alters the selected time
+    if (coastMode === "live") { liveLabels(); if (tzChanged) refreshArrows(); renderTidePanel(); setLegend(arrowLegend()); }
   });
   map.on("mousemove", (e) => {
     const el = document.getElementById("tide-readout"); if (!el || !TIDES || !COAST || coastMode !== "live" || activeTab !== "coast") return;
@@ -2457,12 +2677,24 @@ function landPath() {
   const path = new Path2D(), vb = map.getBounds().pad(0.1), groups = [];
   if (layers.detail && layers.detail.getLayers().length && map.getZoom() >= 8.5) layers.detail.eachLayer((g) => groups.push(g));
   else { const c = activeTab === "coast" ? layers.coastLand : layers.land; if (c) groups.push(c); }
-  const addRings = (ll) => {
-    if (!ll.length) return;
-    if (ll[0] instanceof L.LatLng) { ll.forEach((p, i) => { const q = map.latLngToContainerPoint(p); i ? path.lineTo(q.x, q.y) : path.moveTo(q.x, q.y); }); path.closePath(); }
-    else ll.forEach(addRings);
+  // Rings are projected once (Web Mercator at zoom 0) and cached, then scaled to the view; points closer than
+  // ~0.7 px to the previous one are skipped, so a zoomed-out coastline costs a fraction of the work.
+  const sc = map.getZoomScale(map.getZoom(), 0), org = map.getPixelOrigin(), pane = map._getMapPanePos(), ox = org.x - pane.x, oy = org.y - pane.y;
+  const addRings = (l) => {
+    if (!l._mx) { const out = []; const walk = (ll) => { if (!ll.length) return; if (ll[0] instanceof L.LatLng) { const a = new Float64Array(ll.length * 2); ll.forEach((p, i) => { const q = map.project(p, 0); a[2 * i] = q.x; a[2 * i + 1] = q.y; }); out.push(a); } else ll.forEach(walk); }; walk(l.getLatLngs()); l._mx = out; }
+    for (const a of l._mx) {
+      const n = a.length / 2; let px = 0, py = 0, minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+      for (let i = 0; i < n; i++) { const x = a[2 * i] * sc - ox, y = a[2 * i + 1] * sc - oy; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
+      if (maxx - minx < 1 && maxy - miny < 1) continue;
+      for (let i = 0; i < n; i++) {
+        const x = a[2 * i] * sc - ox, y = a[2 * i + 1] * sc - oy;
+        if (i === 0) path.moveTo(x, y); else if (i < n - 1 && Math.abs(x - px) < 0.7 && Math.abs(y - py) < 0.7) continue; else path.lineTo(x, y);
+        px = x; py = y;
+      }
+      path.closePath();
+    }
   };
-  const addLayer = (l) => { if (l.getLatLngs && (!l.getBounds || vb.intersects(l.getBounds()))) addRings(l.getLatLngs()); else if (l.eachLayer) l.eachLayer(addLayer); };
+  const addLayer = (l) => { if (l.getLatLngs && (!l.getBounds || vb.intersects(l.getBounds()))) addRings(l); else if (l.eachLayer) l.eachLayer(addLayer); };
   groups.forEach(addLayer);
   return path;
 }
@@ -2495,9 +2727,11 @@ function probeHtml(cp, ll) {
     const t = tideTimeMin(), cl = Math.cos(rad(ll.lat)), pad = (CUR_RADIUS_KM + 1) / 111.32;
     const states = stationStates(t, L.latLngBounds([ll.lat - pad, ll.lng - pad / cl], [ll.lat + pad, ll.lng + pad / cl]));
     const c = currentAt(ll.lat, ll.lng, states, lp === false);
-    rows.push(`<div class="pr"><span class="pk">Current</span>${!TIDES.currents.length ? "<span>no tidal-current data for this region</span>" : !c ? "<span>no station within 10 km by water</span>" : c.sp < 0.15 ? "<span>slack</span>" : `<span class="${c.flood ? "flood" : "ebb"}">${c.flood ? "flood" : "ebb"} ${c.sp.toFixed(1)} kt</span><span>toward ${Math.round(c.dir)}°</span>`}</div>`);
+    rows.push(`<div class="pr"><span class="pk">Current</span>${!TIDES.currents.length ? "<span>no tidal-current data for this region</span>" : !c ? `<span>no station within ${CUR_RADIUS_KM} km by water</span>` : c.sp < 0.15 ? "<span>slack</span>" : `<span class="${c.flood ? "flood" : "ebb"}">${c.flood ? "flood" : "ebb"} ${c.sp.toFixed(1)} kt</span><span>toward ${Math.round(c.dir)}°</span>`}</div>`);
+    const dp = depthAt(ll.lat, ll.lng);
+    if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.depth && c.ratio > 1.15 ? `, channel: current about ${c.ratio.toFixed(1)}× nearby stations` : c && c.depth && c.ratio < 0.85 ? `, shallow: current about ${c.ratio.toFixed(1)}× nearby stations` : ""}</span></div>`);
     const tide = tideAt(ll.lat, ll.lng, t), nearT = TIDES.timebase === "utc" ? nearest(TIDES.tides, ll.lat, ll.lng) : null;
-    rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}` : "no tide station within 20 km"}</span></div>`);
+    rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}` : REGION.id === "lakes" ? "almost none (Great Lakes)" : "no tide station within 20 km"}</span></div>`);
     when = coastMode === "live" ? `${hourLabel(+$("#live-hour").value)} on the selected date` : "now";
   }
   const src = coastMode === "live" ? (useObs() ? "live readings" : "forecast") : coastMode === "custom" ? "the breeze you set" : "typical wind for the month and hour";
@@ -2517,7 +2751,7 @@ function showProbe(cp, ll) {
 function initTideToggle() {
   const b = $("#tide-toggle");
   b.addEventListener("click", () => {
-    tidesOn = !tidesOn; b.classList.toggle("active", tidesOn); b.setAttribute("aria-pressed", String(tidesOn)); b.textContent = tidesOn ? "Tides on" : "Tides off";
+    tidesOn = !tidesOn; b.classList.toggle("active", tidesOn); b.setAttribute("aria-pressed", String(tidesOn)); b.textContent = tidesOn ? "Tides & currents on" : "Tides & currents off";
     if (currentLayer) currentLayer.redraw(); if (activeTab === "coast") setLegend(arrowLegend());
   });
   // redraw tide markers when the typical month/hour or the wind direction changes ("now" markers stay current)
@@ -2785,7 +3019,7 @@ async function boot() {
   }
   $("#loading").hidden = true;
   renderKits();
-  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initTideToggle(); initProbe(); initPlanner(); initDebrief(); renderModel();
+  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initTideToggle(); initProbe(); initDepth(); initPlanner(); initDebrief(); renderModel();
   $("#liftmap-btn").addEventListener("click", () => toggleLiftMap());
   window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
   showTab(location.hash.slice(1) || "coast");

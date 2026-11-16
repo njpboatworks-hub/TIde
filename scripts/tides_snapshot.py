@@ -42,7 +42,9 @@ def east(lat, lon):
     return in_region(lat, lon)
 
 
-def main(days_ahead: int = 8):
+def main(days_ahead: int = 8, in_region=None, out=None, tz="America/New_York"):
+    inside = in_region or east
+    out = out or OUT
     start = date.today() - timedelta(days=1)
     end = date.today() + timedelta(days=days_ahead)
     t0 = datetime(start.year, start.month, start.day)
@@ -52,7 +54,7 @@ def main(days_ahead: int = 8):
     # ---- currents: one entry per station, the shallowest prediction bin
     by_id = {}
     for s in get(MD + "currentpredictions")["stations"]:
-        if s["type"] in ("H", "S") and east(s["lat"], s["lng"]):
+        if s["type"] in ("H", "S") and inside(s["lat"], s["lng"]):
             by_id.setdefault(s["id"], []).append(s)
     cur_st = [min(v, key=lambda s: (s["depth"] if s["depth"] is not None else 0, s["currbin"] or 0)) for v in by_id.values()]
 
@@ -66,7 +68,7 @@ def main(days_ahead: int = 8):
                 "flood": cp[0].get("meanFloodDir"), "ebb": cp[0].get("meanEbbDir"), "ev": ev}
 
     # ---- tides: high/low events
-    tide_st = [s for s in get(MD + "tidepredictions")["stations"] if east(s["lat"], s["lng"])]
+    tide_st = [s for s in get(MD + "tidepredictions")["stations"] if inside(s["lat"], s["lng"])]
 
     def tide(s):
         d = get(f"{API}?product=predictions&station={s['id']}&datum=MLLW&interval=hilo&{q}")
@@ -82,10 +84,17 @@ def main(days_ahead: int = 8):
         print(f"  currents done: {len(currents)}", flush=True)
         tides = [t for t in ex.map(tide, tide_st) if t]
         print(f"  tides done: {len(tides)}", flush=True)
-    OUT.write_text(json.dumps({"start": f"{start}T00:00", "end": f"{end}T23:59", "tz": "America/New_York",
+    # channel speed factor at each current station (from scripts.bathymetry), used to carry its speed to nearby water
+    ff = ROOT / "data" / "depth_station_factors.json"
+    if ff.exists():
+        fac = json.loads(ff.read_text())
+        for c in currents:
+            if c["id"] in fac:
+                c["df"] = fac[c["id"]]
+    out.write_text(json.dumps({"start": f"{start}T00:00", "end": f"{end}T23:59", "tz": tz,
                                "source": "NOAA CO-OPS predictions", "currents": currents, "tides": tides},
                               separators=(",", ":")))
-    print(f"wrote {OUT} ({OUT.stat().st_size // 1024} KB)")
+    print(f"wrote {out} ({out.stat().st_size // 1024} KB)")
 
 
 if __name__ == "__main__":

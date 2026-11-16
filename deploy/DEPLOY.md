@@ -1,4 +1,4 @@
-# Put SailIQ Wind on your own domain
+# Put the Nockd Lift, Header and Tide Guide on your own domain
 
 This folder is the whole website: plain files, no server code. Any static host works.
 The steps below use **Netlify** (free plan) and a domain registered at **GoDaddy**.
@@ -41,10 +41,14 @@ Check Mapbox's current pricing and its attribution rules for your plan before la
 "© Mapbox © OpenStreetMap / Improve this map" credits; Mapbox may also require its logo.
 
 ## Data freshness
-`live.json` (latest readings and the 7-day forecast) and `tides.json` (tide and current predictions,
-8 days) are snapshots from when the folder was built. Tide predictions stay correct for their dates;
-the live readings and forecast go stale within hours. Rebuild them with the project's scripts
-(`python -m scripts.live_snapshot`, `python -m scripts.tides_snapshot`) and redeploy, or ask Claude to.
+The readings, the 7-day forecast and the tide and current predictions are refreshed every morning by the
+GitHub workflow in the project (see AUTO_UPDATE.md), which republishes this folder to Netlify. A folder you
+drop in by hand holds the data from the day it was built until the next automatic refresh.
 
-Sources: NOAA NDBC and CO-OPS, National Weather Service, Iowa Environmental Mesonet, US Census Bureau,
+## Regions and water depth
+US East & Gulf, US West Coast, Great Lakes (no tides there), Hawaii, and Spain & Portugal. Current arrows between
+NOAA stations are adjusted for water depth from NOAA NCEI depth models (CUDEM 1/9 and 1/3 arc-second where NCEI
+publishes them, the 3 arc-second Coastal Relief Model elsewhere), in the `depth` folder.
+
+Sources: NOAA NDBC, CO-OPS and NCEI (depth), National Weather Service, MET Norway, Iowa Environmental Mesonet, US Census Bureau,
 GSHHG shoreline (LGPL), and OpenStreetMap contributors. Not for navigation.
