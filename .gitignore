@@ -1,0 +1,12 @@
+
+.venv/
+__pycache__/
+*.pyc
+deploy/sailiq-wind-site/
+deploy/sailiq-wind-site.zip
+data/cache/
+data/raw/
+data/asos/
+data/coast_hourly.npz
+.venv/
+data/iberia/gauges/

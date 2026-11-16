@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SailIQ Wind</title>
+  <link rel="stylesheet" href="/static/vendor/leaflet.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2 L12 18 L4 18 Z" fill="currentColor"/><path d="M13 5 L20 18 L13 18 Z" fill="currentColor" opacity=".55"/><path d="M3 20 Q12 24 21 20" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+    </span>
+    <span class="name">SailIQ <b>Wind</b></span>
+  </div>
+  <label class="venue">Venue
+    <select id="venue"></select>
+  </label>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="plan" class="active">Race Planner</button>
+    <button role="tab" data-tab="live">Live Today</button>
+    <button role="tab" data-tab="debrief">Coach Debrief</button>
+    <button role="tab" data-tab="model">Model Accuracy</button>
+  </nav>
+</header>
+
+<main>
+  <section class="panel">
+    <!-- ===================== PLANNER ===================== -->
+    <div class="tab" id="tab-plan">
+      <h1>Pre-race planner</h1>
+      <p class="lede">Enter the forecast for race start. We find past days at this venue that started the same way and show what the wind actually did next.</p>
+      <form id="plan-form" class="form">
+        <fieldset>
+          <legend>Months</legend>
+          <div class="chips" id="months"></div>
+        </fieldset>
+        <div class="row">
+          <label>Start time<input type="time" id="start" value="13:00" step="600" required></label>
+          <label>Race length (h)<input type="number" id="duration" value="2.5" min="0.5" max="6" step="0.5" required></label>
+        </div>
+        <div class="row">
+          <label>Wind from (°)<input type="number" id="dir" value="210" min="0" max="359" required></label>
+          <label>Speed (kt)<input type="number" id="spd" value="12" min="0" max="40" required></label>
+        </div>
+        <details>
+          <summary>Matching tolerance</summary>
+          <div class="row">
+            <label>Direction ± (°)<input type="number" id="dirtol" value="25" min="5" max="90"></label>
+            <label>Speed ± (kt)<input type="number" id="spdtol" value="4" min="1" max="15"></label>
+          </div>
+        </details>
+        <button class="primary" type="submit">Analyze history</button>
+      </form>
+
+      <div id="plan-out" hidden>
+        <div class="tiles" id="plan-tiles"></div>
+        <div class="split" id="plan-split" aria-label="Share of similar days by outcome"></div>
+        <ul class="advice" id="plan-advice"></ul>
+
+        <h2>How the wind moved on similar days</h2>
+        <p class="hint">Degrees from the start direction at Newport harbor. Above zero = wind went right (veered), below zero = left (backed). Bands show the middle 50% and 80% of days. Click a day in the table to overlay it.</p>
+        <div class="chart"><canvas id="env-chart"></canvas></div>
+        <h2>Wind speed on similar days</h2>
+        <div class="chart small"><canvas id="spd-chart"></canvas></div>
+
+        <h2>Station wind over the race</h2>
+        <p class="hint">Drag to see the typical wind at each station during the race. The arrows show where the wind blows <i>to</i>.</p>
+        <input type="range" id="time-slider" min="0" max="0" value="0">
+        <div class="slider-label" id="time-label"></div>
+
+        <h2>Matching days <span class="count" id="days-count"></span></h2>
+        <div class="table-wrap"><table id="days-table"><thead><tr><th>Date</th><th>Start</th><th>Shift at end</th><th>Osc ±</th><th>Speed end</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <h2>Typical day by hour</h2>
+      <p class="hint">Median wind at Newport harbor for the selected month, all days with at least 3 kt.</p>
+      <label class="inline">Month <select id="clim-month"></select></label>
+      <div class="chart small"><canvas id="clim-dir"></canvas></div>
+      <div class="chart small"><canvas id="clim-spd"></canvas></div>
+    </div>
+
+    <!-- ===================== LIVE ===================== -->
+    <div class="tab" id="tab-live" hidden>
+      <h1>Live conditions + AI shift forecast</h1>
+      <p class="lede">Latest NOAA readings around the venue, and the model's forecast of how far the wind will shift at Newport harbor over the next 2 hours.</p>
+      <button class="primary" id="live-refresh">Refresh live data</button>
+      <div id="live-out"></div>
+    </div>
+
+    <!-- ===================== DEBRIEF ===================== -->
+    <div class="tab" id="tab-debrief" hidden>
+      <h1>Coach debrief</h1>
+      <p class="lede">Upload a GPX track from any GPS or phone app. We infer the wind from the boat's tacking headings, color every moment lifted or headed, and grade the tacks.</p>
+      <form id="upload-form" class="form">
+        <label>GPX file<input type="file" id="gpx" accept=".gpx,application/gpx+xml" required></label>
+        <label>Name (boat / sailor / race)<input type="text" id="gpx-name" placeholder="e.g. J/70 USA 123, Race 2"></label>
+        <details>
+          <summary>Known wind direction (optional)</summary>
+          <label>Wind from (°)<input type="number" id="twd-hint" min="0" max="359" placeholder="auto-detect"></label>
+        </details>
+        <div class="row">
+          <button class="primary" type="submit">Analyze track</button>
+          <button type="button" id="load-samples">Load demo tracks</button>
+        </div>
+      </form>
+      <div id="debrief-list"></div>
+      <div id="debrief-out" hidden>
+        <h2 id="debrief-title"></h2>
+        <div class="tiles" id="debrief-tiles"></div>
+        <ul class="advice" id="debrief-insights"></ul>
+        <div class="seg" role="group" aria-label="Track color">
+          <button class="active" data-color="lift">Lifted / headed</button>
+          <button data-color="shift">Wind shift</button>
+        </div>
+        <h2>Wind direction during the race</h2>
+        <p class="hint">Inferred from the GPS track (upwind legs only) vs. the NOAA station at Newport harbor.</p>
+        <div class="chart"><canvas id="twd-chart"></canvas></div>
+        <p class="caveat">GPS records course over ground, not compass heading, so tidal current and leeway are mixed into the inferred wind. Steering changes also show up as small shifts. Use the pattern, not single readings.</p>
+      </div>
+    </div>
+
+    <!-- ===================== MODEL ===================== -->
+    <div class="tab" id="tab-model" hidden>
+      <h1>How accurate is the AI?</h1>
+      <p class="lede">The shift forecaster is tested on a full season it never saw during training. Here is how it compares with simple baselines.</p>
+      <div id="model-out"></div>
+    </div>
+
+    <footer class="rules">
+      Built for pre-race planning and post-race debriefs. Racing Rules of Sailing rule 41 (Outside Help), class rules and sailing instructions may limit electronic information <i>during</i> a race, so check them before using this on the water.
+      Wind data: NOAA National Data Buoy Center. Map: © OpenStreetMap contributors.
+    </footer>
+  </section>
+
+  <section class="mapwrap">
+    <div id="map" role="region" aria-label="Venue map"></div>
+    <div class="legend" id="map-legend" hidden></div>
+    <div class="maptools" id="maptools">
+      <button id="liftmap-btn" title="Average shift by location from saved debrief tracks">Show venue lift map</button>
+    </div>
+  </section>
+</main>
+
+<script src="/static/vendor/leaflet.js"></script>
+<script src="/static/vendor/chart.umd.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

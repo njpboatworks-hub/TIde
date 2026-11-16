@@ -1,0 +1,53 @@
+# Refreshes the wind forecast, station readings and tide/current predictions every day,
+# rebuilds the website folder and publishes it to Netlify.
+# Needs two repository secrets: NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID (see deploy/AUTO_UPDATE.md).
+name: Refresh wind data
+
+on:
+  schedule:
+    - cron: "23 10 * * *"   # every day at 10:23 UTC (about 6 AM Eastern in summer, 5 AM in winter)
+  workflow_dispatch:         # lets you run it by hand from the Actions tab
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python packages
+        run: pip install -r requirements-refresh.txt
+
+      - name: Download latest readings and the 7-day NWS forecast
+        run: python -m scripts.live_snapshot
+
+      - name: Download tide and current predictions
+        run: python -m scripts.tides_snapshot
+
+      - name: Spain and Portugal - latest readings and MET Norway forecast
+        run: python -m scripts.iberia_build live
+
+      - name: Spain and Portugal - recalculate tides (Mondays, or when run by hand; predictions run 30 days ahead)
+        run: |
+          if [ "$(date -u +%u)" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            pip install utide && python -m scripts.iberia_build tides
+          else
+            echo "Not Monday: keeping last week's tide predictions"
+          fi
+
+      - name: Build the website folder
+        run: python -m scripts.build_deploy
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Publish to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: npx --yes netlify-cli@17 deploy --prod --dir deploy/sailiq-wind-site --message "Daily data refresh"
