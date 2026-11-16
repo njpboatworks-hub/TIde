@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -25,8 +25,10 @@ window.SAILIQ_CONFIG = {
 HEAD = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Nockd Lift, Header and Tide Guide: wind shifts, forecasts, tides and currents for sailors across US coasts and the Great Lakes, plus Spain and Portugal.">
-<link rel="icon" type="image/png" href="logo-mark.png">
-<link rel="apple-touch-icon" href="logo-mark.png">
+<link rel="icon" href="favicon.ico?v=nockd2" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-nockd-32.png?v=nockd2">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-nockd-192.png?v=nockd2">
+<link rel="apple-touch-icon" href="apple-touch-icon-nockd.png?v=nockd2">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head><body>
 """

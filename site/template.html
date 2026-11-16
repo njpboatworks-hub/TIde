@@ -14,7 +14,7 @@
   --accent: #1f6fc4; --accent-ink: #ffffff;
   --water: #d7e6ef; --land: #eef0ec; --shore: #a9b8bf;
   --left: #6250d6; --right: #eb6834; --neutral: #8a9399;
-  --lift: #2a78d6; --header: #e34948; --flood: #1baf7a; --ebb: #c98500;
+  --lift: #2a78d6; --header: #e34948; --flood: #1baf7a; --ebb: #c98500; --drift: #7c5ce0;
   --band1: rgba(42, 120, 214, 0.12); --band2: rgba(42, 120, 214, 0.26);
   --warn-bg: #fff4dc; --warn-ink: #6b4a00;
   --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -27,7 +27,7 @@
     --grid: #22303a; --axis: #33434e; --border: rgba(255, 255, 255, 0.10);
     --accent: #4a96e8; --accent-ink: #06121c;
     --water: #0f2433; --land: #1f2a2f; --shore: #3b4d57;
-    --left: #9085e9; --right: #d95926; --neutral: #7d878d; --lift: #3987e5; --header: #e66767; --flood: #199e70; --ebb: #d9a020;
+    --left: #9085e9; --right: #d95926; --neutral: #7d878d; --lift: #3987e5; --header: #e66767; --flood: #199e70; --ebb: #d9a020; --drift: #a58ff5;
     --band1: rgba(57, 135, 229, 0.16); --band2: rgba(57, 135, 229, 0.32);
     --warn-bg: #3a2e10; --warn-ink: #f5d48a;
   }
@@ -38,7 +38,7 @@
   --grid: #22303a; --axis: #33434e; --border: rgba(255, 255, 255, 0.10);
   --accent: #4a96e8; --accent-ink: #06121c;
   --water: #0f2433; --land: #1f2a2f; --shore: #3b4d57;
-  --left: #9085e9; --right: #d95926; --neutral: #7d878d; --lift: #3987e5; --header: #e66767; --flood: #199e70; --ebb: #d9a020;
+  --left: #9085e9; --right: #d95926; --neutral: #7d878d; --lift: #3987e5; --header: #e66767; --flood: #199e70; --ebb: #d9a020; --drift: #a58ff5;
   --band1: rgba(57, 135, 229, 0.16); --band2: rgba(57, 135, 229, 0.32);
   --warn-bg: #3a2e10; --warn-ink: #f5d48a;
 }
@@ -154,7 +154,7 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .probe .pr { display: flex; gap: 8px; }
 .probe .pk { color: var(--muted); width: 72px; flex: none; }
 .probe .lift { color: var(--lift); font-weight: 600; } .probe .head { color: var(--header); font-weight: 600; }
-.probe .flood { color: var(--flood); font-weight: 600; } .probe .ebb { color: var(--ebb); font-weight: 600; }
+.probe .flood { color: var(--flood); font-weight: 600; } .probe .drift { color: var(--drift); font-weight: 600; } .probe .ebb { color: var(--ebb); font-weight: 600; }
 .probe .pf { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
 .maptools { position: absolute; right: calc(12px + env(safe-area-inset-right, 0px)); top: 12px; z-index: 500; display: grid; justify-items: end; gap: 6px; }
 .maptools .seg { margin-top: 0; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
@@ -1649,23 +1649,83 @@ function drawArrow(ctx, x, y, dir, len, col, halo, width) {
   }
 }
 let curStates = [];
+const DRIFT_FRAC = 0.03; // rule of thumb: wind pushes the surface water at about 3% of the wind speed
+function windHere(x, y, lat, lon) {
+  const h = heatSample(x, y); if (h) return { dir: h.dir, spd: h.spd };
+  return coastField && activeTab === "coast" ? (() => { const w = coastAt(lat, lon, true); return w ? { dir: w.dir, spd: w.spd } : null; })() : null;
+}
+function driftFrom(w, dp) {
+  if (!w || !(w.spd > 0.5)) return null;
+  // to the right of downwind in deeper water (Earth's rotation), straight downwind in shallow water
+  const sp = DRIFT_FRAC * w.spd, dfl = dp ? Math.min(1, dp.h / 20) * 15 : 10, th = rad((w.dir + 180 + dfl) % 360);
+  return { u: Math.sin(th) * sp, w: Math.cos(th) * sp, sp };
+}
+function flowAt(lat, lon, states, landChecked, quick, wind) {
+  if (!landChecked && isCoastLand(lat, lon)) return null;
+  const tid = states.length ? currentAt(lat, lon, states, true, quick) : null;
+  const d0 = tid && tid.depth ? tid.depth : depthAt(lat, lon), dp = d0 && !d0.land ? d0 : null;
+  let dr = driftFrom(wind, dp);
+  if (dr) { const [a, b] = shoreAdjust(lat, lon, dr.u, dr.w, true); dr = { u: a, w: b, sp: Math.hypot(a, b) }; }
+  if (!tid && !dr) return null;
+  const fade = tid ? Math.max(0, Math.min(1, (1 - tid.nearest / CUR_RADIUS_KM) / 0.35)) : 0;
+  const tu = tid ? tid.u * fade : 0, tw = tid ? tid.w * fade : 0, tsp = Math.hypot(tu, tw), dsp = dr ? dr.sp : 0;
+  const u = tu + (dr ? dr.u : 0), w = tw + (dr ? dr.w : 0), sp = Math.hypot(u, w);
+  return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, tidal: tid, tsp, drift: dr, dsp, depth: dp,
+           kind: tid && tsp >= dsp ? (tid.flood ? "flood" : "ebb") : "drift", conf: tid ? Math.max(tid.conf * fade, 0.5) : 0.5 };
+}
+// Flowing arrows: each arrow slides along its direction and fades in and out, faster where the water moves faster.
+let curAnimId = null;
+function animateCurrents(t) {
+  curAnimId = null;
+  if (!currentLayer || !currentLayer._flow) return;
+  currentLayer._paint(t);
+  if (currentLayer._flow.length && !reduceMotion.matches && !document.hidden) curAnimId = requestAnimationFrame(animateCurrents);
+}
+function startCurrentAnim() { if (curAnimId) cancelAnimationFrame(curAnimId); curAnimId = requestAnimationFrame(animateCurrents); }
+document.addEventListener("visibilitychange", () => { if (!document.hidden) startCurrentAnim(); });
 const CurrentLayer = L.Layer.extend({
   includes: ZoomCanvasMixin,
   _canvases() { return [this._c]; },
   onAdd(m) { this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("currentPane")); m.on(this._zoomEvents(), this); this.redraw(); },
   onRemove(m) { this._c.remove(); m.off(this._zoomEvents(), this); },
+  _paint(t) {
+    const ctx = this._c.getContext("2d"), size = map.getSize(), still = reduceMotion.matches;
+    ctx.clearRect(0, 0, size.x, size.y);
+    const fl = this._flow || [];
+    if (fl.length) {
+      ctx.lineCap = "round"; ctx.lineJoin = "round";
+      const groups = new Map();
+      for (const a of fl) {
+        const span = a.len * 1.4, f = still ? 0.5 : (((t / 1000) * a.pxs + a.phase * span) % span) / span;
+        const band = f < 0.18 || f > 0.82 ? 0 : 1, off = (f - 0.5) * span;
+        const key = a.col + "|" + a.wd + "|" + band + "|" + a.ab;
+        let g = groups.get(key); if (!g) groups.set(key, (g = { col: a.col, wd: a.wd, alpha: a.alpha * (band ? 1 : 0.35), shafts: new Path2D(), heads: new Path2D() }));
+        const cx = a.x + a.dx * off, cy = a.y + a.dy * off, h = a.len / 2, hs = 2.6 + a.wd * 1.3, hx = -a.dy, hy = a.dx;
+        const x1 = cx + a.dx * h, y1 = cy + a.dy * h;
+        g.shafts.moveTo(cx - a.dx * h, cy - a.dy * h); g.shafts.lineTo(x1 - a.dx * hs * 0.5, y1 - a.dy * hs * 0.5);
+        g.heads.moveTo(x1, y1); g.heads.lineTo(x1 - a.dx * hs + hx * hs * 0.55, y1 - a.dy * hs + hy * hs * 0.55); g.heads.lineTo(x1 - a.dx * hs - hx * hs * 0.55, y1 - a.dy * hs - hy * hs * 0.55); g.heads.closePath();
+      }
+      for (const g of groups.values()) { ctx.globalAlpha = g.alpha; ctx.strokeStyle = g.col; ctx.fillStyle = g.col; ctx.lineWidth = g.wd; ctx.stroke(g.shafts); ctx.fill(g.heads); }
+      ctx.globalAlpha = 1;
+    }
+    if (this._st) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(this._st, 0, 0); ctx.restore(); }
+  },
   redraw() {
     if (!this._c) return;
     sizeCanvas(this._c);
-    const ctx = this._c.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y); currentPts = []; curStates = [];
-    if (!TIDES || !COAST || activeTab !== "coast") return;
-    const t = tideTimeMin();
-    if (!tidesOn || !TIDES.currents.length || (coastMode === "live" && !$("#show-currents").checked)) { if (tidesOn) drawTideMarkers(ctx, t, size); return; }
+    const size = map.getSize(), dpr = window.devicePixelRatio || 1; currentPts = []; curStates = []; this._flow = [];
+    const st = this._st || (this._st = document.createElement("canvas"));
+    st.width = size.x * dpr; st.height = size.y * dpr;
+    const ctx = st.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // stations, labels and tide markers (redrawn only on change)
+    const done = () => { this._paint(performance.now()); startCurrentAnim(); };
+    if (!COAST || activeTab !== "coast") return done();
+    const t = TIDES ? tideTimeMin() : null;
+    if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) { if (tidesOn && TIDES) drawTideMarkers(ctx, t, size); return done(); }
     const padKm = CUR_RADIUS_KM + 2, c = map.getCenter();
     const b = map.getBounds(), padLat = padKm / 111.32, padLon = padKm / (111.32 * Math.cos(rad(c.lat)));
     const wide = L.latLngBounds([b.getSouth() - padLat, b.getWest() - padLon], [b.getNorth() + padLat, b.getEast() + padLon]);
-    curStates = stationStates(t, wide);
-    const flood = css("--flood"), ebb = css("--ebb"), ink = css("--ink-2"), sur = css("--surface");
+    curStates = TIDES && TIDES.currents.length ? stationStates(t, wide) : [];
+    const flood = css("--flood"), ebb = css("--ebb"), drift = css("--drift"), ink = css("--ink-2"), sur = css("--surface");
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     // Station screen positions, to keep estimates from crowding them
     let stPx = curStates.map((st) => ({ st, p: map.latLngToContainerPoint([st.lat, st.lon]) }));
@@ -1680,19 +1740,22 @@ const CurrentLayer = L.Layer.extend({
       }
       stPx = [...best.values()];
     }
-    // 1) Many small estimated arrows between stations (every ~15 px), at every zoom
-    const step = size.x < 600 ? 13 : 15, quick = map.getZoom() < 9, near = zoomedOut ? 9 : 13;
+    // 1) Flowing arrows on all water (every ~16 px): tidal estimate near NOAA stations plus wind drift everywhere.
+    //    Longer, thicker and faster-moving where the water moves faster (deep channels, narrows).
+    const step = size.x < 600 ? 14 : 16, quick = map.getZoom() < 9, near = zoomedOut ? 9 : 13;
     for (let y = step / 2; y < size.y; y += step) for (let x = step / 2; x < size.x; x += step) {
       const jx = x + (((x * 7 + y * 13) % 5) - 2) * 0.6, jy = y + (((x * 11 + y * 3) % 5) - 2) * 0.6; // slight fixed jitter, no grid look
       if (stPx.some(({ p }) => Math.abs(p.x - jx) < near && Math.abs(p.y - jy) < near)) continue;
       const lp = onLandPx(jx, jy); if (lp === true) continue;
-      const ll = map.containerPointToLatLng([jx, jy]), e = currentAt(ll.lat, ll.lng, curStates, lp === false, quick);
-      if (!e) continue;
-      ctx.globalAlpha = 0.3 + 0.55 * e.conf;
-      if (e.sp < 0.12) { ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(jx, jy, 1.1, 0, 7); ctx.fill(); continue; }
-      drawArrow(ctx, jx, jy, e.dir, Math.min(16, 7 + e.sp * 5), e.flood ? flood : ebb, null, 1.4);
+      const ll = map.containerPointToLatLng([jx, jy]); if (lp === null && isCoastLand(ll.lat, ll.lng)) continue;
+      const e = flowAt(ll.lat, ll.lng, curStates, true, quick, windHere(jx, jy, ll.lat, ll.lng));
+      if (!e || e.sp < 0.05) continue;
+      const th = rad(e.dir), sp = e.sp;
+      this._flow.push({ x: jx, y: jy, dx: Math.sin(th), dy: -Math.cos(th), len: Math.min(22, 6 + sp * 6), wd: sp < 0.5 ? 1.2 : sp < 1.5 ? 1.8 : 2.5,
+        pxs: 5 + sp * 14, phase: ((jx * 0.37 + jy * 0.61) % 1 + 1) % 1, col: e.kind === "flood" ? flood : e.kind === "ebb" ? ebb : drift,
+        alpha: 0.35 + 0.55 * e.conf, ab: Math.round(e.conf * 4) });
     }
-    ctx.globalAlpha = 1;
+    for (const a of this._flow) a.alpha = 0.35 + 0.15 * a.ab;
     // 2) NOAA prediction stations, bold with a halo
     ctx.font = "600 11px " + css("--f-body");
     for (const { st, p } of stPx) {
@@ -1705,7 +1768,8 @@ const CurrentLayer = L.Layer.extend({
       if (map.getZoom() >= 11) { ctx.fillStyle = css("--ink"); ctx.fillText(sp.toFixed(1), p.x + 6, p.y - 6); }
     }
     // 3) Tide height markers: height and rising/falling at tide stations, thinned so labels don't overlap
-    if (tidesOn) drawTideMarkers(ctx, t, size);
+    if (tidesOn && TIDES) drawTideMarkers(ctx, t, size);
+    done();
   },
 });
 let tidePts = [], tidesOn = true;
@@ -1803,10 +1867,10 @@ function tideLegendKey() {
      <div class="fine">${TIDES.timebase === "utc" ? "Calculated from tide-gauge records (estimates, not official predictions). * = tiny tide (Mediterranean): wind and air pressure move the water more than the tide. No tidal-current data for this region." : "NOAA tide predictions; labels are thinned when stations crowd together."}</div>`;
 }
 function currentLegendKey() {
-  if (!tidesOn || !TIDES || !TIDES.currents.length || (coastMode === "live" && !$("#show-currents").checked)) return "";
+  if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
-     <div class="ends"><span><i class="swatch" style="background:var(--flood)"></i>flood</span><span><i class="swatch" style="background:var(--ebb)"></i>ebb</span><span><i class="swatch" style="background:var(--ink-2);border-radius:50%"></i>slack</span></div>
-     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Small arrows are estimates between them, fainter farther from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
+     <div class="ends"><span><i class="swatch" style="background:var(--flood)"></i>flood</span><span><i class="swatch" style="background:var(--ebb)"></i>ebb</span><span><i class="swatch" style="background:var(--drift)"></i>wind drift</span></div>
+     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Moving arrows cover all the water: tidal current near stations plus wind drift (the wind pushes the surface at about 3% of its speed; purple where wind drift is the bigger part). Faster water has longer, thicker, faster-moving arrows. Tidal estimates fade out ${CUR_RADIUS_KM} km from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
 }
 function liveLegendBody(head) {
   return head + tideLegendKey() + currentLegendKey() + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
@@ -2065,8 +2129,17 @@ function probeHtml(cp, ll) {
   if (TIDES) {
     const t = tideTimeMin(), cl = Math.cos(rad(ll.lat)), pad = (CUR_RADIUS_KM + 1) / 111.32;
     const states = stationStates(t, L.latLngBounds([ll.lat - pad, ll.lng - pad / cl], [ll.lat + pad, ll.lng + pad / cl]));
-    const c = currentAt(ll.lat, ll.lng, states, lp === false);
-    rows.push(`<div class="pr"><span class="pk">Current</span>${!TIDES.currents.length ? "<span>no tidal-current data for this region</span>" : !c ? `<span>no station within ${CUR_RADIUS_KM} km by water</span>` : c.sp < 0.15 ? "<span>slack</span>" : `<span class="${c.flood ? "flood" : "ebb"}">${c.flood ? "flood" : "ebb"} ${c.sp.toFixed(1)} kt</span><span>toward ${Math.round(c.dir)}°</span>`}</div>`);
+    const fw = flowAt(ll.lat, ll.lng, states, true, false, windHere(cp.x, cp.y, ll.lat, ll.lng)), c = fw && fw.tidal;
+    if (!fw) rows.push(`<div class="pr"><span class="pk">Current</span><span>no estimate here</span></div>`);
+    else {
+      const word = fw.kind === "drift" ? "wind drift" : fw.kind;
+      rows.push(`<div class="pr"><span class="pk">Current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "almost still" : `${word} ${fw.sp.toFixed(1)} kt`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}</div>`);
+      const parts = [];
+      if (fw.tsp >= 0.05) parts.push(`tide ${fw.tsp.toFixed(1)} kt (NOAA stations)`); else if (!TIDES.currents.length) parts.push(REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data here");
+      else if (!c) parts.push(`no NOAA current station within ${CUR_RADIUS_KM} km`);
+      if (fw.dsp >= 0.05) parts.push(`wind drift ${fw.dsp.toFixed(1)} kt (about 3% of the wind)`);
+      rows.push(`<div class="pr"><span class="pk"></span><span style="color:var(--muted)">${parts.join(" + ")}</span></div>`);
+    }
     const dp = depthAt(ll.lat, ll.lng);
     if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.depth && c.ratio > 1.15 ? `, channel: current about ${c.ratio.toFixed(1)}× nearby stations` : c && c.depth && c.ratio < 0.85 ? `, shallow: current about ${c.ratio.toFixed(1)}× nearby stations` : ""}</span></div>`);
     const tide = tideAt(ll.lat, ll.lng, t), nearT = TIDES.timebase === "utc" ? nearest(TIDES.tides, ll.lat, ll.lng) : null;

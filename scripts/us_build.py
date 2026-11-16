@@ -526,6 +526,13 @@ def export():
     have = set(idx["tiles"]) | set(idx["land"])
     sub = json.loads((D / "tiles" / "index.json").read_text())
     added = 0
+    # The East Coast build made plain GSHHS tiles across its whole box, where the Great Lakes are land.
+    # This region's tiles (lakes cut out as water) replace those.
+    override = KEY == "lakes"
+    if override:
+        mine = set(sub["tiles"]) | set(sub["land"])
+        idx["tiles"] = [k for k in idx["tiles"] if k not in mine]; idx["land"] = [k for k in idx["land"] if k not in mine]
+        have = set(idx["tiles"]) | set(idx["land"])
     for k in sub["tiles"]:
         if k not in have:
             shutil.copy(D / "tiles" / f"{k}.json", tiles_dir / f"{k}.json"); idx["tiles"].append(k); have.add(k); added += 1
