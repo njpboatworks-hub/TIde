@@ -1677,14 +1677,17 @@ function baseNode(lat, lon) {
       // local effects come from land: a station out in open water keeps no local quirk of its own (it still counts in
       // the regional wind), so offshore buoys and forecast points don't make circles of colour around themselves
       if (o.near == null) o.near = Math.max(0, Math.min(1, (0.95 - openness(o.lat, o.lon)) / 0.35));
-      o.au = r ? (o.u - r[0]) * o.near : 0; o.av = r ? (o.v - r[1]) * o.near : 0; o.as = r ? (Math.hypot(o.u, o.v) - r[3]) * o.near : 0;
+      // nearshore stations: local effect fading over ~10 km (land); open-water stations (offshore buoys): their reading
+      // spread smoothly over ~40 km, so the map matches the buoy without drawing a circle around it
+      o.L = LOCAL_KM + 30 * (1 - o.near);
+      o.au = r ? o.u - r[0] : 0; o.av = r ? o.v - r[1] : 0; o.as = r ? Math.hypot(o.u, o.v) - r[3] : 0;
     }
   }
   const near = knn(obsBuckets, lat, lon, 6);
   if (!near.length || near[0].d2 > 350 * 350) return null;
   const r = regionalAt(lat, lon); if (!r) return null;
   let au = 0, av = 0, as = 0, aw = 0;
-  for (const { o, d2 } of near) { const t = trustOf(o), w = Math.exp(-Math.sqrt(d2) / LOCAL_KM); au += o.au * w * t; av += o.av * w * t; as += o.as * w * t; aw += w; }
+  for (const { o, d2 } of near) { const t = trustOf(o), dd = Math.sqrt(d2), w = o.L > LOCAL_KM + 1 ? Math.exp(-(dd * dd) / (2 * o.L * o.L)) : Math.exp(-dd / o.L); au += o.au * w * t; av += o.av * w * t; as += o.as * w * t; aw += w; }
   const k = aw > 1 ? 1 / aw : 1; // overlapping stations share, they do not add up
   const dn = Math.sqrt(near[0].d2);
   { const fu = r[0] + au * k, fv = r[1] + av * k, fm = Math.hypot(fu, fv) || 1e-9, spd = Math.max(0.5, r[3] + as * k);
@@ -1827,7 +1830,13 @@ function renderHeat(canvas) {
   }
   oc.putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  const g = activeTab === "coast" && COAST && COAST.grid; ctx.save();
+  if (g) { // keep the smoothed shading inside this region's land/water data (no stripe bleeding past its edge)
+    const a = map.latLngToContainerPoint([g.lat0 + g.ny * g.res, g.lon0]), b = map.latLngToContainerPoint([g.lat0, g.lon0 + g.nx * g.res]);
+    ctx.beginPath(); ctx.rect(a.x, a.y, b.x - a.x, b.y - a.y); ctx.clip();
+  }
   ctx.drawImage(off, 0, 0, heat.gx * HEAT_STEP, heat.gy * HEAT_STEP);
+  ctx.restore();
   if (basemap !== "drawn") { ctx.save(); ctx.globalCompositeOperation = "destination-out"; ctx.fill(curLandPath || landPath(), "evenodd"); ctx.restore(); }
 }
 function computeDashes() {

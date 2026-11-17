@@ -152,6 +152,15 @@ def shore():
     t = time.time()
     polys = _osm_polys(BB, in_region) if R["shore"] == "osm" else _gshhs_lakes_polys(BB)
     print(f"{len(polys)} land pieces ({time.time() - t:.0f}s)", flush=True)
+    extra = []
+    if R["shore"] == "osm":
+        # OpenStreetMap pieces are only read near the coast. Fill the rest of the box (inland) with GSHHS land, so the
+        # land/water raster and the overview don't treat inland areas as water (wind was drawn over Nevada).
+        from scripts.coast_shoreline_gshhs import read_gshhs
+        covered = shapely.unary_union([box(*p.bounds) for p in polys])
+        g = shapely.unary_union(read_gshhs(GSHHS_DIR, BB)).difference(covered)
+        extra = [p for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon" and p.area > 1e-6]
+        print(f"  + {len(extra)} inland GSHHS land pieces outside the OpenStreetMap coverage", flush=True)
     simp = 0.00005 if R["shore"] == "osm" else 0.0001
     tdir = D / "tiles"; tdir.mkdir(exist_ok=True)
     for f in tdir.glob("*.json"):
@@ -178,10 +187,10 @@ def shore():
     (tdir / "index.json").write_text(json.dumps({"tiles": index, "land": land}))
     print(f"{len(index)} tiles + {len(land)} solid-land tiles, {total // 1024:,} KB ({time.time() - t:.0f}s)", flush=True)
     # overview coastline for zoomed-out maps (~150 m), keeping lakes and lagoons as holes
-    coarse = [c for c in (_rings(p, 0.0015, 4) for p in polys if p.area >= 4e-6) if c]
+    coarse = [c for c in (_rings(p, 0.0015, 4) for p in polys + extra if p.area >= 4e-6) if c]
     # merge OSM's split pieces first so the overview has no seams
     if R["shore"] == "osm":
-        merged = shapely.unary_union([p.buffer(0) for p in polys if p.area >= 4e-6])
+        merged = shapely.unary_union([p.buffer(0) for p in polys + extra if p.area >= 4e-6])
         coarse = [c for c in (_rings(p, 0.0015, 4) for p in (merged.geoms if hasattr(merged, "geoms") else [merged])) if c]
     (D / "coast_land.json").write_text(json.dumps({"type": "MultiPolygon", "coordinates": coarse}, separators=(",", ":")))
     print(f"overview coastline {(D / 'coast_land.json').stat().st_size // 1024:,} KB", flush=True)
@@ -190,7 +199,7 @@ def shore():
     img = Image.new("1", (nx, ny), 0)
     dr = ImageDraw.Draw(img)
     px = lambda cs: [((x - BB[0]) / res, (y - BB[1]) / res) for x, y in cs]
-    for p in polys:
+    for p in polys + extra:
         dr.polygon(px(p.exterior.coords), fill=1)
         for h in p.interiors:
             dr.polygon(px(h.coords), fill=0)
