@@ -149,8 +149,10 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .pin-mark, .fin-mark { width: 24px; height: 24px; border-radius: 50%; background: #ffd23f; color: #0F2A45; border: 2px solid #fff; font: 700 9px/20px var(--f-body); text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
 .fin-mark { background: #1baf7a; color: #fff; font-size: 11px; }
 .pin-mark.big, .fin-mark.big { width: 40px; height: 40px; font-size: 14px; line-height: 36px; }
+.leg-chev { width: 0; height: 0; margin: 1px 0 0 2px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 10px solid var(--c); filter: drop-shadow(0 0 1px #0b1d33); }
 .leg-lab { transform: translate(-50%, -50%); white-space: nowrap; background: rgba(15,42,69,.85); color: #fff; padding: 2px 6px; border-radius: 6px; font: 600 11px/1.3 var(--f-body); width: max-content; }
 .leg-lab.big { font-size: 18px; padding: 4px 10px; }
+.sim-num { position: absolute; left: 14px; top: -6px; font: 700 10px/1 var(--f-body); color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }
 .sim-boat { width: 0; height: 0; margin: 1px 0 0 3px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid var(--c); filter: drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .chat #chat-log { max-height: 280px; overflow-y: auto; display: grid; gap: 6px; margin-bottom: 8px; }
 .chat .msg { padding: 8px 10px; border-radius: 10px; line-height: 1.4; }
@@ -410,6 +412,10 @@ main.wide .panel { border-right: 0; }
           <label><input type="checkbox" value="best"> Fastest route</label><label><input type="checkbox" value="left"> Goes left</label>
           <label><input type="checkbox" value="right"> Goes right</label><label><input type="checkbox" value="shifts"> Plays the shifts</label>
         </div>
+        <p class="hint" style="margin:0">The fleet is shared among the styles you tick. Each boat sails a little differently (boat speed, how soon it tacks), like a real fleet.</p>
+        <div>
+        </div>
+        <label for="race-fleet">Boats in the race: <b id="race-fleet-label"></b><input type="range" id="race-fleet" min="1" max="20" step="1" value="6"></label>
         <div class="row">
           <label for="race-speed">Replay speed<select id="race-speed"><option value="30">30×</option><option value="60" selected>60×</option><option value="120">120×</option><option value="300">300×</option></select></label>
           <div style="display:grid;align-items:end"><button type="button" id="race-run" class="primary">Run the race</button></div>
@@ -1853,6 +1859,17 @@ function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
            kind: tid && tsp >= 0.6 * dsp && tsp >= 0.08 ? (tid.flood ? "flood" : "ebb") : "drift", conf: tid ? Math.max(tid.conf * fade, 0.5) : 0.5 };
 }
 // Flowing arrows: each arrow slides along its direction and fades in and out, faster where the water moves faster.
+// Current speed colours: pale blue (still) through teal, green, yellow, orange to red and magenta (3+ kt), blended smoothly.
+const CUR_STOPS = [[0, [158, 206, 230]], [0.3, [64, 182, 200]], [0.6, [47, 191, 113]], [1.0, [226, 210, 58]], [1.5, [245, 165, 36]], [2.2, [239, 90, 60]], [3.2, [194, 24, 91]]];
+const _curCol = new Map();
+function speedColor(kt) {
+  const b = Math.max(0, Math.min(3.2, Math.round(kt * 20) / 20)); // 0.05 kt steps (keeps drawing fast)
+  let c = _curCol.get(b); if (c) return c;
+  let k = 1; while (k < CUR_STOPS.length - 1 && CUR_STOPS[k][0] < b) k++;
+  const [x0, a] = CUR_STOPS[k - 1], [x1, z] = CUR_STOPS[k], f = Math.max(0, Math.min(1, (b - x0) / (x1 - x0)));
+  c = `rgb(${a.map((v, i) => Math.round(v + (z[i] - v) * f)).join(",")})`; _curCol.set(b, c); return c;
+}
+const speedGradient = () => `linear-gradient(90deg, ${CUR_STOPS.map(([k, c]) => `rgb(${c.join(",")}) ${Math.round((k / 3.2) * 100)}%`).join(", ")})`;
 let curAnimId = null;
 function animateCurrents(t) {
   curAnimId = null;
@@ -1941,8 +1958,8 @@ const CurrentLayer = L.Layer.extend({
         const dl = Math.hypot(dx, dy); if (dl < 0.25) continue; dx /= dl; dy /= dl;
         if (onLandPx(jx + dx * 10, jy + dy * 10) === true) continue;
       }
-      this._flow.push({ x: jx, y: jy, dx, dy, len: Math.min(22, 6 + sp * 6), wd: sp < 0.5 ? 1.2 : sp < 1.5 ? 1.8 : 2.5,
-        pxs: 5 + sp * 14, phase: ((jx * 0.37 + jy * 0.61) % 1 + 1) % 1, col: e.kind === "flood" ? flood : e.kind === "ebb" ? ebb : drift,
+      this._flow.push({ x: jx, y: jy, dx, dy, len: Math.min(22, 6 + sp * 6), wd: Math.round((1.1 + Math.min(1.6, sp * 0.7)) * 5) / 5,
+        pxs: 5 + sp * 14, phase: ((jx * 0.37 + jy * 0.61) % 1 + 1) % 1, col: speedColor(sp),
         alpha: 0.35 + 0.55 * e.conf, ab: Math.round(e.conf * 4) });
     }
     for (const a of this._flow) a.alpha = 0.35 + 0.15 * a.ab;
@@ -1954,7 +1971,7 @@ const CurrentLayer = L.Layer.extend({
       const sp = Math.abs(st.v);
       if (sp < 0.15) { ctx.fillStyle = ink; ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, 7); ctx.fill(); continue; }
       const dir = st.v > 0 ? st.s.flood : st.s.ebb; if (dir == null) continue;
-      drawArrow(ctx, p.x, p.y, dir, zoomedOut ? Math.min(28, 9 + sp * 8) : Math.min(40, 10 + sp * 12), st.v > 0 ? flood : ebb, sur, zoomedOut ? 2.4 : 3);
+      drawArrow(ctx, p.x, p.y, dir, zoomedOut ? Math.min(28, 9 + sp * 8) : Math.min(40, 10 + sp * 12), speedColor(sp), sur, zoomedOut ? 2.4 : 3);
       if (map.getZoom() >= 11) { ctx.fillStyle = css("--ink"); ctx.fillText(sp.toFixed(1), p.x + 6, p.y - 6); }
     }
     // 3) Tide height markers: height and rising/falling at tide stations, thinned so labels don't overlap
@@ -2007,23 +2024,34 @@ async function updateDepth() {
   }
   if (currentLayer) currentLayer.redrawSoon();
 }
-function depthAt(lat, lon) {
-  if (!DEPTH) return null;
-  let t = depthTiles.get(`f_${Math.floor(lat * 4)}_${Math.floor(lon * 4)}`);
-  if (!t) t = depthTiles.get(`c_${Math.floor(lat / DEPTH.block) * DEPTH.block}_${Math.floor(lon / DEPTH.block) * DEPTH.block}`);
-  if (!t) return null;
+function depthSample(t, lat, lon, rad_) {
   const i = Math.floor((lon - t.lon0) / t.res), j = Math.floor((t.lat1 - lat) / t.res);
   if (i < 0 || j < 0 || i >= t.w || j >= t.h) return null;
   t.used = performance.now();
   const k = (j * t.w + i) * 4, R = t.d[k], G = t.d[k + 1], B = t.d[k + 2];
   if (!R) return { land: true };
-  const rad_ = t.res < 0.001 ? 2 : 0; let sl = 0, n = 0; // fine tiles: mean of the log factor over a 5x5 window of water pixels
+  let sl = 0, n = 0; // mean of the log factor over nearby water pixels, so speed changes gradually
   for (let a = -rad_; a <= rad_; a++) for (let b = -rad_; b <= rad_; b++) {
     const jj = j + a, ii = i + b; if (jj < 0 || ii < 0 || jj >= t.h || ii >= t.w) continue;
     const r = t.d[(jj * t.w + ii) * 4]; if (r) { sl += (r - 1) / 254; n++; }
   }
-  const out = { f: Math.exp(DEPTH.lf0 + (sl / n) * (DEPTH.lf1 - DEPTH.lf0)), h: (G / 8) ** 2, ax: null, str: 0, fine: t.res < 0.001 };
-  if (B) { const v = B - 1; out.ax = (v % 60) * 3 + 1.5; out.str = 0.25 + (Math.floor(v / 60) + 0.5) * 0.1875; }
+  return { lf: sl / n, h: (G / 8) ** 2, B };
+}
+function depthAt(lat, lon) {
+  if (!DEPTH) return null;
+  const fk = `f_${Math.floor(lat * 4)}_${Math.floor(lon * 4)}`, ft = depthTiles.get(fk);
+  const ct = depthTiles.get(`c_${Math.floor(lat / DEPTH.block) * DEPTH.block}_${Math.floor(lon / DEPTH.block) * DEPTH.block}`);
+  const fs = ft ? depthSample(ft, lat, lon, 3) : null, cs = ct ? depthSample(ct, lat, lon, 1) : null;
+  if (!fs && !cs) return null;
+  if ((fs && fs.land) || (!fs && cs.land)) return { land: true };
+  let lf = fs ? fs.lf : cs.lf;
+  if (fs && cs && !cs.land) { // fade the detailed tile into the coarse one over its last ~2 km, so there is no edge
+    const la0 = Math.floor(lat * 4) / 4, lo0 = Math.floor(lon * 4) / 4;
+    const d = Math.min(lat - la0, la0 + 0.25 - lat, lon - lo0, lo0 + 0.25 - lon), w = Math.max(0, Math.min(1, d / 0.02));
+    lf = w * fs.lf + (1 - w) * cs.lf;
+  }
+  const src = fs || cs, out = { f: Math.exp(DEPTH.lf0 + lf * (DEPTH.lf1 - DEPTH.lf0)), h: src.h, ax: null, str: 0, fine: !!fs };
+  if (src.B) { const v = src.B - 1; out.ax = (v % 60) * 3 + 1.5; out.str = 0.25 + (Math.floor(v / 60) + 0.5) * 0.1875; }
   return out;
 }
 function drawTideMarkers(ctx, t, size) {
@@ -2065,8 +2093,8 @@ function tideLegendKey() {
 function currentLegendKey() {
   if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
-     <div class="ends"><span><i class="swatch" style="background:var(--flood)"></i>flood</span><span><i class="swatch" style="background:var(--ebb)"></i>ebb</span><span><i class="swatch" style="background:var(--drift)"></i>wind drift</span></div>
-     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Moving arrows cover all the water: tidal current near stations plus wind drift (the wind pushes the surface at about 3% of its speed; purple where wind drift is clearly the bigger part). Faster water has longer, thicker, faster-moving arrows. Tidal estimates fade out ${CUR_RADIUS_KM} km from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
+     <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>1 kt</span><span>2 kt</span><span>3+ kt</span></div>
+     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Moving arrows cover all the water: tidal current near stations plus wind drift (the wind pushes the surface at about 3% of its speed). Colour shows speed; tap the water to see flood or ebb. Faster water has longer, thicker, faster-moving arrows. Tidal estimates fade out ${CUR_RADIUS_KM} km from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
 }
 function liveLegendBody(head) {
   return head + tideLegendKey() + currentLegendKey() + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
@@ -2410,7 +2438,7 @@ function polar(b, tws, twa) {
 
 let raceMode = false, raceLayer = null, raceSimLayer = null;
 const RACE = { type: "wl", laps: 2, lenNm: 0.8, lineM: 150, gateM: 80, offsetM: 90, autoAxis: true, axis: 0, finish: "down", rounding: "port",
-               boat: "ilca", center: null, marks: null, seq: [], strategies: ["best", "left", "right", "shifts"], speed: 60 };
+               boat: "ilca", center: null, marks: null, seq: [], strategies: ["best", "left", "right", "shifts"], speed: 60, fleet: 6 };
 const MARK_STYLE = { rc: "RC", pin: "Pin", m: "" };
 const KT = 0.514444;
 function dest(p, brg, m) { const b = rad(brg); return { lat: p.lat + (m * Math.cos(b)) / 110540, lon: p.lon + (m * Math.sin(b)) / (111320 * Math.cos(rad(p.lat))) }; }
@@ -2488,18 +2516,35 @@ function drawCourse() {
   if (!raceMode || !RACE.marks) return;
   const M = RACE.marks, pts = legPoints(), big = document.body.classList.contains("board");
   raceLayer.addLayer(L.polyline([[M.rc.lat, M.rc.lon], [M.pin.lat, M.pin.lon]], { pane: "racePane", color: "#ffffff", weight: big ? 5 : 3, opacity: 0.95 }));
+  // Each distinct leg is drawn once, shifted a little to the right of its direction of travel: an upwind leg and the
+  // downwind leg back down the same line sit side by side, like boats leaving the marks to port. Laps show as "×2".
+  const legs = new Map();
   for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1], b = pts[i];
-    raceLayer.addLayer(L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { pane: "racePane", color: "#0b1d33", weight: big ? 6 : 4, opacity: 0.55 }));
-    raceLayer.addLayer(L.polyline([[a.lat, a.lon], [b.lat, b.lon]], { pane: "racePane", color: "#F27A48", weight: big ? 3 : 2, dashArray: "8 7", opacity: 0.95 }));
+    const a = pts[i - 1], b = pts[i], key = a.id + ">" + b.id;
+    if (distM(a, b) < 20) continue;
+    if (!legs.has(key)) legs.set(key, { a, b, nums: [] });
+    legs.get(key).nums.push(i);
   }
-  // distance and bearing on each distinct leg (repeated laps share labels)
-  const seen = new Set();
-  for (let i = 1; i < pts.length; i++) {
-    const a = pts[i - 1], b = pts[i], key = [a.id, b.id].join(">"); if (seen.has(key)) continue; seen.add(key);
-    const d = distM(a, b) / 1852; if (d < 0.05) continue;
-    const mid = { lat: a.lat + (b.lat - a.lat) * 0.38, lon: a.lon + (b.lon - a.lon) * 0.38 }; // off-centre so up and down legs on the same line don't overlap
-    raceLayer.addLayer(L.marker([mid.lat, mid.lon], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="leg-lab${big ? " big" : ""}">${d.toFixed(2)} nm · ${String(Math.round(brgOf(a, b))).padStart(3, "0")}°</div>`, iconSize: [0, 0] }) }));
+  const off = big ? 9 : 7, kinds = { up: 0, down: 0, reach: 0 };
+  for (const L_ of legs.values()) {
+    const A = map.latLngToContainerPoint([L_.a.lat, L_.a.lon]), B = map.latLngToContainerPoint([L_.b.lat, L_.b.lon]);
+    const dev = Math.abs(wrap180(brgOf(L_.a, L_.b) - RACE.axis)), kind = dev < 60 ? "up" : dev > 120 ? "down" : "reach", nth = kinds[kind]++;
+    const o = off * (1 + 1.6 * nth); // a second leg going the same way (e.g. start->1 and gate->1) sits further out
+    const len = Math.hypot(B.x - A.x, B.y - A.y) || 1, ux = (B.x - A.x) / len, uy = (B.y - A.y) / len, rx = -uy * o, ry = ux * o;
+    const trim = Math.min(len * 0.12, big ? 26 : 16);  // stop short of the mark circles
+    const P = (pt, t) => map.containerPointToLatLng([pt.x + ux * t + rx, pt.y + uy * t + ry]);
+    const p0 = P(A, trim), p1 = P(B, -trim);
+    const up = kind === "up";
+    const col = up ? "#F27A48" : "#ffd23f";
+    raceLayer.addLayer(L.polyline([p0, p1], { pane: "racePane", color: "#0b1d33", weight: big ? 6 : 4.5, opacity: 0.55, interactive: false }));
+    raceLayer.addLayer(L.polyline([p0, p1], { pane: "racePane", color: col, weight: big ? 3.5 : 2.5, dashArray: up ? null : "9 6", opacity: 0.95, interactive: false }));
+    // direction chevron in the middle of the leg
+    const mid = P(A, len * 0.5), rot = (deg(Math.atan2(ux, -uy)) + 360) % 360;
+    raceLayer.addLayer(L.marker(mid, { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="leg-chev" style="--c:${col};transform:rotate(${rot}deg)"></div>`, iconSize: [14, 14], iconAnchor: [7, 7] }) }));
+    const d = distM(L_.a, L_.b) / 1852, labAt = P(A, len * (0.25 + 0.22 * (nth % 3))), side = { x: (rx / o) * (o + 16), y: (ry / o) * (o + 16) };
+    const lp = map.containerPointToLatLng([map.latLngToContainerPoint(labAt).x + side.x, map.latLngToContainerPoint(labAt).y + side.y]);
+    const lap = L_.nums.length > 1 ? ` ×${L_.nums.length}` : "";
+    raceLayer.addLayer(L.marker(lp, { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="leg-lab${big ? " big" : ""}">${kind === "up" ? "Up" : kind === "down" ? "Down" : "Reach"} ${d.toFixed(2)} nm · ${String(Math.round(brgOf(L_.a, L_.b))).padStart(3, "0")}°${lap}</div>`, iconSize: [0, 0] }) }));
   }
   for (const [id, m] of Object.entries(M)) {
     const mk = L.marker([m.lat, m.lon], { pane: "racePane", draggable: true, icon: markIcon(id, m), title: m.kind === "rc" ? "Committee boat (drag to move)" : m.kind === "pin" ? "Pin end (drag to move)" : `Mark ${id} (drag to move)` });
@@ -2568,8 +2613,8 @@ function envAt(G, lat, lon, tMin) {
 }
 const twaOf = (h, twd) => Math.abs(wrap180(h - twd));
 // Move a boat for dt seconds on heading h (through the water), plus the current.
-function stepBoat(G, b, p, h, tMin, dt) {
-  const E = envAt(G, p.lat, p.lon, tMin), bsp = polar(b, E.tws, twaOf(h, E.twd));
+function stepBoat(G, b, p, h, tMin, dt, skill = 1) {
+  const E = envAt(G, p.lat, p.lon, tMin), bsp = polar(b, E.tws, twaOf(h, E.twd)) * skill;
   const vx = (Math.sin(rad(h)) * bsp + E.cu) * KT, vy = (Math.cos(rad(h)) * bsp + E.cw) * KT;
   return { lat: p.lat + (vy * dt) / 110540, lon: p.lon + (vx * dt) / (111320 * Math.cos(rad(p.lat))), bsp, E };
 }
@@ -2584,7 +2629,7 @@ function vmgOptions(G, b, p, tgt, tMin) {
   }
   return { ...opts, E, brg };
 }
-function sailLegHeuristic(G, boat, strat, from, to, t0, track) {
+function sailLegHeuristic(G, boat, strat, from, to, t0, track, opt = { hyst: 1.12, minTack: 120, skill: 1, lay: 6 }) {
   let p = { lat: from.lat, lon: from.lon }, t = t0, side = null, lastTack = -1e9, minD = Infinity;
   const dt = 6, pen = BOATS[boat].pen, maxT = t0 + 240 * 60;
   while (t < maxT) {
@@ -2597,17 +2642,17 @@ function sailLegHeuristic(G, boat, strat, from, to, t0, track) {
     let pick;
     const best = !O.L ? "R" : !O.R ? "L" : O.L.vmg >= O.R.vmg ? "L" : "R";
     if (side == null) side = strat === "left" ? "L" : strat === "right" ? "R" : best;
-    if (strat === "best" || strat === "shifts") { if (side !== best && O[best] && O[side] && O[best].vmg > O[side].vmg * 1.12 && t - lastTack > 120) { side = best; lastTack = t; t += pen; } }
+    if (strat === "best" || strat === "shifts") { if (side !== best && O[best] && O[side] && O[best].vmg > O[side].vmg * opt.hyst && t - lastTack > opt.minTack) { side = best; lastTack = t; t += pen; } }
     else { // stay on one side until the other tack lays (or nearly lays) the mark, then tack once
       const other = side === "L" ? "R" : "L";
       // tack onto the layline once the other tack points at (or just above) the mark
-      if (O[other] && O[side] && Math.abs(wrap180(O[other].h - O.brg)) < 6 && t - lastTack > 120) { side = other; lastTack = t; t += pen; }
+      if (O[other] && O[side] && Math.abs(wrap180(O[other].h - O.brg)) < opt.lay && t - lastTack > opt.minTack) { side = other; lastTack = t; t += pen; }
       else if (O[side] && O[side].vmg < 0.05 && O[other] && t - lastTack > 60) { side = other; lastTack = t; t += pen; }
     }
     pick = O[side] || O[side === "L" ? "R" : "L"];
     if (!pick) break;
-    let nx = stepBoat(G, boat, p, pick.h, t / 60, dt);
-    if (landAtG(G, nx.lat, nx.lon)) { side = side === "L" ? "R" : "L"; lastTack = t; t += pen; const alt = O[side]; if (!alt) break; nx = stepBoat(G, boat, p, alt.h, t / 60, dt); if (landAtG(G, nx.lat, nx.lon)) break; }
+    let nx = stepBoat(G, boat, p, pick.h, t / 60, dt, opt.skill);
+    if (landAtG(G, nx.lat, nx.lon)) { side = side === "L" ? "R" : "L"; lastTack = t; t += pen; const alt = O[side]; if (!alt) break; nx = stepBoat(G, boat, p, alt.h, t / 60, dt, opt.skill); if (landAtG(G, nx.lat, nx.lon)) break; }
     p = { lat: nx.lat, lon: nx.lon }; t += dt;
     track.push([t, p.lat, p.lon, pick.h, nx.bsp]);
   }
@@ -2645,21 +2690,34 @@ function sailLegBest(G, boat, from, to, t0, track) {
   return null;
 }
 const STRATS = { best: { name: "Fastest route", col: "#F27A48" }, left: { name: "Goes left", col: "#2a78d6" }, right: { name: "Goes right", col: "#1baf7a" }, shifts: { name: "Plays the shifts", col: "#a35cf0" } };
+// Build the fleet: one "fastest route" boat (if ticked) and the rest shared among the other ticked styles, each with its
+// own small differences (boat speed 0-5% below the best, how big a shift it waits for, how long between tacks, layline judgement).
+function buildFleet() {
+  const n = Math.max(1, RACE.fleet | 0), styles = RACE.strategies.length ? RACE.strategies : ["shifts"], out = [];
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const heur = styles.filter((x) => x !== "best");
+  if (styles.includes("best")) out.push({ sid: "best", opt: null });
+  for (let k = 0; out.length < n; k++) {
+    const sid = heur.length ? heur[k % heur.length] : "shifts";
+    out.push({ sid, opt: { hyst: 1.06 + rnd() * 0.14, minTack: 60 + rnd() * 120, skill: 0.95 + rnd() * 0.05, lay: 3 + rnd() * 8 } });
+  }
+  return out.slice(0, n).map((b, i, arr) => ({ ...b, num: i + 1, col: b.sid === "best" ? "#F27A48" : `hsl(${Math.round((i * 360) / arr.length + 200) % 360} 70% 55%)` }));
+}
 async function runRace() {
   if (!RACE.marks) return;
   const msg = $("#race-sim-msg"); showMsg(msg, "Working out the race... (wind and current across the course)");
   await new Promise((r) => setTimeout(r, 30));
   const pts = legPoints(), G = simGrids(pts), t0 = (TIDES ? tideTimeMin() : 0) * 60;
   const res = [];
-  for (const sid of RACE.strategies) {
+  for (const B of buildFleet()) {
     const track = [[t0, pts[0].lat, pts[0].lon, RACE.axis, 0]], legs = []; let t = t0, ok = true;
     for (let i = 1; i < pts.length; i++) {
       await new Promise((r) => setTimeout(r, 0));
-      const tEnd = sid === "best" ? sailLegBest(G, RACE.boat, pts[i - 1], pts[i], t, track) : sailLegHeuristic(G, RACE.boat, sid, pts[i - 1], pts[i], t, track);
+      const tEnd = B.sid === "best" ? sailLegBest(G, RACE.boat, pts[i - 1], pts[i], t, track) : sailLegHeuristic(G, RACE.boat, B.sid, pts[i - 1], pts[i], t, track, B.opt);
       if (tEnd == null) { ok = false; break; }
       legs.push(tEnd - t); t = tEnd;
     }
-    res.push({ sid, track, legs, total: ok ? t - t0 : null });
+    res.push({ sid: B.sid, num: B.num, col: B.col, track, legs, total: ok ? t - t0 : null });
   }
   RACE.sim = { res, t0, G, pts, shown: 0 };
   showMsg(msg, "");
@@ -2672,8 +2730,8 @@ function animateRace() {
   const S = RACE.sim; if (!S) return;
   const end = Math.max(...S.res.map((r) => r.track[r.track.length - 1][0]));
   const boats = S.res.map((r) => {
-    const line = L.polyline([], { pane: "racePane", color: STRATS[r.sid].col, weight: 2.5, opacity: 0.9 }).addTo(raceSimLayer);
-    const mk = L.marker([r.track[0][1], r.track[0][2]], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="sim-boat" style="--c:${STRATS[r.sid].col}"></div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(raceSimLayer);
+    const line = L.polyline([], { pane: "racePane", color: r.col, weight: 2.2, opacity: 0.85 }).addTo(raceSimLayer);
+    const mk = L.marker([r.track[0][1], r.track[0][2]], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="sim-boat" style="--c:${r.col}"></div><div class="sim-num">${r.num}</div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(raceSimLayer);
     return { r, line, mk, k: 0 };
   });
   let simT = S.t0, last = performance.now();
@@ -2697,14 +2755,15 @@ function renderSimResults() {
   const ok = S.res.filter((r) => r.total != null).sort((a, b) => a.total - b.total);
   const best = ok[0];
   box.innerHTML = `<table><thead><tr><th></th><th>Boat</th><th>Finish</th><th>Behind</th></tr></thead><tbody>${S.res.slice().sort((a, b) => (a.total ?? 1e9) - (b.total ?? 1e9)).map((r) =>
-    `<tr><td><i class="swatch" style="background:${STRATS[r.sid].col}"></i></td><td>${STRATS[r.sid].name}</td><td>${r.total == null ? "did not finish" : fmtDur(r.total)}</td><td>${r.total == null || !best ? "" : r === best ? "winner" : "+" + fmtDur(r.total - best.total)}</td></tr>`).join("")}</tbody></table>
+    `<tr><td><i class="swatch" style="background:${r.col}"></i></td><td>${r.num} · ${STRATS[r.sid].name}</td><td>${r.total == null ? "did not finish" : fmtDur(r.total)}</td><td>${r.total == null || !best ? "" : r === best ? "winner" : "+" + fmtDur(r.total - best.total)}</td></tr>`).join("")}</tbody></table>
     <p class="hint" id="race-clock"></p>${raceSideNote()}`;
 }
 function raceSideNote() {
   const S = RACE.sim; if (!S) return "";
-  const l = S.res.find((r) => r.sid === "left"), r = S.res.find((r) => r.sid === "right");
-  if (!l || !r || !l.legs.length || !r.legs.length) return "";
-  const d = l.legs[0] - r.legs[0];
+  const avg = (sid) => { const xs = S.res.filter((r) => r.sid === sid && r.legs.length).map((r) => r.legs[0]); return xs.length ? xs.reduce((a, b) => a + b) / xs.length : null; };
+  const l = avg("left"), r = avg("right");
+  if (l == null || r == null) return "";
+  const d = l - r;
   if (Math.abs(d) < 5) return `<p class="hint">First beat: left and right are about even (within 5 seconds).</p>`;
   return `<p class="hint">First beat: the <b>${d < 0 ? "left" : "right"}</b> side was faster by ${fmtDur(Math.abs(d))} in this simulation.</p>`;
 }
@@ -2738,6 +2797,8 @@ function initRace() {
   $("#race-axis").addEventListener("input", (e) => { RACE.axis = +e.target.value; RACE.autoAxis = false; $("#race-auto").checked = false; rebuild(); });
   $("#race-auto").addEventListener("change", (e) => { RACE.autoAxis = e.target.checked; rebuild(); });
   $("#race-boat").addEventListener("change", (e) => { RACE.boat = e.target.value; raceSave(); });
+  $("#race-fleet").value = RACE.fleet || 6; $("#race-fleet-label").textContent = $("#race-fleet").value;
+  $("#race-fleet").addEventListener("input", (e) => { RACE.fleet = +e.target.value; $("#race-fleet-label").textContent = e.target.value; raceSave(); });
   $("#race-here").addEventListener("click", () => { const c = map.getCenter(); placeCourse(c.lat, c.lng); });
   $("#race-place").addEventListener("click", () => { racePlacing = !racePlacing; $("#race-place").classList.toggle("active", racePlacing); $("#race-place").textContent = racePlacing ? "Tap the map for the start line…" : "Tap to place the start"; });
   $("#race-addmark").addEventListener("click", () => {
@@ -2752,6 +2813,7 @@ function initRace() {
   document.querySelectorAll("#race-strats input").forEach((el) => { el.checked = RACE.strategies.includes(el.value); el.addEventListener("change", () => { RACE.strategies = [...document.querySelectorAll("#race-strats input:checked")].map((x) => x.value); raceSave(); }); });
   $("#race-board").addEventListener("click", toggleBoard);
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("board")) toggleBoard(); });
+  map.on("zoomend", () => { if (raceMode && RACE.marks) drawCourse(); }); // leg offsets are in screen pixels
   map.on("click", (e) => { if (raceMode && racePlacing) { racePlacing = false; $("#race-place").classList.remove("active"); $("#race-place").textContent = "Tap to place the start"; placeCourse(e.latlng.lat, e.latlng.lng); } });
   initRaceChat();
 }
@@ -2788,7 +2850,7 @@ function raceContext() {
     ctx.course = { type: { wl: "windward-leeward", wlg: "windward-leeward with gate", tri: "triangle", trap: "trapezoid", custom: "custom" }[RACE.type], laps: RACE.laps, axis_deg: RACE.axis,
       boat: BOATS[RACE.boat].name, marks: Object.fromEntries(Object.entries(RACE.marks).map(([k, m]) => [k, sample(m.lat, m.lon)])),
       legs: pts.slice(1).map((p, i) => ({ to: p.id, nm: +(distM(pts[i], p) / 1852).toFixed(2), bearing: Math.round(brgOf(pts[i], p)) })) };
-    if (RACE.sim) ctx.simulation = RACE.sim.res.map((r) => ({ boat: STRATS[r.sid].name, finish_min: r.total == null ? null : +(r.total / 60).toFixed(1), first_leg_min: r.legs[0] ? +(r.legs[0] / 60).toFixed(1) : null }));
+    if (RACE.sim) ctx.simulation = RACE.sim.res.map((r) => ({ boat: `${r.num} (${STRATS[r.sid].name})`, finish_min: r.total == null ? null : +(r.total / 60).toFixed(1), first_leg_min: r.legs[0] ? +(r.legs[0] / 60).toFixed(1) : null }));
   }
   return ctx;
 }
