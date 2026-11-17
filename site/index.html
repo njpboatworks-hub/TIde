@@ -2471,13 +2471,13 @@ function buildWaterNet() {
     for (let k = 0; k < D.length; k++) D16[k] = Number.isFinite(D[k]) ? Math.min(65534, Math.round(D[k] * 100)) : 65535;
     net.dist.set(st.id, D16);
   }
-  // --- Way to the sea. "Sea" = water that is open for ~3 km around. S = distance through the water to the sea (km).
+  // --- Way to the sea. "Sea" = water that is open for ~6 km around (so bays count as bays, not open sea). S = distance through the water to the sea (km).
   // Ebb runs down S (toward the sea), flood up it; in a cove the way out is always through its mouth.
   // A = water area behind each cell (further from the sea, draining through it): the tide that must pass, so currents
   // weaken toward the head of a cove or river.
   const ii = new Int32Array((nx + 1) * (ny + 1)); // integral image of water
   for (let j = 0; j < ny; j++) { let row = 0; for (let i = 0; i < nx; i++) { row += water[j * nx + i]; ii[(j + 1) * (nx + 1) + i + 1] = ii[j * (nx + 1) + i + 1] + row; } }
-  const rx = Math.max(2, Math.round(3 / kmx)), ry = Math.max(2, Math.round(3 / kmy)), SEA = new Float64Array(nx * ny).fill(Infinity);
+  const rx = Math.max(2, Math.round(6 / kmx)), ry = Math.max(2, Math.round(6 / kmy)), SEA = new Float64Array(nx * ny).fill(Infinity);
   hn = 0;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const k = j * nx + i; if (!water[k]) continue;
@@ -2500,6 +2500,50 @@ function buildWaterNet() {
       if (best >= 0 && SEA[best] > 0) A[best] += A[k];
     }
     net.sea = new Float32Array(SEA); net.area = A; net.kmx = kmx; net.kmy = kmy;
+    // --- Tidal channel fields (estuary physics): the tide that fills/drains the water behind a cross-section (prism,
+    // proportional to the drained area A) must pass through that section, so speed ~ A / (width x mean depth); across
+    // the section, deeper water runs faster (~ (depth / mean depth)^(2/3), friction). Direction: along the way to the sea.
+    const NC = nx * ny, H = new Float32Array(NC), EX = new Float32Array(NC), EY = new Float32Array(NC), FF = new Float32Array(NC);
+    const cellKm2 = kmx * kmy;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = j * nx + i; if (!water[k]) continue;
+      const dp = depthAt(S + (j + 0.5) * res, W + (i + 0.5) * rlon); H[k] = dp && !dp.land ? Math.max(0.5, dp.h) : 3;
+    }
+    for (let j = 2; j < ny - 2; j++) for (let i = 2; i < nx - 2; i++) { // seaward unit direction from the distance-to-sea slope
+      const k = j * nx + i, c0 = SEA[k]; if (!(c0 > 0) || !Number.isFinite(c0)) continue;
+      let gx = 0, gy = 0;
+      for (let b2 = -2; b2 <= 2; b2++) for (let a = -2; a <= 2; a++) { const v = SEA[(j + b2) * nx + i + a]; if (!Number.isFinite(v) || (a === 0 && b2 === 0)) continue; const dx = a * kmx, dy = b2 * kmy, r2 = dx * dx + dy * dy; gx += ((v - c0) * dx) / r2; gy += ((v - c0) * dy) / r2; }
+      const g = Math.hypot(gx, gy); if (g > 1e-9) { EX[k] = -gx / g; EY[k] = -gy / g; }
+    }
+    const maxSteps = Math.round(5 / Math.min(kmx, kmy));
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const k = j * nx + i; if (!(SEA[k] > 0) || !(EX[k] || EY[k])) continue;
+      // cross-section: walk across the flow (perpendicular to the seaward direction) to the banks on both sides
+      const px = -EY[k] / kmx, py = EX[k] / kmy, pl = Math.hypot(px, py), sx = px / pl, sy = py / pl, stepKm = 1 / (Math.hypot(px, py) / Math.hypot(EY[k], EX[k]) || 1);
+      // walk across the section to both banks; the water behind the whole section is the sum of A along it
+      let wid = 0, hs = H[k], n = 1, asum = A[k];
+      for (const sg of [1, -1]) for (let t = 1; t <= maxSteps; t++) {
+        const a = Math.round(i + sg * sx * t), b2 = Math.round(j + sg * sy * t); if (a < 0 || b2 < 0 || a >= nx || b2 >= ny) break;
+        const kk = b2 * nx + a; if (!water[kk]) break; hs += H[kk]; asum += A[kk]; n++; wid += Math.hypot(sx * kmx, sy * kmy);
+      }
+      const hbar = hs / n, Wk = Math.max(2 * Math.min(kmx, kmy), wid + Math.min(kmx, kmy));
+      FF[k] = ((asum * cellKm2) / (Wk * hbar / 1000)) * Math.pow(H[k] / hbar, 2 / 3);
+    }
+    // smooth the fields (normalised 5x5 Gaussian over water), so speed and direction change gradually
+    const smooth = (src, conf) => { const out = new Float32Array(NC);
+      for (let j = 2; j < ny - 2; j++) for (let i = 2; i < nx - 2; i++) { const k = j * nx + i; if (!water[k]) continue; let s1 = 0, s0 = 0;
+        for (let b2 = -2; b2 <= 2; b2++) for (let a = -2; a <= 2; a++) { const kk = (j + b2) * nx + i + a; if (!conf[kk]) continue; const g = Math.exp(-(a * a + b2 * b2) / 3); s1 += src[kk] * g; s0 += g; }
+        out[k] = s0 ? s1 / s0 : 0; } return out; };
+    const has = new Uint8Array(NC); for (let k = 0; k < NC; k++) has[k] = FF[k] > 0 ? 1 : 0;
+    const LF = new Float32Array(NC); for (let k = 0; k < NC; k++) LF[k] = FF[k] > 0 ? Math.log(FF[k]) : 0;
+    const LFs = smooth(LF, has), EXs = smooth(EX, has), EYs = smooth(EY, has);
+    for (let k = 0; k < NC; k++) { if (!has[k]) { FF[k] = 0; continue; } FF[k] = Math.exp(LFs[k]); const m = Math.hypot(EXs[k], EYs[k]) || 1; EX[k] = EXs[k] / m; EY[k] = EYs[k] / m; }
+    net.F = FF; net.ex = EX; net.ey = EY; net.H = H;
+    // calibration point of each station: the largest F within ~3 cells of where it sits (stations are at the shore)
+    net.stF = new Map();
+    for (const st of sts) { const i0 = Math.floor((st.lon - W) / rlon), j0 = Math.floor((st.lat - S) / res); let best = 0;
+      for (let b2 = -3; b2 <= 3; b2++) for (let a = -3; a <= 3; a++) { const i2 = i0 + a, j2 = j0 + b2; if (i2 < 0 || j2 < 0 || i2 >= nx || j2 >= ny) continue; best = Math.max(best, FF[j2 * nx + i2]); }
+      if (best > 0) net.stF.set(st.id, best); }
     net.stArea = new Map();
     for (const st of sts) { const D = net.dist.get(st.id); if (!D) continue; let best = 0, bd = 1e9; for (let k = 0; k < D.length; k++) if (D[k] < bd) { bd = D[k]; best = k; if (bd === 0) break; } net.stArea.set(st.id, A[best] || 0); }
   }
@@ -2507,6 +2551,18 @@ function buildWaterNet() {
 }
 // distance through water (km) from a station to a point, smoothly interpolated; null when the net does not cover it
 // Toward-the-sea direction (unit, east/north), distance to the sea (km) and drained area at a point, or null.
+function netSample(lat, lon) { // bilinear F, seaward direction and distance to sea at a point (water cells only)
+  const N = WNET; if (!N || !N.F) return null;
+  const fx = (lon - N.W) / N.rlon - 0.5, fy = (lat - N.S) / N.res - 0.5, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+  let f = 0, ex = 0, ey = 0, sea = 0, w = 0, ws = 0;
+  for (const [a, b, wt] of [[i, j, (1 - tx) * (1 - ty)], [i + 1, j, tx * (1 - ty)], [i, j + 1, (1 - tx) * ty], [i + 1, j + 1, tx * ty]]) {
+    if (a < 0 || b < 0 || a >= N.nx || b >= N.ny || wt <= 0) continue; const k = b * N.nx + a;
+    if (Number.isFinite(N.sea[k])) { sea += N.sea[k] * wt; ws += wt; }
+    if (N.F[k] > 0) { f += N.F[k] * wt; ex += N.ex[k] * wt; ey += N.ey[k] * wt; w += wt; }
+  }
+  if (!ws) return null;
+  return { S: sea / ws, f: w ? f / w : 0, ex: w ? ex / w : 0, ey: w ? ey / w : 0, cw: w };
+}
 function seaFlow(lat, lon) {
   const N = WNET; if (!N || !N.sea) return null;
   const i = Math.round((lon - N.W) / N.rlon - 0.5), j = Math.round((lat - N.S) / N.res - 0.5);
@@ -2560,7 +2616,31 @@ function shoreAdjust(lat, lon, u, w, noSlow) {
   const slow = noSlow ? 1 : 1 - 0.35 * Math.min(1, hits / 4);
   return [u * slow, w * slow, slow];
 }
+// Tidal current at a point: in bays, rivers and coves (confined water) from the channel fields calibrated by the NOAA
+// stations reached through the water; in open water from the stations directly. The two blend smoothly by distance to
+// the open sea.
 function currentAt(lat, lon, states, landChecked, quick) {
+  const open = openTideAt(lat, lon, states, landChecked, quick);
+  const ns = quick ? null : netSample(lat, lon);
+  if (!ns || !(ns.f > 0) || ns.cw < 0.3) return open;
+  let kw = 0, ks = 0, vmax = 0, near = Infinity, sg = 0;
+  for (const st of states) {
+    const Fs = WNET.stF.get(st.s.id); if (!Fs) continue;
+    const d = waterDist(st, lat, lon); if (d == null || !Number.isFinite(d) || d >= CUR_RADIUS_KM) continue;
+    const g = (1 / (d * d + 0.25)) * (1 - (d / CUR_RADIUS_KM) ** 2) ** 2;
+    ks += (st.v / Fs) * g; kw += g; vmax = Math.max(vmax, Math.abs(st.v)); near = Math.min(near, d); sg += st.v * g;
+  }
+  if (!kw) return open;
+  const v = Math.max(-1.6 * vmax, Math.min(1.6 * vmax, (ks / kw) * ns.f)); // signed: + flood (inland), - ebb (seaward)
+  let u = -ns.ex * v, w = -ns.ey * v;
+  const wc = Math.max(0, Math.min(1, ns.S / 1.5)) * Math.min(1, ns.cw);   // 0 in open sea, 1 well inside a bay or river
+  if (open) { u = wc * u + (1 - wc) * open.u; w = wc * w + (1 - wc) * open.w; }
+  const sp = Math.hypot(u, w), conf = Math.max(0.35, 1 - near / CUR_RADIUS_KM);
+  const dp = depthAt(lat, lon);
+  return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, flood: (wc > 0.5 ? sg : open ? (open.flood ? 1 : -1) : sg) >= 0, nearest: open ? Math.min(open.nearest, near) : near,
+           n: open ? open.n : 1, conf: open ? Math.max(conf * wc + open.conf * (1 - wc), 0.35) : conf, depth: dp && !dp.land ? dp : null, ratio: open ? open.ratio : 1, confined: wc };
+}
+function openTideAt(lat, lon, states, landChecked, quick) {
   if (!landChecked && isCoastLand(lat, lon)) return null;
   const cl = Math.cos(rad(lat)); let su = 0, sw = 0, sg = 0, wt = 0, sf = 0, nearest = Infinity;
   const cand = [];
@@ -2587,25 +2667,12 @@ function currentAt(lat, lon, states, landChecked, quick) {
   }
   if (!used) return null;
   let u = su / wt, w = sw / wt, ratio = 1;
-  // Away from the stations, the tide follows the way to the sea: ebb drains toward the sea (out of coves, down rivers),
-  // flood runs the other way, and it weakens toward the head of a cove in proportion to the water behind it.
-  const sf2 = !quick && WNET && WNET.sea ? seaFlow(lat, lon) : null;
-  if (sf2 && sf2.S > 0.3) {
-    let aw = 0, at = 0;
-    for (const [km, st] of cand.slice(0, 16)) { const ar = WNET.stArea.get(st.s.id); if (ar == null) continue; const g = 1 / (km * km + 0.25); aw += ar * g; at += g; }
-    const m = Math.hypot(u, w), refA = at ? aw / at : 0;
-    const scale = refA > 0 ? Math.min(1.3, Math.sqrt(sf2.A / refA)) : 1;
-    const k = Math.min(1, (sf2.S - 0.3) / 1.5) * (1 - Math.exp(-nearest / 1.5)); // trust the station right next to it
-    const sgn = sg >= 0 ? -1 : 1; // flood: away from the sea; ebb: toward it
-    const tu = sgn * sf2.ex * m * scale, tw = sgn * sf2.ey * m * scale;
-    u += (tu - u) * k; w += (tw - w) * k;
-  }
   const dp = depthAt(lat, lon), useDepth = dp && !dp.land;
   if (useDepth) {
     // Carry the stations' speed here in proportion to the channel factor: deep channels and narrows faster, flats slower.
-    ratio = Math.max(0.5, Math.min(2.2, Math.pow(dp.f / (sf / wt), 0.7)));
+    ratio = Math.max(0.6, Math.min(1.8, Math.pow(dp.f / (sf / wt), 0.5)));
     u *= ratio; w *= ratio;
-    if (dp.ax != null) { // turn the flow toward the channel's axis where the depth contours are clear
+    if (false) { // (channel turning now comes from the channel fields)
       const m = Math.hypot(u, w), ax = rad(dp.ax), au = Math.sin(ax), aw = Math.cos(ax), sgn = u * au + w * aw >= 0 ? 1 : -1, k = Math.min(0.8, dp.str * 0.85);
       if (m > 0) { let nu = (1 - k) * (u / m) + k * sgn * au, nw = (1 - k) * (w / m) + k * sgn * aw; const nl = Math.hypot(nu, nw) || 1; u = (nu / nl) * m; w = (nw / nl) * m; }
     }
@@ -2683,22 +2750,15 @@ function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
   if (!landChecked && isCoastLand(lat, lon)) return null;
   const tid = states.length ? currentAt(lat, lon, states, true, quick) : null;
   const d0 = tid && tid.depth ? tid.depth : depthAt(lat, lon), dp = d0 && !d0.land ? d0 : null;
-  const ch = channelAt(lat, lon, cx, cy, mpp);
+  // Wind drift is worked out for the hover card only; the arrows show the tidal current.
   let dr = driftFrom(wind, dp);
-  if (dr) {
-    // hemmed-in water (rivers, narrows) is barely pushed sideways by the wind; what is left runs along the channel
-    let [a, b] = shoreAdjust(lat, lon, dr.u * (1 - 0.75 * (ch ? ch.conf : 0)), dr.w * (1 - 0.75 * (ch ? ch.conf : 0)), true);
-    [a, b] = alongChannel(a, b, ch, false);
-    dr = { u: a, w: b, sp: Math.hypot(a, b) };
-  }
-  if (!tid && !dr) return null;
-  const fade = tid ? Math.max(0, Math.min(1, (1 - tid.nearest / CUR_RADIUS_KM) / 0.35)) : 0;
-  let tu = tid ? tid.u * fade : 0, tw = tid ? tid.w * fade : 0;
-  [tu, tw] = alongChannel(tu, tw, ch, true);                 // the tide runs up and down the channel
-  const tsp = Math.hypot(tu, tw), dsp = dr ? dr.sp : 0;
-  const u = tu + (dr ? dr.u : 0), w = tw + (dr ? dr.w : 0), sp = Math.hypot(u, w);
+  if (dr) { const [a, b] = shoreAdjust(lat, lon, dr.u, dr.w, true); dr = { u: a, w: b, sp: Math.hypot(a, b) }; }
+  if (!tid) return null;
+  const fade = Math.max(0, Math.min(1, (1 - tid.nearest / CUR_RADIUS_KM) / 0.35));
+  const tu = tid.u * fade, tw = tid.w * fade, tsp = Math.hypot(tu, tw), dsp = dr ? dr.sp : 0;
+  const u = tu, w = tw, sp = tsp;
   return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, tidal: tid, tsp, drift: dr, dsp, depth: dp,
-           kind: tid && tsp >= 0.6 * dsp && tsp >= 0.08 ? (tid.flood ? "flood" : "ebb") : "drift", conf: tid ? Math.max(tid.conf * fade, 0.5) : 0.5 };
+           kind: tsp < 0.05 ? "slack" : tid.flood ? "flood" : "ebb", conf: Math.max(tid.conf * fade, 0.35) };
 }
 // Flowing arrows: each arrow slides along its direction and fades in and out, faster where the water moves faster.
 // Current speed colours: pale blue (still) through teal, green, yellow, orange to red and magenta (3+ kt), blended smoothly.
@@ -2797,7 +2857,7 @@ const CurrentLayer = L.Layer.extend({
     for (const [key, c0] of cells) {
       const gx = Math.floor(key / 10000), gy = key - gx * 10000; let su = 0, sw = 0, wt = 0;
       for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) { const n = cells.get((gx + a) * 10000 + gy + b); if (!n) continue; const g = Math.exp(-(a * a + b * b) / 2.2); su += n.u * g; sw += n.w * g; wt += g; }
-      const u = su / wt, w = sw / wt, spd = Math.hypot(u, w); if (spd < 0.05) continue;
+      const u = su / wt, w = sw / wt, spd = Math.hypot(u, w); if (spd < 0.02) continue; // slow water: small faint arrows
       const jx = c0.jx, jy = c0.jy, e = { sp: spd, dir: (deg(Math.atan2(u, w)) + 360) % 360, conf: c0.conf };
       const th = rad(e.dir), sp = e.sp;
       let dx = Math.sin(th), dy = -Math.cos(th);
@@ -2948,7 +3008,7 @@ function currentLegendKey() {
   if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
      <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>1 kt</span><span>2 kt</span><span>3+ kt</span></div>
-     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. Moving arrows cover all the water: tidal current near stations plus wind drift (the wind pushes the surface at about 3% of its speed). Colour shows speed; tap the water to see flood or ebb. Faster water has longer, thicker, faster-moving arrows. Tidal estimates fade out ${CUR_RADIUS_KM} km from a station${DEPTH ? ", adjusted for water depth from NOAA depth models when zoomed in: faster in deep channels and narrows, slower over shallow flats" : ""}. Arrows point where the water flows; longer is faster.</div>`;
+     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. The moving arrows are the tidal current between them: flood runs in toward land and up rivers, ebb runs out toward the sea. In bays and rivers the speed follows the channel: the water that fills or drains everything behind a spot must pass through it, so it runs faster through narrows and deep channels and slows over shallows and toward the head of a cove${DEPTH ? " (depths from NOAA depth models)" : ""}. Strength and timing come from the NOAA stations, so spring and neap tides are included. Colour and length show speed. Wind drift is not drawn; tap the water to see it. Estimates, not for navigation.</div>`;
 }
 function liveLegendBody(head) {
   return head + tideLegendKey() + currentLegendKey() + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
@@ -3237,18 +3297,11 @@ function probeHtml(cp, ll) {
     const states = stationStates(t, L.latLngBounds([ll.lat - pad, ll.lng - pad / cl], [ll.lat + pad, ll.lng + pad / cl]));
     const sz = map.getSize(), mpp = map.distance(map.containerPointToLatLng([0, sz.y / 2]), map.containerPointToLatLng([100, sz.y / 2])) / 100;
     const fw = flowAt(ll.lat, ll.lng, states, true, false, windHere(cp.x, cp.y, ll.lat, ll.lng), cp.x, cp.y, mpp), c = fw && fw.tidal;
-    if (!fw) rows.push(`<div class="pr"><span class="pk">Current</span><span>no estimate here</span></div>`);
-    else {
-      const word = fw.kind === "drift" ? "wind drift" : fw.kind;
-      rows.push(`<div class="pr"><span class="pk">Current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "almost still" : `${word} ${fw.sp.toFixed(1)} kt`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}</div>`);
-      const parts = [];
-      if (fw.tsp >= 0.05) parts.push(`tide ${fw.tsp.toFixed(1)} kt (NOAA stations)`); else if (!TIDES.currents.length) parts.push(REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data here");
-      else if (!c) parts.push(`no NOAA current station within ${CUR_RADIUS_KM} km`);
-      if (fw.dsp >= 0.05) parts.push(`wind drift ${fw.dsp.toFixed(1)} kt (about 3% of the wind)`);
-      rows.push(`<div class="pr"><span class="pk"></span><span style="color:var(--muted)">${parts.join(" + ")}</span></div>`);
-    }
+    if (!fw) rows.push(`<div class="pr"><span class="pk">Tide</span><span>${!TIDES.currents.length ? (REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data for this region") : `no NOAA current station within ${CUR_RADIUS_KM} km by water`}</span></div>`);
+    else rows.push(`<div class="pr"><span class="pk">Tidal current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "slack (almost still)" : `${fw.kind} ${fw.sp.toFixed(1)} kt`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}</div>`);
+    if (fw && fw.dsp >= 0.05) rows.push(`<div class="pr"><span class="pk">Wind drift</span><span style="color:var(--muted)">about ${fw.dsp.toFixed(1)} kt on top of the tide (about 3% of the wind; not drawn)</span></div>`);
     const dp = depthAt(ll.lat, ll.lng);
-    if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.depth && c.ratio > 1.15 ? `, channel: current about ${c.ratio.toFixed(1)}× nearby stations` : c && c.depth && c.ratio < 0.85 ? `, shallow: current about ${c.ratio.toFixed(1)}× nearby stations` : ""}</span></div>`);
+    if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.confined > 0.5 ? " (current here follows the channel: faster where deep and narrow)" : ""}</span></div>`);
     const tide = tideAt(ll.lat, ll.lng, t), nearT = TIDES.timebase === "utc" ? nearest(TIDES.tides, ll.lat, ll.lng) : null;
     rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}` : REGION.id === "lakes" ? "almost none (Great Lakes)" : "no tide station within 20 km"}</span></div>`);
     when = coastMode === "live" ? `${hourLabel(+$("#live-hour").value)} on the selected date` : "now";
