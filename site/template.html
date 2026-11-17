@@ -987,33 +987,47 @@ let obsPrep = null;
 const trustOf = (o) => (Number.isNaN(o.steady) || o.steady == null ? 1 : Math.max(0.05, Math.min(1, (o.steady - 0.2) / 0.6)) ** 2);
 function regionalAt(lat, lon) {
   const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon);
-  let su = 0, sv = 0, sw = 0, st = 0, sn = 0;
+  let su = 0, sv = 0, sw = 0, st = 0, sn = 0, ss = 0;
   for (let a = i0 - 2; a <= i0 + 2; a++) for (let b = j0 - 3; b <= j0 + 3; b++) {
     const arr = obsBuckets.get(a * 1000 + b); if (!arr) continue;
     for (const o of arr) {
       const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy;
       if (d2 > 40000) continue;
       const w = Math.exp(-d2 / (2 * REG_SIGMA_KM * REG_SIGMA_KM)) * trustOf(o);
-      su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; }
+      su += o.u * w; sv += o.v * w; ss += Math.hypot(o.u, o.v) * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; }
     }
   }
   if (sw < 1e-3) { // far from everything: use the nearest few stations
     const near = knn(obsBuckets, lat, lon, 4); if (!near.length) return null;
-    su = sv = sw = st = sn = 0;
-    for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
+    su = sv = sw = st = sn = ss = 0;
+    for (const { o, d2 } of near) { const w = 1 / (d2 + 1); su += o.u * w; sv += o.v * w; ss += Math.hypot(o.u, o.v) * w; sw += w; if (!Number.isNaN(o.steady)) { st += o.steady * w; sn += w; } }
   }
-  return [su / sw, sv / sw, sn ? st / sn : NaN];
+  // direction from the vector average, speed from the average of the speeds: two stations with different directions
+  // (e.g. lake breezes on opposite shores) must not cancel each other's speed
+  const vu = su / sw, vv = sv / sw, vm = Math.hypot(vu, vv) || 1e-9, sp = ss / sw;
+  return [(vu / vm) * sp, (vv / vm) * sp, sn ? st / sn : NaN, sp];
 }
 function baseNode(lat, lon) {
   if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
-  if (!obsPrep) { obsPrep = true; for (const o of coastField.obs) { const r = regionalAt(o.lat, o.lon); o.au = r ? o.u - r[0] : 0; o.av = r ? o.v - r[1] : 0; } }
+  if (!obsPrep) {
+    obsPrep = true;
+    for (const o of coastField.obs) {
+      const r = regionalAt(o.lat, o.lon);
+      // local effects come from land: a station out in open water keeps no local quirk of its own (it still counts in
+      // the regional wind), so offshore buoys and forecast points don't make circles of colour around themselves
+      if (o.near == null) o.near = Math.max(0, Math.min(1, (0.95 - openness(o.lat, o.lon)) / 0.35));
+      o.au = r ? (o.u - r[0]) * o.near : 0; o.av = r ? (o.v - r[1]) * o.near : 0; o.as = r ? (Math.hypot(o.u, o.v) - r[3]) * o.near : 0;
+    }
+  }
   const near = knn(obsBuckets, lat, lon, 6);
   if (!near.length || near[0].d2 > 350 * 350) return null;
   const r = regionalAt(lat, lon); if (!r) return null;
-  let au = 0, av = 0, aw = 0;
-  for (const { o, d2 } of near) { const t = trustOf(o), w = Math.exp(-Math.sqrt(d2) / LOCAL_KM); au += o.au * w * t; av += o.av * w * t; aw += w; }
+  let au = 0, av = 0, as = 0, aw = 0;
+  for (const { o, d2 } of near) { const t = trustOf(o), w = Math.exp(-Math.sqrt(d2) / LOCAL_KM); au += o.au * w * t; av += o.av * w * t; as += o.as * w * t; aw += w; }
   const k = aw > 1 ? 1 / aw : 1; // overlapping stations share, they do not add up
   const dn = Math.sqrt(near[0].d2);
+  { const fu = r[0] + au * k, fv = r[1] + av * k, fm = Math.hypot(fu, fv) || 1e-9, spd = Math.max(0.5, r[3] + as * k);
+    return [(fu / fm) * spd, (fv / fm) * spd, r[2], dn < 120 ? 1 : dn < 320 ? 1 - ((dn - 120) / 200) * 0.4 : 0.6 * (350 - dn) / 30]; }
   // last value: coverage. Full within 120 km of a station; farther out the wind is the regional blend (drawn a little fainter).
   return [r[0] + au * k, r[1] + av * k, r[2], dn < 120 ? 1 : dn < 320 ? 1 - ((dn - 120) / 200) * 0.4 : 0.6 * (350 - dn) / 30];
 }
@@ -1029,18 +1043,17 @@ function lattice(cache, sp, lat, lon, node) {
   return w > 0.01 ? [u / w, v / w, ws ? s / ws : NaN, cv] : null;
 }
 // "Average wind within about 40 km": Gaussian blend of the wind at all stations/forecast points (with their land effect).
+// Reference for lifted/headed: the same open-water wind field, averaged (Gaussian) over ~15 km around the spot. The
+// colour then shows how a spot differs from the rest of its own race area: land shelter and local station effects.
+const REF_PTS = (() => { const a = [[0, 0, 1]]; for (const r of [6, 12, 20]) for (let k = 0; k < 8; k++) { const t = (k * Math.PI) / 4 + (r === 12 ? Math.PI / 8 : 0); a.push([r * Math.sin(t), r * Math.cos(t), Math.exp(-(r * r) / (2 * 12 * 12))]); } return a; })();
 function refNode(lat, lon) {
-  // "Usual wind around here": stations within ~15 km (Gaussian), blended with the regional open-water wind so that
-  // open sea far from stations reads neutral and inside a bay the bay's own average is the reference.
   if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
-  const r = regionalAt(lat, lon); if (!r) return null;
-  const cl = Math.cos(rad(lat)), i0 = Math.floor(lat), j0 = Math.floor(lon), w0 = 0.35;
-  let su = r[0] * w0, sv = r[1] * w0;
-  for (let a = i0 - 1; a <= i0 + 1; a++) for (let b = j0 - 1; b <= j0 + 1; b++) {
-    const arr = obsBuckets.get(a * 1000 + b); if (!arr) continue;
-    for (const o of arr) { const dy = (lat - o.lat) * 111.32, dx = (lon - o.lon) * 111.32 * cl, d2 = dx * dx + dy * dy; if (d2 > 2025) continue; const g = Math.exp(-d2 / 450) * trustOf(o); su += o.u * g; sv += o.v * g; }
+  const cl = Math.cos(rad(lat)); let su = 0, sv = 0, sw = 0;
+  for (const [dx, dy, g] of REF_PTS) {
+    const b = lattice(baseCache, 0.04, lat + dy / 111.32, lon + dx / (111.32 * cl), baseNode); if (!b) continue;
+    const m = Math.hypot(b[0], b[1]) || 1; su += (b[0] / m) * g; sv += (b[1] / m) * g; sw += g;
   }
-  return [su, sv, NaN];
+  return sw > 0.2 ? [su, sv, NaN] : null;
 }
 // Upwind land share for one shading cell. Zoomed in, it reads the drawn shoreline pixels (exact); otherwise the ~600 m grid.
 // Land upwind shelters the water. Flat land: the effect fades over ~1-3 km. Higher land (NOAA ETOPO 2022 heights) shelters
@@ -1501,7 +1514,7 @@ function coastLegend() {
   }
   const { m, h } = coastTime();
   return divLegend(`Typical wind, ${MONTHS[m]} ${hourLabel(h)}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
-    `<div class="ends"><span>compared with the usual wind within about 15 km</span></div>
+    `<div class="ends"><span>compared with the average wind within about 15 km</span></div>
      <div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
      <div class="fine">Average of ${COAST.years[0]} to ${COAST.years[1]} at ${COAST.stations.length} ${REGION.stations} stations, spread across the water and adjusted near shore with a rough land-shelter rule that grows with land height (NOAA ETOPO 2022). More than about 120 km from a station (far offshore) the wind is carried over from the nearest stations and is less reliable. Model estimate, not measured at each spot, and not a forecast.</div>`;
 }
@@ -1719,6 +1732,14 @@ function waterPath(lat1, lon1, lat2, lon2) {
 // How much land lies on the straight line between two points (km), using the smooth land fraction, and ignoring the
 // first and last ~600 m (stations sit at the shore). It changes gradually as the line sweeps past an island, so the
 // influence of a station fades behind land instead of cutting off along a straight "shadow" line.
+// Share of water within ~3 km (0 = hemmed in, 1 = open sea). A current squeezed through an inlet slows down as it
+// spreads into wider water (the same flow through a bigger opening), so a station's speed only carries to similar water.
+function openness(lat, lon) {
+  const cl = Math.cos(rad(lat)); let w = 0, n = 0;
+  for (const r of [0.8, 1.6, 2.8]) for (let k = 0; k < 12; k++) { const a = (k * Math.PI) / 6; w += 1 - coastLandFrac(lat + (r * Math.cos(a)) / 111.32, lon + (r * Math.sin(a)) / (111.32 * cl)); n++; }
+  return w / n;
+}
+function stationOpen(s) { if (s._open == null || s._openRegion !== REGION.id) { s._open = openness(s.lat, s.lon); s._openRegion = REGION.id; } return s._open; }
 function landCrossKm(lat1, lon1, lat2, lon2) {
   const km = Math.hypot((lat2 - lat1) * 111.32, (lon2 - lon1) * 111.32 * Math.cos(rad(lat1)));
   const n = Math.max(1, Math.ceil(km / 0.2)), step = km / n; let land = 0;
@@ -1877,7 +1898,7 @@ function currentAt(lat, lon, states, landChecked, quick) {
     if (km <= CUR_RADIUS_KM) cand.push([km, st]);
   }
   cand.sort((a, b) => a[0] - b[0]);
-  let used = 0;
+  let used = 0, sa = 0; const op = openness(lat, lon);
   for (const [km, st] of cand.slice(0, 16)) {
     // distance through the water when the water network covers this spot (around islands, up rivers); otherwise a
     // straight line where each km of land in the way counts like 6 km of water
@@ -1886,7 +1907,11 @@ function currentAt(lat, lon, states, landChecked, quick) {
     const de = wd != null && Number.isFinite(wd) ? Math.min(Math.max(km, wd), straight) : straight;
     if (de >= CUR_RADIUS_KM) continue;
     const g = (1 / (de * de + 0.25)) * (1 - (de / CUR_RADIUS_KM) ** 2) ** 2;
-    su += st.u * g; sw += st.w * g; sg += Math.sign(st.v) * Math.abs(st.v) * g; sf += (st.s.df || 1) * g; wt += g; used++;
+    // inlet or narrows station, wider water here: the jet slows and dies out within a few km
+    const os = stationOpen(st.s), more = op == null ? 0 : Math.max(0, op - os);
+    const amp = more > 0.05 ? Math.min(1, ((os + 0.1) / (op + 0.1)) ** 1.5) * Math.exp((-Math.max(0, de - 0.5) * more) / 0.6) : 1;
+    sa += amp * g;
+    su += st.u * g * amp; sw += st.w * g * amp; sg += Math.sign(st.v) * Math.abs(st.v) * g; sf += (st.s.df || 1) * g; wt += g; used++;
     nearest = Math.min(nearest, de);
   }
   if (!used) return null;
@@ -1981,7 +2006,9 @@ function alongChannel(u, w, ch, keepSpeed) {
   const k = Math.min(1, (ch.conf - 0.15) * 1.6), tu = (keepSpeed ? Math.sign(along || 1) * m : along) * au, tw = (keepSpeed ? Math.sign(along || 1) * m : along) * aw;
   return [u + (tu - u) * k, w + (tw - w) * k];
 }
+function inCoastGrid(lat, lon) { const g = COAST && COAST.grid; return !!g && lat >= g.lat0 && lon >= g.lon0 && lat <= g.lat0 + g.ny * g.res && lon <= g.lon0 + g.nx * g.res; }
 function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
+  if (!inCoastGrid(lat, lon)) return null; // outside this region's land/water data (e.g. Cuba): draw nothing
   if (!landChecked && isCoastLand(lat, lon)) return null;
   const tid = states.length ? currentAt(lat, lon, states, true, quick) : null;
   const d0 = tid && tid.depth ? tid.depth : depthAt(lat, lon), dp = d0 && !d0.land ? d0 : null;
@@ -2236,7 +2263,7 @@ function drawTideMarkers(ctx, t, size) {
 function liveLegend() {
   const tackName = arrowTack === "stbd" ? "starboard" : "port";
   const head = arrowTack === "off" ? "" : divLegend(`${useObs() ? "Live wind" : "Forecast wind"}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
-    `<div class="ends"><span>compared with the usual wind within about 15 km</span></div>`;
+    `<div class="ends"><span>compared with the average wind within about 15 km</span></div>`;
   return liveLegendBody(head);
 }
 function tideLegendKey() {
@@ -2422,8 +2449,24 @@ function setBasemap(kind) {
       maxNativeZoom: 13, maxZoom: 19,
       attribution: '<a href="https://s2maps.eu" target="_blank" rel="noopener">Sentinel-2 cloudless 2016</a> by EOX IT Services GmbH (contains modified Copernicus Sentinel data 2016, CC BY 4.0)',
     });
-    const us = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", {
-      maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
+    // USGS imagery is sharper near the US shore, but over open water it serves black (no-data) tiles or none at all,
+    // which showed as dark squares. Use it only zoomed in, and make its black pixels see-through so EOX shows below.
+    const USGS = L.TileLayer.extend({
+      createTile(coords, done) {
+        const c = document.createElement("canvas"), sz = this.getTileSize(); c.width = sz.x; c.height = sz.y;
+        const img = new Image(); img.crossOrigin = "anonymous";
+        img.onload = () => {
+          const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, sz.x, sz.y);
+          try { const d = x.getImageData(0, 0, sz.x, sz.y); for (let k = 0; k < d.data.length; k += 4) if (d.data[k] + d.data[k + 1] + d.data[k + 2] < 24) d.data[k + 3] = 0; x.putImageData(d, 0, 0); } catch (_) {}
+          done(null, c);
+        };
+        img.onerror = () => done(null, c); // missing tile: stay transparent (no error count, EOX shows)
+        img.src = this.getTileUrl(coords);
+        return c;
+      },
+    });
+    const us = new USGS("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", {
+      minZoom: 11, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
       attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a>',
     });
     baseLayer = L.layerGroup([world, us]).addTo(map);

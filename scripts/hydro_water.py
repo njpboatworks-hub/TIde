@@ -170,8 +170,8 @@ def main():
             if done % 20 == 0:
                 print(f"  {done}/{len(cells)} cells ({time.time() - t0:.0f}s)", flush=True)
     out = DATA_DIR / "us_water"; out.mkdir(exist_ok=True)
-    changed = 0
-    for k, g in water.items():
+    changed, kept = 0, {}  # kept: only the water actually cut into the shoreline, so the land raster always matches the tiles
+    for k, g in list(water.items()):
         (out / f"{k}.json").write_text(json.dumps(shapely.geometry.mapping(g), separators=(",", ":")))
         la, lo = map(int, k.split("_"))
         if k in files:
@@ -187,8 +187,8 @@ def main():
         # keep: water that really joins the sea (within ~30 m), or a big lagoon (> 5 km2) lying within ~4 km of the sea.
         # Inland ponds and lakes stay land (they are not tidal, and the wind/current model is for sea water).
         def coastal(p):
-            if sea.is_empty:
-                return False
+            if sea.is_empty:  # a "solid land" square: only a big water body (e.g. Lake Pontchartrain), checked for sea level below
+                return p.area * km2 > 5
             if p.buffer(0.0003).intersects(sea):
                 return True
             return p.area * km2 > 5 and p.distance(sea) < 0.04
@@ -208,7 +208,7 @@ def main():
         g = shapely.unary_union([p.buffer(-0.0003).buffer(0.0003) for p in add])
         if g.is_empty:
             continue
-        water[k] = g
+        kept[k] = g
         new = landg.difference(g)
         if new.area > landg.area - 1e-6:
             continue
@@ -224,7 +224,7 @@ def main():
     print(f"water found in {len(water)} cells; shoreline tiles updated: {changed}", flush=True)
     # ~600 m land rasters and overview coastlines of the US regions: draw the water polygons onto them
     from PIL import ImageDraw
-    polys = [p for g in water.values() for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon"]
+    polys = [p for g in kept.values() for p in (g.geoms if hasattr(g, "geoms") else [g]) if p.geom_type == "Polygon"]
     for d in (DATA_DIR, DATA_DIR / "west", DATA_DIR / "hawaii"):
         g = json.loads((d / "coast_raster.json").read_text())
         cells_ = np.unpackbits(np.frombuffer(base64.b64decode(g["bits"]), dtype=np.uint8))[: g["nx"] * g["ny"]].reshape(g["ny"], g["nx"]).astype(bool)
