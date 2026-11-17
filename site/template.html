@@ -1702,7 +1702,7 @@ function nearest(list, lat, lon) {
 // Rules: use stations within CUR_RADIUS_KM whose straight line to the point stays on water;
 // inverse-distance weighting with a taper; near shore, remove the part of the flow heading into land
 // and slow it somewhat. Beyond the radius nothing is drawn.
-const CUR_RADIUS_KM = 15, TIDE_RADIUS_KM = 20;
+const CUR_RADIUS_KM = 20, TIDE_RADIUS_KM = 20;
 function waterPath(lat1, lon1, lat2, lon2) {
   // True when the straight line stays on water. The land grid is ~600 m, so land within 600 m of
   // either end (stations sit at the shoreline) and single-cell slivers (piers, pixelated channels) are ignored;
@@ -1715,6 +1715,87 @@ function waterPath(lat1, lon1, lat2, lon2) {
     if (isCoastLand(lat1 + (lat2 - lat1) * f, lon1 + (lon2 - lon1) * f)) { run += km / n; if (run > 0.7) return false; } else run = 0;
   }
   return true;
+}
+// How much land lies on the straight line between two points (km), using the smooth land fraction, and ignoring the
+// first and last ~600 m (stations sit at the shore). It changes gradually as the line sweeps past an island, so the
+// influence of a station fades behind land instead of cutting off along a straight "shadow" line.
+function landCrossKm(lat1, lon1, lat2, lon2) {
+  const km = Math.hypot((lat2 - lat1) * 111.32, (lon2 - lon1) * 111.32 * Math.cos(rad(lat1)));
+  const n = Math.max(1, Math.ceil(km / 0.2)), step = km / n; let land = 0;
+  for (let k = 1; k < n; k++) {
+    const d = (k / n) * km, edge = Math.min(1, d / 0.6, (km - d) / 0.6); if (edge <= 0) continue;
+    const f = k / n, fr = coastLandFrac(lat1 + (lat2 - lat1) * f, lon1 + (lon2 - lon1) * f);
+    if (fr > 0) land += fr * step * edge;
+  }
+  return land;
+}
+/* Distance through the water from each current station (around islands, up winding rivers), on a grid built from the
+   NOAA depth tiles (fine ~55 m tiles near stations, ~275 m blocks elsewhere). Rebuilt when the view moves. */
+let WNET = null;
+function fastWater(lat, lon) {
+  if (DEPTH) {
+    for (const key of [`f_${Math.floor(lat * 4)}_${Math.floor(lon * 4)}`, `c_${Math.floor(lat / DEPTH.block) * DEPTH.block}_${Math.floor(lon / DEPTH.block) * DEPTH.block}`]) {
+      const t = depthTiles.get(key); if (!t) continue;
+      const i = Math.floor((lon - t.lon0) / t.res), j = Math.floor((t.lat1 - lat) / t.res);
+      if (i >= 0 && j >= 0 && i < t.w && j < t.h) return t.d[(j * t.w + i) * 4] > 0;
+    }
+  }
+  return coastLandFrac(lat, lon) < 0.5;
+}
+function buildWaterNet() {
+  WNET = null;
+  if (!TIDES || !TIDES.currents.length || !COAST || map.getZoom() < 10) return;
+  const b = map.getBounds(), padLat = (CUR_RADIUS_KM + 1) / 111.32, c = map.getCenter(), padLon = padLat / Math.cos(rad(c.lat));
+  const S = b.getSouth() - padLat, N = b.getNorth() + padLat, W = b.getWest() - padLon, E = b.getEast() + padLon;
+  const res = Math.max(0.0012, (N - S) / 360), nx = Math.ceil((E - W) / (res / Math.cos(rad(c.lat)))) , ny = Math.ceil((N - S) / res), rlon = (E - W) / nx;
+  if (nx * ny > 400000) return;
+  const water = new Uint8Array(nx * ny);
+  for (let j = 0; j < ny; j++) { const la = S + (j + 0.5) * res; for (let i = 0; i < nx; i++) water[j * nx + i] = fastWater(la, W + (i + 0.5) * rlon) ? 1 : 0; }
+  const kmy = res * 111.32, kmx = rlon * 111.32 * Math.cos(rad(c.lat)), kmd = Math.hypot(kmx, kmy);
+  const net = { S, W, res, rlon, nx, ny, water, dist: new Map() };
+  const cl = Math.cos(rad(c.lat));
+  const sts = TIDES.currents.filter((st) => st.lat > S && st.lat < N && st.lon > W && st.lon < E)
+    .sort((a, b) => Math.hypot(a.lat - c.lat, (a.lon - c.lng) * cl) - Math.hypot(b.lat - c.lat, (b.lon - c.lng) * cl)).slice(0, 40);
+  // one reusable priority queue (typed arrays) for all stations
+  let hk = new Float64Array(1 << 16), hv = new Int32Array(1 << 16), hn = 0;
+  const hpush = (key, val) => { if (hn >= hk.length) { const k2 = new Float64Array(hk.length * 2), v2 = new Int32Array(hk.length * 2); k2.set(hk); v2.set(hv); hk = k2; hv = v2; }
+    let k = hn++; while (k > 0) { const p = (k - 1) >> 1; if (hk[p] <= key) break; hk[k] = hk[p]; hv[k] = hv[p]; k = p; } hk[k] = key; hv[k] = val; };
+  const hpop = () => { const val = hv[0]; hn--; if (hn > 0) { const key = hk[hn], v = hv[hn]; let k = 0; for (;;) { const l = 2 * k + 1, r = l + 1; let m = -1, mk = key; if (l < hn && hk[l] < mk) { m = l; mk = hk[l]; } if (r < hn && hk[r] < mk) { m = r; mk = hk[r]; } if (m < 0) break; hk[k] = hk[m]; hv[k] = hv[m]; k = m; } hk[k] = key; hv[k] = v; } return val; };
+  const NB = [[1, 0, kmx], [-1, 0, kmx], [0, 1, kmy], [0, -1, kmy], [1, 1, kmd], [1, -1, kmd], [-1, 1, kmd], [-1, -1, kmd]];
+  for (const st of sts) {
+    let si = Math.floor((st.lon - W) / rlon), sj = Math.floor((st.lat - S) / res), seed = -1, bestD = 1e9;
+    for (let dj = -10; dj <= 10; dj++) for (let di = -10; di <= 10; di++) { // stations sit at the shore: start from the nearest water cell
+      const i = si + di, j = sj + dj; if (i < 0 || j < 0 || i >= nx || j >= ny || !water[j * nx + i]) continue;
+      const d = di * di + dj * dj; if (d < bestD) { bestD = d; seed = j * nx + i; }
+    }
+    if (seed < 0) continue;
+    const D = new Float64Array(nx * ny).fill(Infinity); D[seed] = 0; hn = 0; hpush(0, seed);
+    while (hn) {
+      const kk0 = hpop(), d = D[kk0]; if (d > CUR_RADIUS_KM) continue;
+      const i = kk0 % nx, j = (kk0 - i) / nx;
+      for (const [di, dj, w] of NB) { const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii >= nx || jj >= ny) continue; const kk = jj * nx + ii; if (!water[kk]) continue; const nd = d + w; if (nd < D[kk]) { D[kk] = nd; hpush(nd, kk); } }
+    }
+    const D16 = new Uint16Array(nx * ny); // stored in 10 m units; 65535 = not reachable
+    for (let k = 0; k < D.length; k++) D16[k] = Number.isFinite(D[k]) ? Math.min(65534, Math.round(D[k] * 100)) : 65535;
+    net.dist.set(st.id, D16);
+  }
+  WNET = net;
+}
+// distance through water (km) from a station to a point, smoothly interpolated; null when the net does not cover it
+function waterDist(st, lat, lon) {
+  if (!WNET) return null; const D = WNET.dist.get(st.s ? st.s.id : st.id); if (!D) return null;
+  const fx = (lon - WNET.W) / WNET.rlon - 0.5, fy = (lat - WNET.S) / WNET.res - 0.5, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+  let s = 0, w = 0;
+  for (const [a, b, wt] of [[i, j, (1 - tx) * (1 - ty)], [i + 1, j, tx * (1 - ty)], [i, j + 1, (1 - tx) * ty], [i + 1, j + 1, tx * ty]]) {
+    if (a < 0 || b < 0 || a >= WNET.nx || b >= WNET.ny) continue; const v = D[b * WNET.nx + a]; if (v < 65535) { s += (v / 100) * wt; w += wt; }
+  }
+  return w > 0.2 ? s / w : null;
+}
+let wnetKey = "";
+function ensureWaterNet() {
+  const z = map.getZoom(), b = map.getBounds();
+  const key = z < 10 ? "" : [Math.round(z), b.getSouth().toFixed(2), b.getWest().toFixed(2), b.getNorth().toFixed(2), b.getEast().toFixed(2), depthTiles.size, TIDES ? TIDES.currents.length : 0].join("|");
+  if (key !== wnetKey) { wnetKey = key; buildWaterNet(); }
 }
 function stationStates(t, bounds) {
   const out = [];
@@ -1750,12 +1831,16 @@ function currentAt(lat, lon, states, landChecked, quick) {
   }
   cand.sort((a, b) => a[0] - b[0]);
   let used = 0;
-  for (const [km, st] of cand) {
-    if (used >= 5) break;
-    if (!quick && km > 0.3 && !waterPath(lat, lon, st.lat, st.lon)) continue;
-    const g = (1 / (km * km + 0.25)) * (1 - (km / CUR_RADIUS_KM) ** 2);
+  for (const [km, st] of cand.slice(0, 16)) {
+    // distance through the water when the water network covers this spot (around islands, up rivers); otherwise a
+    // straight line where each km of land in the way counts like 6 km of water
+    const wd = quick ? null : waterDist(st, lat, lon);
+    const straight = km + (quick || km < 0.3 ? 0 : 6 * landCrossKm(lat, lon, st.lat, st.lon));
+    const de = wd != null && Number.isFinite(wd) ? Math.min(Math.max(km, wd), straight) : straight;
+    if (de >= CUR_RADIUS_KM) continue;
+    const g = (1 / (de * de + 0.25)) * (1 - (de / CUR_RADIUS_KM) ** 2) ** 2;
     su += st.u * g; sw += st.w * g; sg += Math.sign(st.v) * Math.abs(st.v) * g; sf += (st.s.df || 1) * g; wt += g; used++;
-    nearest = Math.min(nearest, km);
+    nearest = Math.min(nearest, de);
   }
   if (!used) return null;
   let u = su / wt, w = sw / wt, ratio = 1;
@@ -1778,11 +1863,10 @@ function tideAt(lat, lon, t) {
   for (const s of TIDES.tides) { const km = Math.hypot((s.lat - lat) * 111.32, (s.lon - lon) * 111.32 * cl); if (km <= TIDE_RADIUS_KM) cand.push([km, s]); }
   cand.sort((a, b) => a[0] - b[0]);
   let h = 0, h2 = 0, wt = 0, used = 0;
-  for (const [km, s] of cand) {
-    if (used >= 4) break;
-    if (km > 0.5 && !waterPath(lat, lon, s.lat, s.lon)) continue;
+  for (const [km, s] of cand.slice(0, 12)) {
+    const de = km + (km < 0.5 ? 0 : 6 * landCrossKm(lat, lon, s.lat, s.lon)); if (de >= TIDE_RADIUS_KM) continue;
     const a = evAt(s.ev, t), b = evAt(s.ev, t + 10); if (a == null || b == null) continue;
-    const g = 1 / (km * km + 0.5); h += a * g; h2 += b * g; wt += g; used++;
+    const g = (1 / (de * de + 0.5)) * (1 - (de / TIDE_RADIUS_KM) ** 2) ** 2; h += a * g; h2 += b * g; wt += g; used++;
   }
   return used ? { h: h / wt / 100, rising: h2 > h, n: used } : null;
 }
@@ -1921,6 +2005,7 @@ const CurrentLayer = L.Layer.extend({
     const b = map.getBounds(), padLat = padKm / 111.32, padLon = padKm / (111.32 * Math.cos(rad(c.lat)));
     const wide = L.latLngBounds([b.getSouth() - padLat, b.getWest() - padLon], [b.getNorth() + padLat, b.getEast() + padLon]);
     curStates = TIDES && TIDES.currents.length ? stationStates(t, wide) : [];
+    if (curStates.length) ensureWaterNet();
     const flood = css("--flood"), ebb = css("--ebb"), drift = css("--drift"), ink = css("--ink-2"), sur = css("--surface");
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     // Station screen positions, to keep estimates from crowding them
@@ -1939,14 +2024,23 @@ const CurrentLayer = L.Layer.extend({
     // 1) Flowing arrows on all water (every ~16 px): tidal estimate near NOAA stations plus wind drift everywhere.
     //    Longer, thicker and faster-moving where the water moves faster (deep channels, narrows).
     const step = size.x < 600 ? 14 : 16, quick = map.getZoom() < 9, near = zoomedOut ? 9 : 13;
-    const mpp = map.distance(map.containerPointToLatLng([0, size.y / 2]), map.containerPointToLatLng([100, size.y / 2])) / 100;
+    const mpp = map.distance(map.containerPointToLatLng([0, size.y / 2]), map.containerPointToLatLng([100, size.y / 2])) / 100, cells = new Map();
     for (let y = step / 2; y < size.y; y += step) for (let x = step / 2; x < size.x; x += step) {
       const jx = x + (((x * 7 + y * 13) % 5) - 2) * 0.6, jy = y + (((x * 11 + y * 3) % 5) - 2) * 0.6; // slight fixed jitter, no grid look
       if (stPx.some(({ p }) => Math.abs(p.x - jx) < near && Math.abs(p.y - jy) < near)) continue;
       const lp = onLandPx(jx, jy); if (lp === true) continue;
       const ll = map.containerPointToLatLng([jx, jy]); if (lp === null && isCoastLand(ll.lat, ll.lng)) continue;
       const e = flowAt(ll.lat, ll.lng, curStates, true, quick, windHere(jx, jy, ll.lat, ll.lng), jx, jy, mpp);
-      if (!e || e.sp < 0.05) continue;
+      if (!e) continue;
+      cells.set(Math.round(x / step) * 10000 + Math.round(y / step), { jx, jy, u: e.u, w: e.w, conf: e.conf });
+    }
+    // Smoothing: average each arrow with its water neighbours (Gaussian, ~1.5 arrows), so speed and direction fade
+    // gradually instead of jumping between neighbouring arrows (bottom depth varies a lot over short distances).
+    for (const [key, c0] of cells) {
+      const gx = Math.floor(key / 10000), gy = key - gx * 10000; let su = 0, sw = 0, wt = 0;
+      for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) { const n = cells.get((gx + a) * 10000 + gy + b); if (!n) continue; const g = Math.exp(-(a * a + b * b) / 2.2); su += n.u * g; sw += n.w * g; wt += g; }
+      const u = su / wt, w = sw / wt, spd = Math.hypot(u, w); if (spd < 0.05) continue;
+      const jx = c0.jx, jy = c0.jy, e = { sp: spd, dir: (deg(Math.atan2(u, w)) + 360) % 360, conf: c0.conf };
       const th = rad(e.dir), sp = e.sp;
       let dx = Math.sin(th), dy = -Math.cos(th);
       // water can't flow into the shore: if the arrow tip lands on the drawn shoreline, turn it to run along the shore
@@ -2004,10 +2098,11 @@ async function updateDepth() {
   const z = map.getZoom(); if (z < 8) return;
   const b = map.getBounds(), want = [];
   if (z >= 11) {
-    for (let a = Math.floor(b.getSouth() * 4); a <= Math.floor(b.getNorth() * 4); a++) for (let o = Math.floor(b.getWest() * 4); o <= Math.floor(b.getEast() * 4); o++)
+    const pl = 0.12, po = 0.16; // ~13 km margin: the water between the view and nearby current stations
+    for (let a = Math.floor((b.getSouth() - pl) * 4); a <= Math.floor((b.getNorth() + pl) * 4); a++) for (let o = Math.floor((b.getWest() - po) * 4); o <= Math.floor((b.getEast() + po) * 4); o++)
       if (DEPTH.fine.has(`${a}_${o}`)) want.push([`f_${a}_${o}`, (a + 1) / 4, o / 4, DEPTH.res]);
   }
-  if (want.length > 40) want.length = 0;
+  if (want.length > 64) want.length = 0;
   { // the coarser 2-degree blocks are always loaded too, so depth never stops at the edge of a fine tile
     const B = DEPTH.block, coarse = [];
     for (let a = Math.floor(b.getSouth() / B) * B; a <= b.getNorth(); a += B) for (let o = Math.floor(b.getWest() / B) * B; o <= b.getEast(); o += B)
