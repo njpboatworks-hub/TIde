@@ -140,6 +140,13 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .item.sel { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 .item .meta { color: var(--muted); font-size: 12.5px; }
 .item .tag { margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--axis); border-radius: 999px; padding: 2px 8px; }
+.rate { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 12px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#plan-pick .plan-chips button { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); cursor: pointer; }
+#plan-pick .plan-chips button:hover { border-color: var(--accent); }
+#plan-venues { display: contents; }
+.rate.great { background: #1baf7a; color: #fff; } .rate.ok { background: #e2d23a; color: #1f2a33; } .rate.tough { background: #e34948; color: #fff; } .rate.calm { background: #9ecee6; color: #1f2a33; }
+#plan-table tr.best td { background: color-mix(in srgb, #1baf7a 14%, transparent); }
 .btnrow { display: flex; flex-wrap: wrap; gap: 6px; }
 .race-ico { background: none; border: none; }
 .buoy { width: 26px; height: 26px; border-radius: 50%; background: #F27A48; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); font: 700 11px/22px var(--f-body); text-align: center; }
@@ -174,6 +181,10 @@ body.board #race-board-exit { display: block; }
 .legend.min { padding: 4px; }
 .legend.min .legend-body { display: none; }
 .legend.min .legend-toggle { position: static; }
+.legend .mini-cur { display: none; }
+.legend.min .mini-cur { display: grid; grid-template-columns: auto 90px; gap: 2px 6px; align-items: center; font: 600 10.5px/1.2 var(--f-body); color: var(--ink-2); margin-top: 4px; }
+.legend.min .mini-cur i { height: 8px; border-radius: 4px; display: block; }
+.legend.min .mini-cur span:last-child { grid-column: 2; font-weight: 500; font-size: 9.5px; }
 .legend .bar { height: 8px; border-radius: 4px; margin: 4px 0 2px; }
 .legend .ends { display: flex; justify-content: space-between; gap: 8px; color: var(--ink-2); }
 .legend .fine { color: var(--muted); margin-top: 4px; }
@@ -199,6 +210,11 @@ body.board #race-board-exit { display: block; }
 .sr-k { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .sr-empty { padding: 8px 10px; color: var(--muted); font-size: 13px; }
 main.wide { grid-template-columns: minmax(0, 1fr); }
+main.panel-min { grid-template-columns: minmax(0, 1fr); }
+main.panel-min > .panel { display: none; }
+#panel-toggle { position: absolute; top: 96px; left: 10px; z-index: 650; border-left: 1px solid var(--border) !important; border-radius: 6px !important; width: 34px !important; height: 34px !important; width: 22px; height: 56px; border: 1px solid var(--border); border-left: 0;
+  border-radius: 0 10px 10px 0; background: var(--surface); color: var(--ink-2); font: 700 14px/1 var(--f-body); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2); padding: 0; }
+main.wide #panel-toggle { display: none; }
 main.wide .mapwrap { display: none; }
 main.wide .panel { border-right: 0; }
 #tab-kits { max-width: 1100px; margin: 0 auto; }
@@ -250,6 +266,8 @@ main.wide .panel { border-right: 0; }
   main { grid-template-columns: minmax(0, 1fr); height: auto; }
   .panel { border-right: 0; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   .mapwrap { height: 55vh; order: -1; }
+  main.panel-min { grid-template-columns: minmax(0, 1fr); }
+  main.panel-min .mapwrap { height: calc(100vh - 110px); }
   .tabs { margin-left: 0; }
   .row { grid-template-columns: 1fr; }
   .legend { max-width: 210px; font-size: 11.5px; padding: 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 34%; overflow-y: auto; overscroll-behavior: contain; }
@@ -272,7 +290,7 @@ main.wide .panel { border-right: 0; }
     <a href="#coast" data-tab="coast" class="active">Coast Map</a>
     <a href="#race" data-tab="race">Race Planning</a>
     <a href="#debrief" data-tab="debrief">Coach Debrief</a>
-    <a href="#accuracy" data-tab="accuracy">Model Accuracy</a>
+    <a href="#plan" data-tab="plan">Day Planner</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
   </nav>
 </header>
@@ -377,6 +395,27 @@ main.wide .panel { border-right: 0; }
       </div>
     </div>
 
+    <!-- DAY PLANNER: hour-by-hour wind, tide and current for the map centre -->
+    <div class="tab" id="tab-plan" hidden>
+      <h1>Day planner</h1>
+      <p class="lede">Hour by hour for your spot: forecast wind, tide and tidal current, with the best hours to be on the water highlighted.</p>
+      <div id="dplan-out" hidden>
+      <div class="form">
+        <label for="plan-day">Day<select id="plan-day"></select></label>
+        <p class="hint" id="plan-where" style="margin:0"></p>
+      </div>
+      <div class="chart"><canvas id="plan-chart"></canvas></div>
+      <div id="plan-best" class="note info" style="margin-top:10px"></div>
+      <div class="table-wrap"><table id="plan-table"><thead><tr><th>Time</th><th>Wind</th><th>Tide</th><th>Current</th><th>Sailing</th></tr></thead><tbody></tbody></table></div>
+      </div>
+      <div class="form" id="plan-pick">
+        <p style="margin:0 0 8px"><b id="plan-pick-title">Pick your spot.</b> Tap the water on the map, search for a harbor in the box at the top, use your location, or choose a sailing area:</p>
+        <div class="plan-chips"><button type="button" id="plan-geo" class="btn-ghost">Use my location</button><span id="plan-venues"></span></div>
+        <p class="hint" id="plan-msg" style="margin:6px 0 0"></p>
+      </div>
+      <p class="hint">"Great" = wind 6 to 18 kt with gentle current (0.7 kt or less). "Choppy" = current of 0.8 kt or more running against the wind, which stands up short, steep waves. Wind is the National Weather Service (or MET Norway) forecast; tide and current are NOAA predictions or estimates between stations (see the Coast Map key). Not for navigation.</p>
+    </div>
+
     <!-- RACE PLANNING (sits above the Coast Map controls, which set the conditions) -->
     <div class="tab" id="tab-race" hidden>
       <h1>Race planning</h1>
@@ -475,7 +514,6 @@ main.wide .panel { border-right: 0; }
           <div style="display:grid;align-items:end"><button type="button" id="live-now">Now</button></div>
         </div>
         <label for="live-hour">Time: <b id="live-hour-label"></b><input type="range" id="live-hour" min="0" max="23" value="12"></label>
-        <label class="check" for="show-currents" id="show-currents-row"><input type="checkbox" id="show-currents" checked> Show tides and currents on the map</label>
         <p class="hint" id="live-source" style="margin:0"></p>
       </div>
       <div id="tide-panel" hidden>
@@ -550,6 +588,7 @@ main.wide .panel { border-right: 0; }
   </section>
 
   <section class="mapwrap">
+    <button type="button" id="panel-toggle" aria-label="Hide the side panel" title="Hide the side panel">&laquo;</button>
     <button type="button" id="race-board-exit" class="primary" onclick="toggleBoard()">Exit big screen</button>
     <div id="map" role="region" aria-label="Map of Newport and Narragansett Bay"></div>
     <div class="legend" id="map-legend" hidden></div>
@@ -838,7 +877,7 @@ let legendMin = (() => { try { return localStorage.getItem("legendMin") === "1";
 function setLegend(html) {
   const el = $("#map-legend"); el.hidden = !html; if (!html) { el.innerHTML = ""; return; }
   el.classList.toggle("min", legendMin);
-  el.innerHTML = `<button type="button" class="legend-toggle" aria-expanded="${!legendMin}" title="${legendMin ? "Show the map key" : "Hide the map key"}">${legendMin ? "Map key ▸" : "–"}</button><div class="legend-body">${html}</div>`;
+  el.innerHTML = `<button type="button" class="legend-toggle" aria-expanded="${!legendMin}" title="${legendMin ? "Show the map key" : "Hide the map key"}">${legendMin ? "Map key ▸" : "–"}</button>${legendMin && tidesOn && activeTab === "coast" ? `<div class="mini-cur"><span>Current</span><i style="background:${speedGradient()}"></i><span>still · 1 · 2 · 3+ kt</span></div>` : ""}<div class="legend-body">${html}</div>`;
   el.querySelector(".legend-toggle").addEventListener("click", () => {
     legendMin = !legendMin; try { localStorage.setItem("legendMin", legendMin ? "1" : "0"); } catch (_) {}
     setLegend(html);
@@ -1144,9 +1183,27 @@ function computeCoastHeat() {
     OK[k] = 1; DIR[k] = (baseDir - FIELD.backDeg * L0 + 360) % 360; SPD[k] = Math.hypot(b[0], b[1]) * (1 - FIELD.slowFrac * L0);
     if (!Number.isNaN(b[2])) ST[k] = b[2];
     COV[k] = Math.max(0, Math.min(1, b[3]));
-    let ref = fixedRef;
-    if (ref == null) { const r = lattice(refCache, rsp, ll.lat, ll.lng, refNode); ref = r ? (deg(Math.atan2(r[0], r[1])) + 360) % 360 : DIR[k]; }
-    LIFT[k] = signedLift(DIR[k], ref) * COV[k] * COV[k]; // far offshore the comparison means little: fade toward neutral
+    if (fixedRef != null) LIFT[k] = signedLift(DIR[k], fixedRef) * COV[k] * COV[k];
+  }
+  if (fixedRef == null) {
+    // Reference = the average of the same land-affected wind within ~15 km (Gaussian). Colour then shows how each spot
+    // differs from the water around it (the lee of an island, a sheltered cove, a point), whatever the wind direction.
+    const sig = 15000 / (mPerPx * HEAT_STEP);
+    if (sig >= 2) {
+      const U = new Float32Array(n), V = new Float32Array(n), Wt = new Float32Array(n);
+      for (let k = 0; k < n; k++) if (OK[k]) { const th = rad(DIR[k]); U[k] = Math.sin(th); V[k] = Math.cos(th); Wt[k] = 1; }
+      const r = Math.min(Math.ceil(2.5 * sig), Math.max(gx, gy)), ker = Array.from({ length: 2 * r + 1 }, (_, t) => Math.exp(-((t - r) ** 2) / (2 * sig * sig)));
+      const blur = (src) => { const tmp = new Float32Array(n), out = new Float32Array(n);
+        for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) { let s1 = 0; for (let t = Math.max(-r, -i); t <= Math.min(r, gx - 1 - i); t++) s1 += src[j * gx + i + t] * ker[t + r]; tmp[j * gx + i] = s1; }
+        for (let i = 0; i < gx; i++) for (let j = 0; j < gy; j++) { let s1 = 0; for (let t = Math.max(-r, -j); t <= Math.min(r, gy - 1 - j); t++) s1 += tmp[(j + t) * gx + i] * ker[t + r]; out[j * gx + i] = s1; }
+        return out; };
+      const bu = blur(U), bv = blur(V);
+      for (let k = 0; k < n; k++) if (OK[k]) LIFT[k] = signedLift(DIR[k], (deg(Math.atan2(bu[k], bv[k])) + 360) % 360) * COV[k] * COV[k];
+    } else { // zoomed far out: the field's own 15 km average from the geographic lattice
+      for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) { const k = j * gx + i; if (!OK[k]) continue;
+        const ll = map.containerPointToLatLng([(i + 0.5) * HEAT_STEP, (j + 0.5) * HEAT_STEP]), rr = lattice(refCache, rsp, ll.lat, ll.lng, refNode);
+        LIFT[k] = signedLift(DIR[k], rr ? (deg(Math.atan2(rr[0], rr[1])) + 360) % 360 : DIR[k]) * COV[k] * COV[k]; }
+    }
   }
   heat = { gx, gy, LIFT, DIR, SPD, ST, OK, COV };
 }
@@ -1435,6 +1492,7 @@ async function setRegion(id, keepView) {
   buildVenues();
   $("#tide-panel").hidden = true;
   if (activeTab === "coast") { await enterCoast(); if (coastMode === "live") { try { await loadLive(); } catch (_) {} refreshLive(); } }
+  if (planMode) renderDayPlan();
 }
 const SECT16 = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const compass = (d) => SECT16[Math.round((((d % 360) + 360) % 360) / 22.5) % 16];
@@ -1628,7 +1686,11 @@ async function enterCoast() {
   currentIsLand = isCoastLand; currentLandFrac = coastLandFrac;
   if (layers.land) map.removeLayer(layers.land);
   layers.coastLand.addTo(map); layers.coastStations.addTo(map);
-  if (!coastFitted) { map.fitBounds(REGION.bounds); coastFitted = true; }
+  if (!coastFitted) {
+    const v = store("lastView"); coastFitted = true;
+    if (v && REGIONS[v.r] && v.r !== REGION.id) { await setRegion(v.r, true); map.setView([v.lat, v.lng], v.z); return; }
+    if (v && v.r === REGION.id) map.setView([v.lat, v.lng], v.z); else map.fitBounds(REGION.bounds);
+  }
   loadLive().then(() => { if (currentLayer) currentLayer.redraw(); if (activeTab === "coast") setLegend(arrowLegend()); }).catch(() => {});
   refreshArrows(); renderCoastNear(); updateTiles(); updateDepth();
 }
@@ -1876,14 +1938,15 @@ function buildWaterNet() {
     for (let j = 0; j < my; j++) for (let i = 0; i < mx; i++) { const c = j * mx + i; if (!WC[c]) continue;
       if (i < mx - 1 && WC[c + 1]) CE[c] = (2 * KC[c] * KC[c + 1]) / (KC[c] + KC[c + 1] + 1e-12) / (dxm * dxm);
       if (j < my - 1 && WC[c + mx]) CN[c] = (2 * KC[c] * KC[c + mx]) / (KC[c] + KC[c + mx] + 1e-12) / (dym * dym); }
-    const act = new Uint8Array(MC), D = new Float64Array(MC), phi = new Float64Array(MC);
+    const act = new Uint8Array(MC), D = new Float64Array(MC);
     for (let c = 0; c < MC; c++) { if (!WC[c] || FC[c]) continue; D[c] = CE[c] + (c % mx ? CE[c - 1] : 0) + CN[c] + (c >= mx ? CN[c - mx] : 0); if (D[c] > 0) act[c] = 1; }
     const Ap = (x, y) => { for (let c = 0; c < MC; c++) { if (!act[c]) { y[c] = 0; continue; } let v = D[c] * x[c];
       if (CE[c] && act[c + 1]) v -= CE[c] * x[c + 1]; if (c % mx && CE[c - 1] && act[c - 1]) v -= CE[c - 1] * x[c - 1];
       if (CN[c] && act[c + mx]) v -= CN[c] * x[c + mx]; if (c >= mx && CN[c - mx] && act[c - mx]) v -= CN[c - mx] * x[c - mx]; y[c] = v; } };
-    { // preconditioned conjugate gradients for A phi = 1 (unit rise rate everywhere; sea fixed at 0)
-      const r = new Float64Array(MC), z = new Float64Array(MC), pv = new Float64Array(MC), q = new Float64Array(MC); let rz = 0, r0 = 0;
-      for (let c = 0; c < MC; c++) if (act[c]) { r[c] = 1; z[c] = 1 / D[c]; pv[c] = z[c]; rz += z[c]; r0 += 1; }
+    // preconditioned conjugate gradients for A phi = b (b = local rise rate per unit sea rise; sea fixed at 0)
+    const solveFill = (b) => {
+      const phi = new Float64Array(MC), r = new Float64Array(MC), z = new Float64Array(MC), pv = new Float64Array(MC), q = new Float64Array(MC); let rz = 0, r0 = 0;
+      for (let c = 0; c < MC; c++) if (act[c]) { r[c] = b[c]; z[c] = r[c] / D[c]; pv[c] = z[c]; rz += r[c] * z[c]; r0 += r[c] * r[c]; }
       r0 = Math.sqrt(r0);
       for (let it = 0; it < 2500 && rz > 0; it++) {
         Ap(pv, q); let pq = 0; for (let c = 0; c < MC; c++) if (act[c]) pq += pv[c] * q[c];
@@ -1893,7 +1956,38 @@ function buildWaterNet() {
         let rz2 = 0; for (let c = 0; c < MC; c++) if (act[c]) { z[c] = r[c] / D[c]; rz2 += r[c] * z[c]; }
         const be = rz2 / rz; rz = rz2; for (let c = 0; c < MC; c++) if (act[c]) pv[c] = z[c] + be * pv[c];
       }
+      return phi;
+    };
+    const ones = new Float64Array(MC).fill(1);
+    let phi = solveFill(ones);
+    // Tidal choking: water far behind narrow, shallow passages cannot keep up with the sea, so its tide is smaller
+    // (e.g. Florida's Indian River lagoon has ~0.3 ft of tide behind a 5 ft ocean tide). Amplitude A = exp(-phi / phi0),
+    // with phi0 fitted to the NOAA tide stations in the area (inner and outer ranges). Then the filling flow is solved
+    // again with each place rising by its own, reduced tide.
+    const uf = tideUnits() === "m" ? 1 : 0.3048, tst = [];
+    for (const s of TIDES.tides) {
+      if (s.lat < S || s.lon < W || s.lat > S + ny * res || s.lon > W + nx * rlon) continue;
+      let hmx = -1e9, hmn = 1e9; for (const e of s.ev) { hmx = Math.max(hmx, e[1]); hmn = Math.min(hmn, e[1]); } if (!(hmx > hmn)) continue;
+      // nearest water on the detailed grid (keeps a beach pier on the ocean side, a causeway gauge in the lagoon)
+      const fi = Math.floor((s.lon - W) / rlon), fj = Math.floor((s.lat - S) / res); let ph = null, bd = 1e9;
+      for (let b2 = -6; b2 <= 6; b2++) for (let a = -6; a <= 6; a++) { const i2 = fi + a, j2 = fj + b2; if (i2 < 0 || j2 < 0 || i2 >= nx || j2 >= ny || !conn[j2 * nx + i2]) continue; const d = a * a + b2 * b2; if (d < bd) { bd = d; ph = phi[Math.floor(j2 / f) * mx + Math.floor(i2 / f)]; } }
+      if (ph != null) tst.push({ s, R: ((hmx - hmn) / 100) * uf, ph });
     }
+    let phi0 = Infinity, ref = null;
+    if (tst.length) {
+      const sorted = tst.slice().sort((a, b) => a.ph - b.ph); ref = sorted.slice(0, Math.max(1, Math.ceil(sorted.length / 3))).reduce((a, b) => (b.R > a.R ? b : a));
+      const R0 = ref.R, mxph = Math.max(...tst.map((x) => x.ph));
+      if (tst.some((x) => x.R / R0 < 0.6) && mxph > 0) {
+        let bestE = Infinity;
+        for (let e = -4; e <= 2; e += 0.05) { const p0 = mxph * Math.pow(10, e); let err = 0; for (const x of tst) err += (Math.log(x.R / R0 + 0.02) - Math.log(Math.exp(-x.ph / p0) + 0.02)) ** 2; if (err < bestE) { bestE = err; phi0 = p0; } }
+      }
+    }
+    const AMP = new Float64Array(MC).fill(1);
+    if (Number.isFinite(phi0)) {
+      for (let c = 0; c < MC; c++) AMP[c] = Math.max(0.02, Math.exp(-Math.max(0, phi[c]) / phi0)); // fitted on this solve
+      phi = solveFill(AMP);
+    }
+    net.tst = tst; net.ampC = AMP; net.f = f; net.mx = mx; net.refTide = ref ? ref.s : null; net.phi0 = phi0;
     // gradient of phi on the coarse grid (one-sided next to land), smoothed over water
     const GX = new Float64Array(MC), GY = new Float64Array(MC);
     for (let j = 0; j < my; j++) for (let i = 0; i < mx; i++) { const c = j * mx + i; if (!WC[c]) continue;
@@ -2028,7 +2122,9 @@ function currentAt(lat, lon, states, landChecked, quick) {
     const ga = Math.exp(-((d / 0.8) ** 2)); // right next to a station, follow that station's own prediction
     if (ga > 0.01) { an += st.v * Math.max(0.5, Math.min(2, ns.P / Ps)) * ga; aw += ga; }
   }
-  const rate = tideRateAt(lat, lon, t);
+  // the sea's rise rate (the reference tide station nearest the sea); choking inside basins is already in the shape P
+  const rs = WNET.refTide, uf = tideUnits() === "m" ? 1 : 0.3048;
+  const rate = rs ? (() => { const h0 = evAt(rs.ev, t - 10), h1 = evAt(rs.ev, t + 10); return h0 == null || h1 == null ? null : (((h1 - h0) / 100) * uf) / 1200; })() : tideRateAt(lat, lon, t);
   if (rate != null) { const g0 = 1 / (12 * 12 + 1); num += rate * 1.94384 * g0; den += g0; vmax = Math.max(vmax, 0.5); }
   if (!den) return open;
   let v = Math.max(-1.5 * vmax, Math.min(1.5 * vmax, (num / den) * ns.P)); // knots, + flood (inland), - ebb (seaward)
@@ -2155,7 +2251,14 @@ function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
   if (dr) { const [a, b] = shoreAdjust(lat, lon, dr.u, dr.w, true); dr = { u: a, w: b, sp: Math.hypot(a, b) }; }
   if (!tid) return null;
   const fade = Math.max(0, Math.min(1, (1 - tid.nearest / CUR_RADIUS_KM) / 0.35));
-  const tu = tid.u * fade, tw = tid.w * fade, tsp = Math.hypot(tu, tw), dsp = dr ? dr.sp : 0;
+  let tu = tid.u * fade, tw = tid.w * fade;
+  // in a narrow channel the water can only move along it: turn the flow onto the channel line (flood/ebb kept)
+  const ch = channelAt(lat, lon, cx, cy, mpp);
+  if (ch && ch.conf > 0.35) { // only when the flow already runs roughly along the channel (no flipping at junctions)
+    const m = Math.hypot(tu, tw), cosA = m > 0 ? Math.abs(tu * Math.sin(rad(ch.ax)) + tw * Math.cos(rad(ch.ax))) / m : 0;
+    if (cosA > 0.5) [tu, tw] = alongChannel(tu, tw, { ax: ch.ax, conf: Math.min(1, 0.15 + (ch.conf - 0.35) * 2) * Math.min(1, (cosA - 0.5) / 0.3) }, true);
+  }
+  const tsp = Math.hypot(tu, tw), dsp = dr ? dr.sp : 0;
   const u = tu, w = tw, sp = tsp;
   return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, tidal: tid, tsp, drift: dr, dsp, depth: dp,
            kind: tsp < 0.05 ? "slack" : tid.flood ? "flood" : "ebb", conf: Math.max(tid.conf * fade, 0.35) };
@@ -2190,6 +2293,7 @@ const CurrentLayer = L.Layer.extend({
     const ctx = this._c.getContext("2d"), size = map.getSize(), still = reduceMotion.matches;
     ctx.clearRect(0, 0, size.x, size.y);
     const fl = this._flow || [];
+    if (this._dots && this._dots.length) { ctx.globalAlpha = 0.55; ctx.fillStyle = speedColor(0); ctx.beginPath(); for (const [x, y] of this._dots) { ctx.moveTo(x + 1.6, y); ctx.arc(x, y, 1.6, 0, 7); } ctx.fill(); ctx.globalAlpha = 1; }
     if (fl.length) {
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       const groups = new Map();
@@ -2206,19 +2310,19 @@ const CurrentLayer = L.Layer.extend({
       for (const g of groups.values()) { ctx.globalAlpha = g.alpha; ctx.strokeStyle = g.col; ctx.fillStyle = g.col; ctx.lineWidth = g.wd; ctx.stroke(g.shafts); ctx.fill(g.heads); }
       ctx.globalAlpha = 1;
     }
-    if (this._st) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(this._st, 0, 0); ctx.restore(); }
+    if (this._st && this._st.width && this._st.height) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(this._st, 0, 0); ctx.restore(); }
   },
   redraw() {
     if (!this._c) return;
     sizeCanvas(this._c);
-    const size = map.getSize(), dpr = window.devicePixelRatio || 1; currentPts = []; curStates = []; this._flow = [];
+    const size = map.getSize(), dpr = window.devicePixelRatio || 1; currentPts = []; curStates = []; this._flow = []; this._dots = [];
     const st = this._st || (this._st = document.createElement("canvas"));
     st.width = size.x * dpr; st.height = size.y * dpr;
     const ctx = st.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // stations, labels and tide markers (redrawn only on change)
     const done = () => { this._paint(performance.now()); startCurrentAnim(); };
     if (!COAST || activeTab !== "coast") return done();
     const t = TIDES ? tideTimeMin() : null;
-    if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) { if (tidesOn && TIDES) drawTideMarkers(ctx, t, size); return done(); }
+    if (!tidesOn) return done();
     const padKm = CUR_RADIUS_KM + 2, c = map.getCenter();
     const b = map.getBounds(), padLat = padKm / 111.32, padLon = padKm / (111.32 * Math.cos(rad(c.lat)));
     const wide = L.latLngBounds([b.getSouth() - padLat, b.getWest() - padLon], [b.getNorth() + padLat, b.getEast() + padLon]);
@@ -2257,7 +2361,8 @@ const CurrentLayer = L.Layer.extend({
     for (const [key, c0] of cells) {
       const gx = Math.floor(key / 10000), gy = key - gx * 10000; let su = 0, sw = 0, wt = 0;
       for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const n = cells.get((gx + a) * 10000 + gy + b); if (!n) continue; const g = Math.exp(-(a * a + b * b) / 0.9); su += n.u * g; sw += n.w * g; wt += g; }
-      const u = su / wt, w = sw / wt, spd = Math.hypot(u, w); if (spd < 0.02) continue; // slow water: small faint arrows
+      const u = su / wt, w = sw / wt, spd = Math.hypot(u, w);
+      if (spd < 0.03) { this._dots.push([c0.jx, c0.jy]); continue; } // slack water: a small dot, so every bit of water shows something
       const jx = c0.jx, jy = c0.jy, e = { sp: spd, dir: (deg(Math.atan2(u, w)) + 360) % 360, conf: c0.conf };
       const th = rad(e.dir), sp = e.sp;
       let dx = Math.sin(th), dy = -Math.cos(th);
@@ -2405,7 +2510,7 @@ function tideLegendKey() {
      <div class="fine">${TIDES.timebase === "utc" ? "Calculated from tide-gauge records (estimates, not official predictions). * = tiny tide (Mediterranean): wind and air pressure move the water more than the tide. No tidal-current data for this region." : "NOAA tide predictions; labels are thinned when stations crowd together."}</div>`;
 }
 function currentLegendKey() {
-  if (!tidesOn || (coastMode === "live" && !$("#show-currents").checked)) return "";
+  if (!tidesOn) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
      <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>1 kt</span><span>2 kt</span><span>3+ kt</span></div>
      <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. The moving arrows are the tidal current between them: flood runs in toward land and up rivers, ebb runs out toward the sea. In bays and rivers the speed follows the channel: the water that fills or drains everything behind a spot must pass through it, so it runs faster through narrows and deep channels and slows over shallows and toward the head of a cove${DEPTH ? " (depths from NOAA depth models)" : ""}. Strength and timing come from the NOAA current stations, or where there is none nearby, from how fast the tide is rising or falling at the nearest tide stations, so spring and neap tides are included. Colour and length show speed. Wind drift is not drawn; tap the water to see it. Estimates, not for navigation.</div>`;
@@ -2474,7 +2579,7 @@ function initLive() {
   currentLayer = new CurrentLayer().addTo(map);
   $("#live-day").addEventListener("change", () => { liveTz = regionTz(); liveIsNow = false; refreshLive(); });
   $("#live-hour").addEventListener("input", () => { liveTz = regionTz(); liveIsNow = false; refreshLive(); });
-  $("#show-currents").addEventListener("change", refreshLive);
+
   $("#live-now").addEventListener("click", () => { const n = nyParts(Date.now()); const v = `${n.y}-${n.m}-${n.d}`; if ([...$("#live-day").options].some((o) => o.value === v)) { $("#live-day").value = v; $("#live-hour").value = n.h; } liveTz = regionTz(); liveIsNow = true; refreshLive(); });
   map.on("moveend", () => {
     if (activeTab === "coast" && !regionSwitching) {
@@ -2555,6 +2660,7 @@ function goToPlace(p) {
   $("#search-results").hidden = true; $("#place-search").value = p.k === "town" ? `${p.n}, ${p.d}` : p.n; $("#place-search").blur();
   const go = () => {
     map.setView([p.lat, p.lon], p.k === "town" ? 12 : 13);
+    if (planMode) { setPlanSpot(p.lat, p.lon, p.n, false); return; }
     if (searchPin) map.removeLayer(searchPin);
     searchPin = L.circleMarker([p.lat, p.lon], { radius: 7, color: css("--surface"), weight: 2, fillColor: css("--ink"), fillOpacity: 1 })
       .bindTooltip(esc(p.n), { permanent: true, direction: "right", offset: [8, 0] }).addTo(map);
@@ -2719,6 +2825,18 @@ function showProbe(cp, ll) {
   if (x + w > size.x - 8) x = cp.x - w - 16;
   if (y + h > size.y - 8) y = Math.max(8, cp.y - h - 16);
   el.style.left = Math.max(8, x) + "px"; el.style.top = y + "px";
+}
+function initPanelToggle() {
+  const b = $("#panel-toggle"), m = document.querySelector("main");
+  const set = (min) => {
+    m.classList.toggle("panel-min", min); b.textContent = min ? "\u00BB" : "\u00AB";
+    b.title = b.ariaLabel = min ? "Show the side panel" : "Hide the side panel";
+    try { localStorage.setItem("panelMin", min ? "1" : "0"); } catch (_) {}
+    setTimeout(() => map.invalidateSize({ animate: false }), 30);
+  };
+  b.addEventListener("click", () => set(!m.classList.contains("panel-min")));
+  let start = false; try { start = localStorage.getItem("panelMin") === "1"; } catch (_) {}
+  if (start) set(true);
 }
 function initTideToggle() {
   const b = $("#tide-toggle");
@@ -3149,6 +3267,9 @@ function initRace() {
   $("#race-board").addEventListener("click", toggleBoard);
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("board")) toggleBoard(); });
   map.on("zoomend", () => { if (raceMode && RACE.marks) drawCourse(); }); // leg offsets are in screen pixels
+  map.on("moveend", () => store("lastView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom(), r: REGION.id }));
+  map.on("click", (e) => { if (planMode && !raceMode) setPlanSpot(e.latlng.lat, e.latlng.lng, null, false); });
+  $("#plan-geo").addEventListener("click", planUseLocation);
   map.on("click", (e) => { if (raceMode && racePlacing) { racePlacing = false; $("#race-place").classList.remove("active"); $("#race-place").textContent = "Tap to place the start"; placeCourse(e.latlng.lat, e.latlng.lng); } });
   initRaceChat();
 }
@@ -3211,6 +3332,107 @@ function initRaceChat() {
   document.querySelectorAll("#chat-chips button").forEach((b) => b.addEventListener("click", () => askChat(b.textContent)));
 }
 
+
+/* =================== Day planner =================== */
+let planMode = false, planSpot = store("planSpot"), planPin = null;
+const regionAt = (lat, lon) => Object.values(REGIONS).find((r) => r.has(lat, lon)) || null;
+function planNearestName(lat, lon) { // nearest named place within ~6 km, for the label
+  if (!PLACES) return null; let best = null, bd = 6; const cl = Math.cos(rad(lat));
+  for (const p of PLACES) { const km = Math.hypot((p.lat - lat) * 111.32, (p.lon - lon) * 111.32 * cl); if (km < bd) { bd = km; best = p; } }
+  return best ? best.n : null;
+}
+async function setPlanSpot(lat, lon, name, move) {
+  const r = regionAt(lat, lon);
+  if (!r) { $("#plan-msg").textContent = "That spot is outside the areas this guide covers (US coasts, Great Lakes, Hawaii, Spain and Portugal)."; return; }
+  if (r.id !== REGION.id) await setRegion(r.id, true);
+  await loadPlaces(); try { await loadCoast(); } catch (_) {}
+  if (name) { const w = waterNear(lat, lon); if (w[0] !== lat || w[1] !== lon) { [lat, lon] = w; if (name === "Your location") name = "Water near you"; } } // named places go to the nearest water
+  planSpot = { lat, lon, name: name || planNearestName(lat, lon) }; store("planSpot", planSpot);
+  if (move) map.setView([lat, lon], Math.max(map.getZoom(), 12));
+  renderDayPlan();
+}
+function planUseLocation() {
+  const msg = $("#plan-msg");
+  if (!navigator.geolocation) { msg.textContent = "This browser can't share your location. Tap the map or search instead."; return; }
+  msg.textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition((pos) => { msg.textContent = ""; setPlanSpot(pos.coords.latitude, pos.coords.longitude, "Your location", true); },
+    () => { msg.textContent = "Location wasn't shared. Tap the water on the map or search for a harbor instead."; }, { timeout: 10000, maximumAge: 600000 });
+}
+function drawPlanPin() {
+  if (planPin) { map.removeLayer(planPin); planPin = null; }
+  if (!planMode || !planSpot) return;
+  planPin = L.circleMarker([planSpot.lat, planSpot.lon], { radius: 8, color: "#fff", weight: 3, fillColor: "#e8562a", fillOpacity: 1, interactive: false })
+    .bindTooltip(esc(planSpot.name || "Your spot"), { permanent: true, direction: "right", offset: [10, 0] }).addTo(map);
+}
+function waterNear(lat, lon) { // venue and town points can sit on land: step out to the nearest water within ~4 km
+  if (!COAST || !isCoastLand(lat, lon)) return [lat, lon];
+  const cl = Math.cos(rad(lat));
+  for (let r = 0.25; r <= 4; r += 0.25) for (let a = 0; a < 360; a += 15) {
+    const la = lat + (r * Math.cos(rad(a))) / 111.32, lo = lon + (r * Math.sin(rad(a))) / (111.32 * cl);
+    if (!isCoastLand(la, lo)) return [la, lo];
+  }
+  return [lat, lon];
+}
+function renderPlanPicker() {
+  $("#plan-venues").innerHTML = REGION.venues.map((v, i) => `<button type="button" data-i="${i}">${esc(v[0])}</button>`).join("");
+  document.querySelectorAll("#plan-venues button").forEach((el) => el.addEventListener("click", () => { const v = REGION.venues[+el.dataset.i]; setPlanSpot(v[1], v[2], v[0], true); }));
+}
+function nearestFc(lat, lon, idx) { // forecast wind at a point: inverse-distance blend of the 4 nearest forecast series
+  if (!LIVE || idx < 0 || idx >= LIVE.fc.hours) return null;
+  const cl = Math.cos(rad(lat)), near = [];
+  for (const p of LIVE.fc.points) { if (p.d[idx] == null || p.s[idx] == null) continue; const d2 = ((p.lat - lat) * 111.32) ** 2 + ((p.lon - lon) * 111.32 * cl) ** 2; near.push([d2, p]); }
+  near.sort((a, b) => a[0] - b[0]); let u = 0, v = 0, sp = 0, w = 0;
+  for (const [d2, p] of near.slice(0, 4)) { const g = 1 / (d2 + 1), th = rad(p.d[idx]); u += Math.sin(th) * g; v += Math.cos(th) * g; sp += p.s[idx] * g; w += g; }
+  return w ? { dir: (deg(Math.atan2(u, v)) + 360) % 360, spd: sp / w } : null;
+}
+function naiveMinFor(y, m, d, h) { return TIDES.timebase === "utc" ? (nyToUtc(y, m, d, h) - TIDES.t0) / 60000 : (Date.UTC(y, m - 1, d, h) - TIDES.t0) / 60000; }
+async function renderDayPlan() {
+  if (!planMode || activeTab !== "coast") return;
+  renderPlanPicker();
+  if (planSpot && !regionAt(planSpot.lat, planSpot.lon)) planSpot = null;
+  if (planSpot && regionAt(planSpot.lat, planSpot.lon).id !== REGION.id) planSpot = null; // switched region: pick again there
+  $("#dplan-out").hidden = !planSpot; $("#plan-pick-title").textContent = planSpot ? "Plan somewhere else?" : "Pick your spot.";
+  drawPlanPin();
+  if (!planSpot) return;
+  try { await loadLive(); } catch (_) { return; }
+  const sel = $("#plan-day");
+  if (!sel.options.length) { sel.innerHTML = $("#live-day").innerHTML; sel.addEventListener("change", renderDayPlan); }
+  const c = { lat: planSpot.lat, lng: planSpot.lon }, [y, m, d] = sel.value.split("-").map(Number), u = tideUnits(), rows = [], data = { wind: [], tide: [], cur: [] }, labels = [];
+  if (TIDES && TIDES.tides.length) ensureWaterNet();
+  const nearTide = (t) => { const a = tideAt(c.lat, c.lng, t); if (a || !TIDES.tides.length) return a; // nearest gauge up to ~80 km
+    let best = null, bd = 80; const cl = Math.cos(rad(c.lat)); for (const s2 of TIDES.tides) { const km = Math.hypot((s2.lat - c.lat) * 111.32, (s2.lon - c.lng) * 111.32 * cl); if (km < bd) { bd = km; best = s2; } }
+    if (!best) return null; const h0 = evAt(best.ev, t), h1 = evAt(best.ev, t + 10); return h0 == null || h1 == null ? null : { h: h0 / 100, rising: h1 > h0 }; };
+  for (let h = 5; h <= 21; h++) {
+    const idx = Math.round((nyToUtc(y, m, d, h) - LIVE.fcStart) / 3600e3), w = nearestFc(c.lat, c.lng, idx);
+    const t = TIDES ? naiveMinFor(y, m, d, h) : null, tide = TIDES ? nearTide(t) : null;
+    let cur = null;
+    if (TIDES) { const pad = (CUR_RADIUS_KM + 2) / 111.32, st = stationStates(t, L.latLngBounds([c.lat - pad, c.lng - pad * 1.4], [c.lat + pad, c.lng + pad * 1.4])); cur = currentAt(c.lat, c.lng, st, false, false); }
+    const csp = cur ? cur.sp : 0;
+    let rate = "calm", word = "Light";
+    if (w) {
+      const against = cur && csp >= 0.8 && Math.abs(wrap180(cur.dir - ((w.dir + 180) % 360))) > 120; // current flowing into the wind
+      if (against) { rate = "tough"; word = "Choppy"; }
+      else if (w.spd >= 6 && w.spd <= 18 && csp <= 0.7) { rate = "great"; word = "Great"; }
+      else if (w.spd >= 4 && w.spd <= 22 && csp <= 1.2) { rate = "ok"; word = "OK"; }
+      else if (w.spd > 22) { rate = "tough"; word = "Windy"; }
+      else if (csp > 1.2) { rate = "tough"; word = "Strong current"; }
+    }
+    labels.push(hourLabel(h)); data.wind.push(w ? r1(w.spd) : null); data.tide.push(tide ? +tide.h.toFixed(2) : null); data.cur.push(cur ? +csp.toFixed(2) : null);
+    rows.push({ h, rate, html: `<tr class="${rate === "great" ? "best" : ""}"><td>${hourLabel(h)}</td><td>${w ? `${Math.round(w.dir)}° ${compass(w.dir)} · ${Math.round(w.spd)} kt` : "–"}</td>
+      <td>${tide ? `${tide.h.toFixed(1)} ${u} ${tide.rising ? "▲" : "▼"}` : "–"}</td><td>${cur ? (csp < 0.1 ? "slack" : `${cur.flood ? "flood" : "ebb"} ${csp.toFixed(1)} kt`) : "–"}</td><td><span class="rate ${rate}">${word}</span></td></tr>` });
+  }
+  $("#plan-table tbody").innerHTML = rows.map((r) => r.html).join("");
+  const great = rows.filter((r) => r.rate === "great").map((r) => r.h);
+  const spans = []; for (const h of great) { const last = spans[spans.length - 1]; if (last && last[1] === h - 1) last[1] = h; else spans.push([h, h]); }
+  $("#plan-best").textContent = spans.length ? `Best hours: ${spans.map(([a, b]) => (a === b ? hourLabel(a) : `${hourLabel(a)} to ${hourLabel(b)}`)).join(", ")}.` : "No hour that day has both a sailable breeze and gentle current here. Check the table for the best compromise.";
+  $("#plan-where").textContent = `For ${planSpot.name ? planSpot.name + ", " : ""}${c.lat.toFixed(3)}°, ${c.lng.toFixed(3)}° (${REGION.name}).${isCoastLand(c.lat, c.lng) ? " This spot is on land, so there is no current here: tap the water for the current." : ""}`;
+  makeChart("plan-chart", { type: "line", data: { labels, datasets: [
+    { label: "Wind (kt)", data: data.wind, borderColor: css("--accent"), yAxisID: "y", tension: 0.3, pointRadius: 2 },
+    { label: "Current (kt)", data: data.cur, borderColor: "#1baf7a", yAxisID: "y1", tension: 0.3, pointRadius: 2 },
+    { label: `Tide (${u})`, data: data.tide, borderColor: "#7c5ce0", borderDash: [5, 4], yAxisID: "y1", tension: 0.3, pointRadius: 0 } ] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      scales: { y: { position: "left", title: { display: true, text: "wind kt" }, beginAtZero: true }, y1: { position: "right", title: { display: true, text: `current kt / tide ${u}` }, grid: { drawOnChartArea: false } } } } });
+}
 
 /* =================== Place names on the map =================== */
 // The satellite imagery has no names until zoomed in close, so towns and marine places are written on the map: big towns
@@ -3474,8 +3696,9 @@ function renderModel() {
 /* =================== routing & boot =================== */
 let activeTab = "planner";
 function showTab(name) {
-  if (!["coast", "race", "debrief", "accuracy", "kits"].includes(name)) name = "coast";
-  const race = name === "race"; if (race) name = "coast";
+  if (!["coast", "race", "plan", "debrief", "kits"].includes(name)) name = "coast";
+  const overlay = name === "race" || name === "plan" ? name : null, race = overlay === "race"; if (overlay) name = "coast";
+  planMode = overlay === "plan"; if (!planMode) drawPlanPin();
   if (raceMode && !race) leaveRace();
   document.querySelector("main").classList.toggle("wide", name === "kits");
   if (name !== "kits") map.invalidateSize({ animate: false });  // the map may have been hidden
@@ -3484,16 +3707,16 @@ function showTab(name) {
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
   $("#liftmap-btn").hidden = name === "coast";
   $("#brand-venue").textContent = "Lift / Header / Tide Guide";
-  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === (race ? "race" : name)));
-  document.querySelectorAll(".tab").forEach((t) => (t.hidden = !(t.id === `tab-${name}` || (race && t.id === "tab-race"))));
+  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === (overlay || name)));
+  document.querySelectorAll(".tab").forEach((t) => (t.hidden = !(t.id === `tab-${name}` || (overlay && t.id === `tab-${overlay}`))));
   if (race) setTimeout(enterRace, 0);
+  if (planMode) setTimeout(renderDayPlan, 400);
   layers.track.clearLayers(); if (liftOn) toggleLiftMap(false); setLegend(null);
   if (name === "planner") { planResult ? updateSlider() : drawStations({}); fitStations(); }
   else if (name === "coast") { layers.stations.clearLayers(); enterCoast(); }
   else drawStations({});
   if (arrowLayer) arrowLayer.redraw();
   if (name === "debrief" && currentTrack) drawTrack(true);
-  if (name === "accuracy") fitStations();
   setTimeout(() => map.invalidateSize(), 50);
 }
 function rerenderCurrent() {
@@ -3518,7 +3741,7 @@ async function boot() {
   }
   $("#loading").hidden = true;
   renderKits();
-  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initPlanner(); initDebrief(); renderModel();
+  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initPanelToggle(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initPlanner(); initDebrief(); renderModel();
   $("#liftmap-btn").addEventListener("click", () => toggleLiftMap());
   window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
   showTab(location.hash.slice(1) || "coast");
