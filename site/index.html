@@ -2563,7 +2563,7 @@ function buildWaterNet() {
       GY[c] = nn && sv ? (phi[c + mx] - phi[c - mx]) / (2 * dym) : nn ? (phi[c + mx] - phi[c]) / dym : sv ? (phi[c] - phi[c - mx]) / dym : 0; }
     const GXs = new Float64Array(MC), GYs = new Float64Array(MC);
     for (let j = 0; j < my; j++) for (let i = 0; i < mx; i++) { const c = j * mx + i; if (!WC[c]) continue; let sx = 0, sy = 0, sw = 0;
-      for (let b2 = -1; b2 <= 1; b2++) for (let a = -1; a <= 1; a++) { const i2 = i + a, j2 = j + b2; if (i2 < 0 || j2 < 0 || i2 >= mx || j2 >= my) continue; const cc = j2 * mx + i2; if (!WC[cc]) continue; const g = a || b2 ? 0.5 : 1; sx += GX[cc] * g; sy += GY[cc] * g; sw += g; }
+      for (let b2 = -2; b2 <= 2; b2++) for (let a = -2; a <= 2; a++) { const i2 = i + a, j2 = j + b2; if (i2 < 0 || j2 < 0 || i2 >= mx || j2 >= my) continue; const cc = j2 * mx + i2; if (!WC[cc]) continue; const g = Math.exp(-(a * a + b2 * b2) / 2.5); sx += GX[cc] * g * KC[cc]; sy += GY[cc] * g * KC[cc]; sw += g * KC[cc]; }
       GXs[c] = sx / sw; GYs[c] = sy / sw; }
     // back on the fine grid: q = -K grad(phi) (seaward flux for a unit rise rate), speed shape P = |q| / depth
     const P = new Float32Array(NC), EX = new Float32Array(NC), EY = new Float32Array(NC);
@@ -2574,12 +2574,14 @@ function buildWaterNet() {
         if (a < 0 || b2 < 0 || a >= mx || b2 >= my || wt <= 0) continue; const c = b2 * mx + a; if (!WC[c]) continue; gx += GXs[c] * wt; gy += GYs[c] * wt; w += wt; }
       if (!w) { const c = Math.floor(j / f) * mx + Math.floor(i / f); gx = GXs[c]; gy = GYs[c]; w = 1; }
       gx /= w; gy /= w; const m = Math.hypot(gx, gy); if (!(m > 0)) continue;
-      EX[k] = -gx / m; EY[k] = -gy / m; P[k] = (K[k] * m) / H[k]; }
+      EX[k] = -gx / m; EY[k] = -gy / m; P[k] = Math.pow(H[k], 2 / 3) * m; }
     net.P = P; net.ex = EX; net.ey = EY; net.H = H; net.fixed = fixed; net.conn = conn;
     net.stP = new Map(); // shape value at each current station (stations sit at the shore: largest value within ~2 cells)
-    for (const st of sts) { const i0 = Math.floor((st.lon - W) / rlon), j0 = Math.floor((st.lat - S) / res); let best = 0;
-      for (let b2 = -2; b2 <= 2; b2++) for (let a = -2; a <= 2; a++) { const i2 = i0 + a, j2 = j0 + b2; if (i2 < 0 || j2 < 0 || i2 >= nx || j2 >= ny) continue; best = Math.max(best, P[j2 * nx + i2]); }
-      if (best > 0) net.stP.set(st.id, best); }
+    for (const st of sts) { // the shape where the station sits: distance-weighted mean of the nearby water cells
+      const fi = (st.lon - W) / rlon - 0.5, fj = (st.lat - S) / res - 0.5, i0 = Math.round(fi), j0 = Math.round(fj); let sp = 0, sw = 0;
+      for (let b2 = -3; b2 <= 3; b2++) for (let a = -3; a <= 3; a++) { const i2 = i0 + a, j2 = j0 + b2; if (i2 < 0 || j2 < 0 || i2 >= nx || j2 >= ny) continue; const v = P[j2 * nx + i2]; if (!(v > 0)) continue;
+        const g = Math.exp(-((i2 - fi) ** 2 + (j2 - fj) ** 2) / 2); sp += v * g; sw += g; }
+      if (sw > 0) net.stP.set(st.id, sp / sw); }
     net.stArea = new Map();
     for (const st of sts) { const D = net.dist.get(st.id); if (!D) continue; let best = 0, bd = 1e9; for (let k = 0; k < D.length; k++) if (D[k] < bd) { bd = D[k]; best = k; if (bd === 0) break; } net.stArea.set(st.id, A[best] || 0); }
   }
@@ -2676,17 +2678,22 @@ function currentAt(lat, lon, states, landChecked, quick) {
   const t = lastStatesT;
   // Speed here = speed at each NOAA current station reached through the water x (filling-flow shape here / at the
   // station); where no station is near, from how fast the tide is rising or falling (tide-height stations).
-  let num = 0, den = 0, near = Infinity;
+  // calibration k = station speed / station shape, blended smoothly by distance through the water; speed = k x shape
+  // here, so the pattern across a channel (deep fast, shallow slow) comes from the depths, not from station mixing
+  let num = 0, den = 0, near = Infinity, vmax = 0, an = 0, aw = 0;
   for (const st of states) {
     const Ps = WNET.stP.get(st.s.id); if (!Ps) continue;
     const d = waterDist(st, lat, lon); if (d == null || !Number.isFinite(d) || d >= CUR_RADIUS_KM) continue;
-    const g = (1 / (d * d + 0.25)) * (1 - (d / CUR_RADIUS_KM) ** 2) ** 2;
-    num += st.v * Math.max(0.15, Math.min(3, ns.P / Ps)) * g; den += g; near = Math.min(near, d);
+    const g = (1 / (d * d + 1)) * (1 - (d / CUR_RADIUS_KM) ** 2) ** 2;
+    num += (st.v / Ps) * g; den += g; near = Math.min(near, d); vmax = Math.max(vmax, Math.abs(st.v));
+    const ga = Math.exp(-((d / 0.8) ** 2)); // right next to a station, follow that station's own prediction
+    if (ga > 0.01) { an += st.v * Math.max(0.5, Math.min(2, ns.P / Ps)) * ga; aw += ga; }
   }
   const rate = tideRateAt(lat, lon, t);
-  if (rate != null) { const g0 = 1 / (10 * 10 + 0.25); num += rate * ns.P * 1.94384 * g0; den += g0; }
+  if (rate != null) { const g0 = 1 / (12 * 12 + 1); num += rate * 1.94384 * g0; den += g0; vmax = Math.max(vmax, 0.5); }
   if (!den) return open;
-  const v = Math.max(-5, Math.min(5, num / den)); // knots, + flood (inland), - ebb (toward the sea)
+  let v = Math.max(-1.5 * vmax, Math.min(1.5 * vmax, (num / den) * ns.P)); // knots, + flood (inland), - ebb (seaward)
+  if (aw > 0) { const wA = Math.min(1, aw); v = (1 - wA) * v + wA * (an / aw); }
   let u = -ns.ex * v, w = -ns.ey * v;
   const wc = Math.max(0, Math.min(1, ns.S / 1.5)); // 0 in open water (stations' own directions), 1 in bays and rivers
   if (open) { u = wc * u + (1 - wc) * open.u; w = wc * w + (1 - wc) * open.w; }
@@ -2910,7 +2917,7 @@ const CurrentLayer = L.Layer.extend({
     // gradually instead of jumping between neighbouring arrows (bottom depth varies a lot over short distances).
     for (const [key, c0] of cells) {
       const gx = Math.floor(key / 10000), gy = key - gx * 10000; let su = 0, sw = 0, wt = 0;
-      for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) { const n = cells.get((gx + a) * 10000 + gy + b); if (!n) continue; const g = Math.exp(-(a * a + b * b) / 2.2); su += n.u * g; sw += n.w * g; wt += g; }
+      for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) { const n = cells.get((gx + a) * 10000 + gy + b); if (!n) continue; const g = Math.exp(-(a * a + b * b) / 0.9); su += n.u * g; sw += n.w * g; wt += g; }
       const u = su / wt, w = sw / wt, spd = Math.hypot(u, w); if (spd < 0.02) continue; // slow water: small faint arrows
       const jx = c0.jx, jy = c0.jy, e = { sp: spd, dir: (deg(Math.atan2(u, w)) + 360) % 360, conf: c0.conf };
       const th = rad(e.dir), sp = e.sp;
