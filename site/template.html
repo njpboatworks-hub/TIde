@@ -648,6 +648,64 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 .probe .pt { font: 600 10.5px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 3px; }
 .probe .pk { width: 56px; }
 .probe .pe { color: var(--muted); font-size: 11px; }
+
+/* Forecast layer rail: a slim column on the map's right edge (icon + short label), like a chart plotter's layer menu */
+.gx-rail { display: none; }
+body.gx .gx-rail { display: flex; flex-direction: column; position: absolute; z-index: 560; right: calc(12px + env(safe-area-inset-right, 0px)); top: 50%; transform: translateY(-58%);
+  background: rgba(7,20,38,.92); border: 1px solid #22344F; border-radius: 14px !important; padding: 5px; gap: 2px; }
+.gx-rail button { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 64px; padding: 8px 4px 7px; min-height: 0; border: 0 !important; border-radius: 10px !important;
+  background: transparent !important; color: #9DB0C8 !important; font: 500 10.5px/1.1 var(--f-body); letter-spacing: .01em; cursor: pointer; transition: background .15s, color .15s; }
+.gx-rail button:hover { background: rgba(255,255,255,.06) !important; color: #F4F4F0 !important; }
+.gx-rail button.active { background: rgba(240,100,45,.16) !important; color: #FFFFFF !important; box-shadow: inset 2px 0 0 var(--signal); }
+.gx-rail button.active svg { color: var(--signal); }
+.gx-rail button:focus-visible { outline: 2px solid var(--signal); outline-offset: -2px; }
+body.gx .maptools { right: calc(92px + env(safe-area-inset-right, 0px)); }
+@media (max-width: 900px) {
+  body.gx .gx-rail { flex-direction: row; top: auto; transform: none; right: 6px; left: 6px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); overflow-x: auto; scrollbar-width: none; border-radius: 12px !important; }
+  body.gx .gx-rail::-webkit-scrollbar { display: none; }
+  .gx-rail button { width: auto; min-width: 58px; flex: none; padding: 6px 6px 5px; }
+  body.gx .legend { top: 8px; bottom: auto !important; left: 52px; max-width: 190px; max-height: 42%; }
+  body.gx #panel-toggle { top: 96px; }
+  body.gx .mapwrap { height: 62vh; }
+  body.gx .maptools { right: 12px; }
+}
+.radar-ctl { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.radar-ctl button { padding: 5px 9px; min-height: 0; font-size: 12px; }
+.radar-ctl span { color: var(--muted); font-size: 11.5px; }
+/* Racing sub-menu: conditions, course and debrief share one top tab */
+.subnav { display: flex; gap: 22px; margin: -6px 0 22px; border-bottom: 1px solid var(--border); }
+.subnav a { padding: 10px 0 11px; color: var(--ink-2); text-decoration: none; font: 500 14px/1 var(--f-body); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.subnav a:hover { color: var(--ink); }
+.subnav a.active { color: var(--ink); border-bottom-color: var(--signal); }
+/* Cruising tab */
+.cr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.cr-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; min-height: 0; border-radius: 999px !important; font-size: 13px; border: 1px solid var(--axis); background: transparent; color: var(--ink-2); }
+.cr-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; opacity: .45; }
+.cr-chip small { color: var(--muted); font: 500 11px/1 var(--f-mono); }
+.cr-chip.on { color: var(--ink); border-color: var(--ink-2); background: rgba(255,255,255,.04); }
+.cr-chip.on i { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,.15); }
+.cr-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.cr-row .seg { margin-top: 0; }
+.cr-row .hint { margin: 0; }
+.cr-list { display: grid; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-height: 460px; overflow-y: auto; }
+.cr-list:empty { display: none; }
+.cr-list > .hint { padding: 12px; margin: 0; }
+.cr-item { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; min-height: 0; border: 0 !important; border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important; background: transparent !important; text-align: left; color: var(--ink) !important; font: 500 13.5px/1.3 var(--f-body); }
+.cr-item:hover { background: rgba(255,255,255,.04) !important; }
+.cr-item i { width: 10px; height: 10px; border-radius: 50%; }
+.cr-n { min-width: 0; } .cr-n small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-d { color: var(--ink-2); font: 500 12px/1 var(--f-mono); white-space: nowrap; }
+.cr-cost { font: 600 10.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; padding: 4px 6px; border-radius: 4px; }
+.cr-cost.free { background: rgba(43,196,120,.18); color: #6BE3A3; } .cr-cost.paid { background: rgba(240,100,45,.18); color: #FF9B70; }
+.cr-popup .leaflet-popup-content-wrapper { background: #071426; color: #F4F4F0; border: 1px solid #2B4468; border-radius: 8px; box-shadow: none; }
+.cr-popup .leaflet-popup-tip { background: #071426; border: 1px solid #2B4468; }
+.cr-popup .leaflet-popup-content { margin: 12px 14px; font: 13px/1.5 var(--f-body); }
+.cr-pop b { display: block; font: 600 15px/1.25 var(--f-display); margin-bottom: 6px; }
+.cr-pop .pr { display: flex; gap: 10px; } .cr-pop .pk { color: #8C9BB0; width: 64px; flex: none; }
+.cr-pop a { color: #FF9B70; }
+.cr-links { display: flex; gap: 14px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #22344F; }
+body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { display: none !important; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -661,10 +719,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
     <div class="search-results" id="search-results" role="listbox" hidden></div>
   </div>
   <nav class="tabs" aria-label="Sections">
-    <a href="#coast" data-tab="coast" class="active">Coast Map</a>
-    <a href="#wind" data-tab="wind">Forecast</a>
-    <a href="#race" data-tab="race">Race Planning</a>
-    <a href="#debrief" data-tab="debrief">Coach Debrief</a>
+    <a href="#wind" data-tab="wind" class="active">Forecast</a>
+    <a href="#coast" data-tab="racing">Racing</a>
+    <a href="#cruise" data-tab="cruise">Cruising</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
   </nav>
   <button type="button" id="settings-btn" class="gear" aria-label="Settings" title="Settings: units, colours, theme"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4h16M1 9h16M1 14h16"/><rect x="4" y="2" width="3" height="4" fill="var(--hdr)"/><rect x="11" y="7" width="3" height="4" fill="var(--hdr)"/><rect x="6" y="12" width="3" height="4" fill="var(--hdr)"/></svg></button>
@@ -678,6 +735,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 
 <main>
   <section class="panel">
+    <nav class="subnav" id="racing-nav" aria-label="Racing" hidden>
+      <a href="#coast" data-sub="coast">Conditions</a><a href="#race" data-sub="race">Race course</a><a href="#debrief" data-sub="debrief">Coach debrief</a>
+    </nav>
     <div id="loading" class="note info">Loading six years of Newport wind history…</div>
 
     <!-- PLANNER -->
@@ -800,12 +860,8 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
     <!-- WIND MAP: worldwide wind, gusts, currents and weather -->
     <div class="tab" id="tab-wind" hidden>
       <h1>Forecast</h1>
-      <p class="lede">Wind, gusts, ocean currents, water temperature, rain, air temperature and cloud for the whole world, up to 16 days ahead. Hover or tap the map for the numbers at any spot, and press play to watch the weather move.</p>
+      <p class="lede">Wind, gusts, ocean currents, rain, live radar, air and water temperature and cloud for the whole world, up to 16 days ahead. Pick a layer on the right edge of the map, hover or tap for the numbers at any spot, and press play to watch the weather move.</p>
       <div id="gx-msg" class="note warn" hidden></div>
-      <div class="seg gx-layers" id="gx-layers" role="group" aria-label="Map layer">
-        <button type="button" data-l="wind" class="active">Wind</button><button type="button" data-l="gust">Gusts</button><button type="button" data-l="current">Current</button><button type="button" data-l="sst">Water temp</button>
-        <button type="button" data-l="rain">Rain</button><button type="button" data-l="temp">Temperature</button><button type="button" data-l="cloud">Cloud</button>
-      </div>
       <p class="hint" id="gx-run"></p>
       <div id="gx-stale" class="note warn" hidden></div>
       <h2>Good to know</h2>
@@ -960,6 +1016,28 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
     </div>
 
     <!-- COACH KITS -->
+    <!-- CRUISING: anchorages, moorings, marinas, pump-outs and services for cruisers and liveaboards -->
+    <div class="tab" id="tab-cruise" hidden>
+      <h1>Cruising</h1>
+      <p class="lede">Anchorages, mooring fields, marinas, pump-outs, fuel and launch ramps from NOAA nautical charts and OpenStreetMap. Move the map or search a harbor at the top; the list shows what is closest to the middle of the map.</p>
+      <div id="cr-msg" class="note warn" hidden></div>
+      <div class="cr-filters" id="cr-types" role="group" aria-label="What to show"></div>
+      <div class="cr-row">
+        <div class="seg" id="cr-cost" role="group" aria-label="Cost">
+          <button type="button" data-c="any" class="active">Any cost</button><button type="button" data-c="free">Free</button><button type="button" data-c="paid">Paid</button>
+        </div>
+        <span class="hint" id="cr-count"></span>
+      </div>
+      <div class="cr-list" id="cr-list"></div>
+      <h2>About this data</h2>
+      <ul class="advice">
+        <li>NOAA electronic charts list charted anchorage areas, mooring buoys and fields, marinas and small-craft services such as pump-out stations, fuel, water and launch sites. Charts do not list prices, phone numbers or rules.</li>
+        <li>OpenStreetMap adds places mapped by volunteers, sometimes with a fee, phone, website or hours. "Free" and "Paid" only show when a source says so; most places have no cost on record, so call the harbormaster or marina before you go.</li>
+        <li>Places can close, move or change rules (seasonal moorings, time limits, permits). Check local notices, the US Coast Pilot and the harbormaster. Not for navigation.</li>
+      </ul>
+      <p class="hint" id="cr-built"></p>
+    </div>
+
     <div class="tab" id="tab-kits" hidden>
       <div class="kits-hero">
         <img src="logo-mark.png" width="72" height="72" alt="">
@@ -1018,6 +1096,16 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
     <div class="legend" id="map-legend" hidden></div>
     <div class="gx-probe" id="gx-probe" hidden></div>
     <div class="gx-nodata" id="gx-nodata" hidden></div>
+    <div class="gx-rail" id="gx-layers" role="radiogroup" aria-label="Map layer">
+      <button type="button" role="radio" data-l="wind" class="active" aria-checked="true"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/></svg><span>Wind</span></button>
+      <button type="button" role="radio" data-l="gust" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h9a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 11h14"/><path d="M3 15h14a2.5 2.5 0 1 1-2.5 2.5"/><path d="M19 7l2-2M19 11h2"/></svg><span>Gusts</span></button>
+      <button type="button" role="radio" data-l="current" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M2 15c2.5-2 4.5-2 7 0s4.5 2 7 0 4.5-2 6 0"/><path d="M17 19l3-2-3-2"/></svg><span>Current</span></button>
+      <button type="button" role="radio" data-l="rain" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 0 1 .5-8A5 5 0 0 1 17 7.5a3.5 3.5 0 0 1 0 7.5"/><path d="M8 18l-1 3M12 17l-1 3M16 18l-1 3"/></svg><span>Rain</span></button>
+      <button type="button" role="radio" data-l="radar" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7a5 5 0 1 0 5 5"/><path d="M12 12l7-7"/></svg><span>Radar</span></button>
+      <button type="button" role="radio" data-l="temp" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0z"/><path d="M12 9v7"/></svg><span>Air temp</span></button>
+      <button type="button" role="radio" data-l="sst" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5a2 2 0 1 1 4 0v8a3.5 3.5 0 1 1-4 0z"/><path d="M15 15c1.5-1.2 2.8-1.2 4.3 0M15 19c1.5-1.2 2.8-1.2 4.3 0"/></svg><span>Water temp</span></button>
+      <button type="button" role="radio" data-l="cloud" aria-checked="false"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4.5 4.5 0 0 1 .4-9 5.5 5.5 0 0 1 10.4 1.5A3.8 3.8 0 0 1 17.5 18z"/></svg><span>Cloud</span></button>
+    </div>
     <div class="gx-time" id="gx-time" hidden>
       <button type="button" id="gx-play" aria-label="Play">&#9654;</button>
       <div class="gx-track"><input type="range" id="gx-slider" min="0" max="384" value="0" aria-label="Forecast time"><div class="gx-ticks" id="gx-ticks"></div></div>
@@ -3158,6 +3246,7 @@ function renderSearch() {
 function goToPlace(p) {
   if (!p) return;
   $("#search-results").hidden = true; $("#place-search").value = p.k === "town" ? `${p.n}, ${p.d}` : p.n; $("#place-search").blur();
+  if (activeTab === "cruise") { map.setView([p.lat, p.lon], 12); return; } // Cruising: just go there; the list follows the map
   const inCoast = Object.values(REGIONS).some((r) => r.has(p.lat, p.lon));
   if (GX.on || (p.k === "world" && !inCoast)) { // Wind Map / Forecast, or a town outside the coast-map regions
     if (!GX.on) location.hash = "#wind";
@@ -4338,7 +4427,7 @@ const GX = { on: false, meta: null, cache: new Map(), layer: "wind", t: 0, play:
 const GX_LAYERS = {
   wind: { label: "Wind", src: "w" }, gust: { label: "Gusts", src: "w" }, current: { label: "Ocean current", src: "c" },
   rain: { label: "Rain", src: "x" }, temp: { label: "Temperature", src: "x" }, cloud: { label: "Cloud", src: "x" },
-  sst: { label: "Water temperature", src: "s" },
+  sst: { label: "Water temperature", src: "s" }, radar: { label: "Radar (live)", src: "w" },
 };
 async function gxLoadMeta() {
   if (GX.meta) return GX.meta;
@@ -4404,6 +4493,7 @@ function gxValue(F, lat, lon) { // value shown for the active layer, in base uni
     case "wind": case "current": return Math.hypot(gxSample(F, "A", lat, lon), gxSample(F, "B", lat, lon));
     case "gust": return gxSample(F, "C", lat, lon);
     case "temp": case "sst": return gxSample(F, "A", lat, lon);
+    case "radar": return NaN; // radar is drawn from map tiles, not from the forecast grid
     case "rain": return gxSample(F, "B", lat, lon);
     case "cloud": return gxSample(F, "C", lat, lon);
   }
@@ -4413,6 +4503,7 @@ function gxColorFn() {
   if (L === "wind" || L === "gust") { const lut = lutFrom(windStops(), 60); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 60 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
   if (L === "current") { const lut = lutFrom(curStops(), 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "temp") { const st = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]], lut = lutFrom(st, 95); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v + 40) / 95 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
+  if (L === "radar") return () => null;
   if (L === "sst") { const lut = lutFrom(SST_STOPS, 34); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v + 2) / 34 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (v < 0.1 ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.min(255, 120 + v * 60)]; })()); }
   return (v) => (v < 5 ? null : [235, 240, 245, Math.min(230, v * 2.3)]); // cloud: white veil
@@ -4429,6 +4520,13 @@ function gxLegend() {
   else if (L === "sst") { grad = gradCss(SST_STOPS, 34); ends = [0, 10, 20, 30].map((c) => fmtTemp(c)); }
   else if (L === "rain") { grad = "linear-gradient(90deg, rgb(120,180,240), rgb(40,130,230) 4%, rgb(40,190,90) 12%, rgb(240,210,40) 24%, rgb(240,90,40) 48%, rgb(200,30,160))"; ends = [0.1, 1, 3, 6, 12, 25].map((m) => (SET.rain === "in" ? (m / 25.4).toFixed(2) : m)); ends[5] += SET.rain === "in" ? " in/h" : " mm/h"; }
   else { grad = "linear-gradient(90deg, rgba(235,240,245,0), rgba(235,240,245,.9))"; ends = ["clear", "", "", "", "overcast"]; }
+  if (L === "radar") {
+    setLegend(`<b>Radar (live)</b><div class="bar" style="background:${RADAR_GRAD}"></div><div class="ends"><span>light</span><span>moderate</span><span>heavy</span><span>severe</span></div>
+    <div class="radar-ctl"><button type="button" id="radar-play">Play the last hour</button><span id="radar-when">${RADAR.frame ? `${RADAR.frame * 5} min ago` : "latest"}</span></div>
+    <div class="fine">NOAA NEXRAD weather radar mosaic for the mainland US, via Iowa Environmental Mesonet, updated about every 5 minutes. Shows rain, snow and storms falling now; it is not a forecast (use Rain for the days ahead). Moving lines show the forecast wind.</div>`);
+    $("#radar-play").addEventListener("click", radarPlay);
+    return;
+  }
   if (L === "sst") {
     setLegend(`<b>${GX_LAYERS[L].label}</b><div class="bar" style="background:${grad}"></div><div class="ends">${ends.map((e) => `<span>${e}</span>`).join("")}</div>
     <div class="fine">Sea surface temperature from the NOAA RTOFS ocean model, about 8 days ahead, averaged to 0.25° (about 25 km). Moving lines show the ocean current. Shallow bays, harbors and river mouths can be several degrees different from the open water shown here.</div>`);
@@ -4666,10 +4764,10 @@ async function enterGlobal(kind) {
   const ageH = (Date.now() - GX.run) / 3600e3;
   $("#gx-run").textContent = `Weather model run ${new Date(GX.run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${GX.crun ? `; ocean model ${new Date(GX.crun).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}. Forecast runs to ${gxTimeLabel(GX.hMax)}.`;
   const stale = $("#gx-stale"); stale.hidden = ageH < 36; stale.textContent = `This forecast is ${Math.round(ageH / 24)} days old. It refreshes when the site's daily update runs; until then the early hours are already in the past.`;
-  gxSetTime(GX.t); gxLegend(); gxLayerObj._show();
+  gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); if (GX.layer === "radar") gxRadar(true);
 }
 function leaveGlobal() {
-  GX.on = false; gxStop(); cancelAnimationFrame(GX.anim);
+  GX.on = false; gxStop(); cancelAnimationFrame(GX.anim); gxRadar(false);
   if (gxLayerObj && map.hasLayer(gxLayerObj)) map.removeLayer(gxLayerObj);
   if (GXO.group) gxOutlines(false);
   if (baseLayer && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
@@ -4695,9 +4793,38 @@ function gxBuildTimeline() {
   map.on("click", (e) => { if (!GX.on) return; if (activeTab === "weather") setFxSpot(e.latlng.lat, e.latlng.lng, null); else gxProbe(e.latlng, e.containerPoint); });
   map.on("moveend", () => { if (GX.on) store("gxView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom() }); });
 }
+/* Live radar: NOAA NEXRAD composite tiles from Iowa Environmental Mesonet (frames every 5 min for the last hour) */
+const RADAR = { layers: new Map(), frame: 0, timer: null };
+const RADAR_GRAD = "linear-gradient(90deg, rgb(100,200,240), rgb(40,160,70) 22%, rgb(250,230,40) 45%, rgb(240,120,30) 62%, rgb(220,20,30) 78%, rgb(200,40,200))";
+function radarLayer(k) { // k = minutes ago in 5-min steps (0 = latest)
+  if (RADAR.layers.has(k)) return RADAR.layers.get(k);
+  if (!map.getPane("radarPane")) { map.createPane("radarPane").style.zIndex = 425; map.getPane("radarPane").style.pointerEvents = "none"; }
+  const slot = Math.floor(Date.now() / 300000); // new URL every 5 minutes so the browser does not keep an old picture
+  const l = L.tileLayer(`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913${k ? `-m${String(k * 5).padStart(2, "0")}m` : ""}/{z}/{x}/{y}.png?s=${slot}`,
+    { pane: "radarPane", opacity: 0, maxNativeZoom: 10, maxZoom: 18, attribution: 'Radar: NOAA NEXRAD via <a href="https://mesonet.agron.iastate.edu/" target="_blank" rel="noopener">Iowa Environmental Mesonet</a>' });
+  RADAR.layers.set(k, l); return l;
+}
+function radarShow(k) {
+  RADAR.frame = k;
+  for (const [j, l] of RADAR.layers) l.setOpacity(j === k ? 0.8 : 0);
+  if (!map.hasLayer(radarLayer(k))) radarLayer(k).addTo(map);
+  radarLayer(k).setOpacity(0.8);
+  const w = $("#radar-when"); if (w) w.textContent = k ? `${k * 5} min ago` : "latest";
+}
+function radarStop() { clearInterval(RADAR.timer); RADAR.timer = null; const b = $("#radar-play"); if (b) b.textContent = "Play the last hour"; }
+function radarPlay() {
+  if (RADAR.timer) { radarStop(); radarShow(0); return; }
+  for (let k = 11; k >= 0; k--) { const l = radarLayer(k); if (!map.hasLayer(l)) l.addTo(map); } // load every frame first
+  let k = 11; $("#radar-play").textContent = "Stop";
+  RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
+}
+function gxRadar(on) {
+  if (!on) { radarStop(); for (const l of RADAR.layers.values()) if (map.hasLayer(l)) map.removeLayer(l); RADAR.layers.clear(); return; }
+  radarShow(0);
+}
 function gxSetLayer(l) {
-  GX.layer = l; document.querySelectorAll("#gx-layers button").forEach((b) => b.classList.toggle("active", b.dataset.l === l));
-  gxLegend(); gxRender();
+  GX.layer = l; document.querySelectorAll("#gx-layers button").forEach((b) => { b.classList.toggle("active", b.dataset.l === l); b.setAttribute("aria-checked", String(b.dataset.l === l)); });
+  gxRadar(l === "radar"); gxLegend(); gxRender();
 }
 let gxTimer = null;
 function gxSetTime(t) {
@@ -4861,7 +4988,8 @@ let activeTab = "planner";
 function showTab(name) {
   if (name === "weather") { location.replace("#wind"); return; } // old Forecast tab and Day Planner were merged away; keep old links working
   if (name === "plan") { location.replace("#coast"); return; }
-  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather"].includes(name)) name = "coast";
+  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather", "cruise"].includes(name)) name = "wind";
+  if (CRUISE.on && name !== "cruise") leaveCruise();
   const global = name === "wind" || name === "weather";
   if (GX.on && !global) leaveGlobal();
   const overlay = name === "race" || name === "plan" ? name : null, race = overlay === "race"; if (overlay) name = "coast";
@@ -4872,9 +5000,13 @@ function showTab(name) {
   const wasCoast = activeTab === "coast";
   activeTab = name;
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
-  $("#liftmap-btn").hidden = name === "coast";
+  $("#liftmap-btn").hidden = name === "coast" || name === "cruise";
+  document.body.classList.toggle("cruise", name === "cruise");
   $("#brand-venue").textContent = "Lift / Header / Tide Guide";
-  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === (overlay || name)));
+  const top = ["coast", "race", "debrief"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
+  document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === top));
+  $("#racing-nav").hidden = top !== "racing";
+  document.querySelectorAll("#racing-nav a").forEach((a) => a.classList.toggle("active", a.dataset.sub === (overlay || name)));
   document.querySelectorAll(".tab").forEach((t) => (t.hidden = !(t.id === `tab-${name}` || (overlay && t.id === `tab-${overlay}`))));
   if (race) setTimeout(enterRace, 0);
   if (planMode) setTimeout(renderDayPlan, 400);
@@ -4882,6 +5014,7 @@ function showTab(name) {
   if (name === "planner") { planResult ? updateSlider() : drawStations({}); fitStations(); }
   else if (global) { enterGlobal(name).then(() => { if (name === "weather") renderForecast(); else if (FX.pin) { map.removeLayer(FX.pin); FX.pin = null; } }); }
   else if (name === "coast") { layers.stations.clearLayers(); enterCoast(); }
+  else if (name === "cruise") { layers.stations.clearLayers(); enterCruise(); }
   else drawStations({});
   if (arrowLayer && !global) arrowLayer.redraw();
   if (name === "debrief" && currentTrack) drawTrack(true);
@@ -4890,12 +5023,123 @@ function showTab(name) {
 function rerenderCurrent() {
   if (planResult) renderPlanCharts();
   renderClimatology(); if (currentTrack) renderTrackChart();
-  if (activeTab !== "coast") drawStations(lastStationVals);
+  if (!["coast", "wind", "cruise"].includes(activeTab)) drawStations(lastStationVals); // the Newport station labels belong to the debrief only
   if (layers.coastLand) layers.coastLand.setStyle({ color: css("--shore"), fillColor: css("--land") });
   restyleTiles();
   if (activeTab === "coast") { drawCoastStations(); refreshArrows(); return; }
   if (liftOn) drawLiftMap(); else if (activeTab === "debrief") drawTrack(); else refreshArrows();
 }
+/* =================== Cruising: anchorages, moorings, marinas, pump-outs (site/boating.json) =================== */
+const CRUISE = { on: false, data: null, layer: null, types: null, cost: "any", sel: null };
+const CR_COLORS = { anchorage: "#3BA4F5", mooring_field: "#2BC4B4", mooring: "#7FE0D2", marina: "#F0642D", pumpout: "#B57BFF", fuel: "#F5C242",
+  ramp: "#9BD15A", boatyard: "#C9A27A", water: "#5BC0F8", showers: "#9EC3E6", laundry: "#9EC3E6", toilets: "#9EC3E6", provisions: "#E7A3C0",
+  chandler: "#D7B66B", club: "#E3E3E3", dinghy: "#CFE8FF", other: "#A7B3C2" };
+const CR_DEFAULT = ["anchorage", "mooring_field", "mooring", "marina", "pumpout", "fuel"];
+async function loadCruise() {
+  if (CRUISE.data) return CRUISE.data;
+  const r = await fetch("boating.json"); if (!r.ok) throw new Error("The cruising places have not been built yet (boating.json missing).");
+  const d = await r.json();
+  d.p.forEach((p, i) => { p.i = i; });
+  // unnamed services (often pump-outs) take the name of the nearest named place within ~400 m, e.g. "Pump-out at X Marina"
+  const named = d.p.filter((q) => q[3]);
+  for (const p of d.p) {
+    if (p[3]) continue; const cl = Math.cos(p[1] * Math.PI / 180); let best = null, bd = 0.4;
+    for (const q of named) { const dk = Math.hypot((q[1] - p[1]) * 111.3, (q[2] - p[2]) * 111.3 * cl); if (dk < bd) { bd = dk; best = q; } }
+    if (best) p.at = best[3];
+  }
+  CRUISE.data = d; return d;
+}
+function crShown(p) {
+  if (!CRUISE.types.has(p[0])) return false;
+  return CRUISE.cost === "any" || p[5] === CRUISE.cost;
+}
+function crCostTag(p) { return p[5] === "free" ? `<span class="cr-cost free">Free</span>` : p[5] === "paid" ? `<span class="cr-cost paid">Paid</span>` : ""; }
+function crName(p) { return p[3] || (p.at ? `${CRUISE.data.types[p[0]]} at ${p.at}` : CRUISE.data.types[p[0]]); }
+function crDetails(p) {
+  const T = CRUISE.data.types, x = p[7] || {}, rows = [];
+  const add = (k, v) => { if (v) rows.push(`<div class="pr"><span class="pk">${k}</span><span>${v}</span></div>`); };
+  add("Type", T[p[0]]);
+  add("Cost", p[5] === "free" ? "Free (per source)" : p[5] === "paid" ? `Paid${x.charge ? `: ${esc(x.charge)}` : ""}` : "Not listed; ask the harbormaster");
+  if (p[4]) add("Notes", esc(p[4]));
+  const ph = x.phone || x["contact:phone"]; if (ph) add("Phone", `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>`);
+  const web = x.website || x["contact:website"]; if (web && /^https?:\/\//.test(web)) add("Website", `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 32))}</a>`);
+  add("VHF", esc(x.vhf || x["seamark:radio_station:channel"] || ""));
+  add("Hours", esc(x.opening_hours || ""));
+  add("Capacity", esc(x.capacity || ""));
+  add("Access", esc(x.access || ""));
+  add("Depth", x.depth ? `${esc(x.depth)} m (per source)` : "");
+  add("Source", esc(p[6]));
+  return `<div class="cr-pop"><b>${esc(crName(p))}</b>${rows.join("")}
+    <div class="cr-links"><a href="#" data-wx="${p.i}">Wind and weather here</a><a href="https://www.google.com/maps/search/?api=1&query=${p[1]},${p[2]}" target="_blank" rel="noopener">Open in maps</a></div></div>`;
+}
+function crDraw() {
+  if (!CRUISE.on || !CRUISE.data) return;
+  if (!CRUISE.layer) CRUISE.layer = L.layerGroup();
+  CRUISE.layer.clearLayers();
+  const rend = CRUISE.rend || (CRUISE.rend = L.canvas({ padding: 0.3 }));
+  const b = map.getBounds().pad(0.2), z = map.getZoom();
+  let n = 0;
+  for (const p of CRUISE.data.p) {
+    if (!crShown(p) || !b.contains([p[1], p[2]])) continue;
+    if (z < 7 && p[0] === "mooring") continue; // single buoys only when zoomed in; there are thousands
+    const m = L.circleMarker([p[1], p[2]], { renderer: rend, radius: z >= 11 ? 7 : z >= 8 ? 5.5 : 4, color: "#071426", weight: 1.2, fillColor: CR_COLORS[p[0]] || "#ccc", fillOpacity: 0.95 });
+    m.bindPopup(() => crDetails(p), { maxWidth: 280, className: "cr-popup" });
+    m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -6] });
+    CRUISE.layer.addLayer(m); if (++n > 6000) break;
+  }
+  if (!map.hasLayer(CRUISE.layer)) CRUISE.layer.addTo(map);
+  crList();
+}
+function crList() {
+  const c = map.getCenter(), cl = Math.cos(c.lat * Math.PI / 180), b = map.getBounds();
+  const near = CRUISE.data.p.filter((p) => crShown(p) && b.contains([p[1], p[2]]))
+    .map((p) => [p, Math.hypot((p[1] - c.lat) * 60, (p[2] - c.lng) * 60 * cl)]).sort((a, b2) => a[1] - b2[1]);
+  $("#cr-count").textContent = near.length ? `${near.length.toLocaleString()} in view` : "";
+  $("#cr-list").innerHTML = near.length ? near.slice(0, 60).map(([p, d]) => `<button type="button" class="cr-item" data-i="${p.i}">
+      <i style="background:${CR_COLORS[p[0]]}"></i><span class="cr-n">${esc(crName(p))}<small>${CRUISE.data.types[p[0]]}${p[4] ? " · " + esc(p[4].slice(0, 60)) : ""}</small></span>${crCostTag(p)}<span class="cr-d">${d < 10 ? d.toFixed(1) : Math.round(d)} nm</span></button>`).join("")
+    : `<p class="hint">Nothing of the selected kinds in view. Zoom out, move the map, or turn on more kinds above.</p>`;
+}
+function crOpen(i) {
+  const p = CRUISE.data.p[i];
+  map.setView([p[1], p[2]], Math.max(map.getZoom(), 13));
+  setTimeout(() => L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng([p[1], p[2]]).setContent(crDetails(p)).openOn(map), 350);
+}
+function renderCruiseFilters() {
+  const T = CRUISE.data.types, counts = {};
+  CRUISE.data.p.forEach((p) => (counts[p[0]] = (counts[p[0]] || 0) + 1));
+  $("#cr-types").innerHTML = Object.keys(T).filter((k) => counts[k]).map((k) => `<button type="button" class="cr-chip${CRUISE.types.has(k) ? " on" : ""}" data-k="${k}" aria-pressed="${CRUISE.types.has(k)}"><i style="background:${CR_COLORS[k]}"></i>${T[k]}<small>${counts[k].toLocaleString()}</small></button>`).join("");
+  $("#cr-types").querySelectorAll(".cr-chip").forEach((b) => b.addEventListener("click", () => {
+    const k = b.dataset.k; CRUISE.types.has(k) ? CRUISE.types.delete(k) : CRUISE.types.add(k);
+    store("crTypes", [...CRUISE.types]); renderCruiseFilters(); crDraw();
+  }));
+}
+async function enterCruise() {
+  CRUISE.on = true;
+  if (!CRUISE.types) CRUISE.types = new Set(store("crTypes") || CR_DEFAULT);
+  try { await loadCruise(); } catch (e) { showMsg($("#cr-msg"), e.message); return; }
+  if (!CRUISE.on) return;
+  $("#cr-built").textContent = `Built ${new Date(CRUISE.data.built).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} from NOAA ENC Direct${CRUISE.data.p.some((p) => p[6].includes("OpenStreetMap")) ? " and OpenStreetMap (© OpenStreetMap contributors, ODbL)" : ""}.`;
+  renderCruiseFilters();
+  if (!CRUISE.started) {
+    CRUISE.started = true;
+    const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.4, -71.4], 10, { animate: false });
+  }
+  crDraw();
+}
+function leaveCruise() {
+  CRUISE.on = false; map.closePopup();
+  if (CRUISE.layer && map.hasLayer(CRUISE.layer)) map.removeLayer(CRUISE.layer);
+}
+function initCruise() {
+  document.querySelectorAll("#cr-cost button").forEach((b) => b.addEventListener("click", () => {
+    CRUISE.cost = b.dataset.c; document.querySelectorAll("#cr-cost button").forEach((x) => x.classList.toggle("active", x === b)); crDraw();
+  }));
+  $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-item"); if (b) crOpen(+b.dataset.i); });
+  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); });
+  map.on("popupopen", (e) => { const a = e.popup.getElement().querySelector("[data-wx]"); if (a) a.addEventListener("click", (ev) => {
+    ev.preventDefault(); const p = CRUISE.data.p[+a.dataset.wx]; store("gxView", { lat: p[1], lng: p[2], z: 8 }); GX.started = false; location.hash = "#wind"; }); });
+}
+
 async function boot() {
   try {
     const res = await fetch("data.json");
@@ -4909,10 +5153,10 @@ async function boot() {
   }
   $("#loading").hidden = true;
   renderKits();
-  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initPanelToggle(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initSettings(); initGlobal(); initPlanner(); initDebrief(); renderModel();
+  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initPanelToggle(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initSettings(); initGlobal(); initPlanner(); initDebrief(); initCruise(); renderModel();
   $("#liftmap-btn").addEventListener("click", () => toggleLiftMap());
   window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
-  showTab(location.hash.slice(1) || "coast");
+  showTab(location.hash.slice(1) || "wind");
   // The Newport planner tab was removed; its code stays because the debrief and accuracy tabs share it.
   if (currentTrack) renderTrack();
 }
