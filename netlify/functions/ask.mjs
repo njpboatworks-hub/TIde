@@ -23,15 +23,20 @@ How to answer:
   down first" or "switch to Live & forecast").
 - Stay on sailing, wind, weather, tides and the course. Politely decline unrelated requests.`;
 
-const ALLOWED = (process.env.ALLOWED_ORIGINS || "https://njpboatworks.com,https://www.njpboatworks.com")
+// capacitor://localhost is the Nockd iPhone app (the page inside the app runs from that address)
+const ALLOWED = (process.env.ALLOWED_ORIGINS || "https://njpboatworks.com,https://www.njpboatworks.com,capacitor://localhost")
   .split(",").map((s) => s.trim()).filter(Boolean);
 
-const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+const okOrigin = (o) => ALLOWED.includes(o) || o.endsWith(".netlify.app");
 
 export default async (req) => {
-  if (req.method !== "POST") return json(405, { error: "Use POST." });
   const origin = req.headers.get("origin") || "";
-  if (origin && !ALLOWED.includes(origin) && !origin.endsWith(".netlify.app")) return json(403, { error: "Not allowed from this website." });
+  // the iPhone app calls from another address, so the browser first checks these permission headers
+  const cors = origin && okOrigin(origin) ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", Vary: "Origin" } : {};
+  const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } });
+  if (req.method === "OPTIONS") return new Response(null, { status: origin && okOrigin(origin) ? 204 : 403, headers: cors });
+  if (req.method !== "POST") return json(405, { error: "Use POST." });
+  if (origin && !okOrigin(origin)) return json(403, { error: "Not allowed from this website." });
   if (!process.env.ANTHROPIC_API_KEY) return json(503, { error: "The AI coach is not set up yet: add ANTHROPIC_API_KEY in Netlify." });
 
   let body;

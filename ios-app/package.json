@@ -1,0 +1,19 @@
+{
+  "name": "nockd-ios",
+  "private": true,
+  "description": "Nockd iPhone app: a Capacitor shell around the Nockd web page. The map data loads from the website.",
+  "scripts": {
+    "build": "cd .. && python3 -m scripts.build_app",
+    "sync": "npm run build && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.6.2",
+    "@capacitor/ios": "8.6.2",
+    "chart.js": "4.4.1",
+    "leaflet": "1.9.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.6.2"
+  }
+}

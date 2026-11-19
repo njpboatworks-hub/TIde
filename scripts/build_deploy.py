@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -20,6 +20,12 @@ window.SAILIQ_CONFIG = {
   // Optional: paste a Mapbox public token (starts with "pk.") to add Mapbox satellite, streets and outdoors maps.
   mapboxToken: "",
 };
+"""
+
+# Netlify header rules: let the Nockd iPhone app (which runs from inside the phone, not from this website) read the
+# public map data files. Nothing private is served from this folder.
+HEADERS = """/*
+  Access-Control-Allow-Origin: *
 """
 
 HEAD = """<!doctype html>
@@ -43,6 +49,7 @@ def main():
     for f in FILES[2:]:
         shutil.copy(SITE / f, OUT / f)
     (OUT / "config.js").write_text(CONFIG)
+    (OUT / "_headers").write_text(HEADERS)
     shutil.copytree(SITE / "tiles", OUT / "tiles")
     for sub in ("iberia", "west", "lakes", "hawaii", "depth", "global", "world"):   # other regions and the water-depth tiles
         if (SITE / sub).exists():

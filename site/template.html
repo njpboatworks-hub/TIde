@@ -678,7 +678,8 @@ main.wide .panel { border-right: 0; }
 
     <footer class="rules">
       Built for pre-race planning and post-race debriefs. Racing Rules of Sailing rule 41 (Outside Help), class rules and sailing instructions may limit electronic information during a race, so check them before using this on the water. Not for navigation.<br>
-      Data: NOAA (NDBC buoys, CO-OPS tides and currents), National Weather Service and MET Norway forecasts (MET Norway data CC BY 4.0), Iowa Environmental Mesonet airport readings, IOC Sea Level Station Monitoring Facility tide gauges, US Census and GeoNames place names (CC BY 4.0). Coastline: © OpenStreetMap contributors (ODbL) and GSHHG.
+      Data: NOAA (NDBC buoys, CO-OPS tides and currents), National Weather Service and MET Norway forecasts (MET Norway data CC BY 4.0), Iowa Environmental Mesonet airport readings, IOC Sea Level Station Monitoring Facility tide gauges, US Census and GeoNames place names (CC BY 4.0). Coastline: © OpenStreetMap contributors (ODbL) and GSHHG.<br>
+      <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>
     </footer>
   </section>
 
@@ -4015,7 +4016,7 @@ async function gxLoadMeta() {
   return GX.meta;
 }
 function gxImage(url) {
-  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); res({ w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }); }; img.onerror = () => rej(new Error("could not load " + url)); img.src = url; });
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); res({ w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }); }; img.onerror = () => rej(new Error("could not load " + url)); img.crossOrigin = "anonymous"; img.src = window.NOCKD_DATA ? new URL(url, window.NOCKD_DATA).href : url; }); // in the iPhone app the data comes from the website
 }
 function gxStep(src, k) {
   const key = src + k; if (GX.cache.has(key)) { const v = GX.cache.get(key); GX.cache.delete(key); GX.cache.set(key, v); return v; }
