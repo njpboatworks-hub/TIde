@@ -2,7 +2,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=Poppins:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Poppins:wght@700&family=Space+Grotesk:wght@500;600;700&display=swap">
 <style>
 /*LEAFLET_CSS*/
 </style>
@@ -318,6 +318,202 @@ main.wide .panel { border-right: 0; }
   .legend { max-width: 210px; font-size: 11.5px; padding: 6px 30px 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 40%; }
   #field-readout, #tide-readout { display: none; }
 }
+/* ===== Nockd theme: chart-room navy, off-white paper, one signal orange. Sharp 1px rules, no rounded cards or shadows.
+   Only looks live here; every map, tide and wind feature above is unchanged. ===== */
+:root {
+  --hdr: #071426; --hdr-ink: #F8F8F6; --hdr-mute: #8C9AAE; --hdr-line: #22344F;
+  --signal: #F0642D;
+  --page: #F8F8F6; --surface: #FFFFFF; --ink: #071426; --ink-2: #33414F; --muted: #5F6B79;
+  --grid: #E3E5E8; --axis: #C4C9D0; --border: #CDD1D6; --rule: #071426;
+  --accent: #0B2140; --accent-ink: #F8F8F6;
+  --warn-bg: #FFF1E8; --warn-ink: #7A2E0B;
+  --f-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --f-display: "Space Grotesk", "IBM Plex Sans", Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #040C18; --surface: #071426; --ink: #F2F2EE; --ink-2: #BAC3CE; --muted: #8592A3;
+    --grid: #15253B; --axis: #2A3C56; --border: #1E3049; --rule: #F2F2EE;
+    --accent: #F2F2EE; --accent-ink: #071426; --hdr-line: #1A2B44;
+    --warn-bg: #2B160A; --warn-ink: #FFC6A8;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #040C18; --surface: #071426; --ink: #F2F2EE; --ink-2: #BAC3CE; --muted: #8592A3;
+  --grid: #15253B; --axis: #2A3C56; --border: #1E3049; --rule: #F2F2EE;
+  --accent: #F2F2EE; --accent-ink: #071426; --hdr-line: #1A2B44;
+  --warn-bg: #2B160A; --warn-ink: #FFC6A8;
+}
+body { font: 15px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
+body::before { background: var(--hdr); }
+
+/* Header: a solid navy bar. Wordmark left, search, then tabs as mono labels with an orange underline. */
+.top { background: var(--hdr); color: var(--hdr-ink); border-bottom: 1px solid var(--hdr-line); padding-block: 0; gap: 0 22px; min-height: 64px; }
+.brand { padding-block: 12px; }
+.brand .logo { border-radius: 0; width: 38px; height: 38px; outline: 1px solid var(--hdr-line); }
+.brand .name { color: var(--hdr-ink); font-size: 25px; }
+.brand .name .d { color: var(--signal); }
+.brand .venue { font: 500 10.5px/1 var(--f-mono); color: var(--hdr-mute); letter-spacing: .08em; }
+.search input { background: transparent; color: var(--hdr-ink); border: 1px solid var(--hdr-line); border-radius: 0; font: 400 13.5px/1.2 var(--f-mono); padding: 9px 12px; }
+.search input::placeholder { color: var(--hdr-mute); }
+.search input:focus { border-color: var(--hdr-ink); outline: none; }
+.tabs { gap: 0; align-self: stretch; }
+.tabs a { display: flex; align-items: center; height: 100%; min-height: 64px; padding: 0 14px; border-radius: 0; color: var(--hdr-mute);
+  font: 500 12px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; border-bottom: 3px solid transparent; border-top: 3px solid transparent; }
+.tabs a:hover { background: none; color: var(--hdr-ink); }
+.tabs a.active { background: none; color: var(--hdr-ink); border-bottom-color: var(--signal); }
+.gear { border-radius: 0; border: 1px solid var(--hdr-line); background: transparent; color: var(--hdr-ink); width: 38px; height: 38px; display: grid; place-items: center; align-self: center; }
+.gear:hover { border-color: var(--hdr-ink); }
+
+/* Side panel: editorial column. Big grotesk headings, a hard rule above each section. */
+@media (min-width: 901px) { main { height: calc(100% - 65px); grid-template-columns: minmax(0, 42%) minmax(0, 1fr); } }
+.panel { background: var(--page); border-right: 1px solid var(--rule); padding-top: 28px; padding-right: 28px; }
+h1 { font: 700 34px/1.02 var(--f-display); letter-spacing: -.025em; margin: 0 0 10px; }
+h2 { font: 600 19px/1.2 var(--f-display); letter-spacing: -.01em; margin: 34px 0 8px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.tab > h1:first-child, .tab > h1:first-of-type { padding-bottom: 14px; border-bottom: 3px solid var(--rule); max-width: 16ch; }
+.lede { font-size: 15.5px; color: var(--ink-2); }
+.hint, .caveat { font-size: 12.5px; }
+.rules { border-top: 1px solid var(--rule); font: 400 12px/1.6 var(--f-body); color: var(--muted); }
+.rules a { color: var(--ink); }
+
+/* Labels and small print in mono */
+.form legend, .form label, .set-grid label, details summary, .tile .k, th, .item .tag, .sr-k, .gx-ticks, .gx-probe .gp-h,
+.legend .ends, .split-legend, .slider-label, .fx-dn, .fx-g, .fx-r, .kit-store, .store-go, .store-sub, .count, .meta, .item .meta,
+.probe .pk, .probe .pf, #gx-label, .legend .legend-more {
+  font-family: var(--f-mono); letter-spacing: .01em;
+}
+.form legend, .form label, .set-grid label, .tile .k, th, .item .tag { font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; }
+.form label, .set-grid label { text-transform: none; letter-spacing: 0; font-size: 12.5px; }
+
+/* Sharp everything: no rounded cards, pills or soft shadows */
+.form, input, select, button, .chips label, .tile, .split, .chart, .table-wrap, .note, .item, .item .tag, .rate, #settings, .pal, .pal i,
+.customs input, .gx-time, .gx-probe, .gx-nodata, .fx-day, #plan-pick .plan-chips button, .chat .msg, .seg, .legend, .legend .legend-toggle,
+.legend .bar, .legend.min .mini-cur i, .probe, .search-results, .sr, #panel-toggle, .kits-hero img, .kit, .store, .kit-feature,
+.kit-feature img, .kit-btn, .station-icon .lab, .leg-lab, .swatch, #race-board-exit { border-radius: 0 !important; }
+.gx-time, .gx-probe, .probe, .search-results, .maptools .seg, .maptools button, #panel-toggle { box-shadow: none !important; }
+
+/* Inputs and buttons */
+input, select { background: var(--surface); border-color: var(--axis); font-family: var(--f-body); }
+.kits-hero + .kit-grid:empty + h2 { border-top: 0; margin-top: 22px; padding-top: 0; }
+input:focus, select:focus { border-color: var(--ink); }
+input[type=range] { accent-color: var(--signal); }
+button { font: 500 13.5px/1 var(--f-body); border-color: var(--axis); }
+button:hover { border-color: var(--ink); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button.primary:hover { background: var(--signal); border-color: var(--signal); color: #071426; }
+.form { background: transparent; border: 1px solid var(--rule); padding: 18px; }
+.chips label { border-color: var(--axis); font-size: 13px; }
+.chips label:has(input:checked) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* Segmented controls: joined boxes with 1px dividers */
+.seg { gap: 0; padding: 0; border: 1px solid var(--rule); background: var(--surface); }
+.seg button { border-radius: 0; border: 0; border-left: 1px solid var(--border); font: 500 12px/1 var(--f-mono); letter-spacing: .03em; padding: 9px 12px; color: var(--ink-2); }
+.seg button:first-child { border-left: 0; }
+.seg button:hover { background: var(--grid); }
+.seg button.active { background: var(--accent); color: var(--accent-ink); }
+.maptools .seg { border-color: #071426; }
+.maptools button { border: 1px solid #071426; }
+
+/* Stat tiles become an editorial figure row: rule on top, mono label, big number */
+.tiles { gap: 18px 22px; }
+.tile { background: none; border: 0; border-top: 1px solid var(--rule); padding: 10px 0 0; }
+.tile.hero { border-top: 3px solid var(--signal); }
+.tile .v { font: 600 30px/1.1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.tile.hero .v { font-size: 40px; }
+.chart { border-color: var(--border); }
+.table-wrap { border-color: var(--rule); }
+th { color: var(--ink-2); border-bottom: 1px solid var(--rule); }
+.note { border-left: 3px solid var(--signal); }
+.note.info { border: 1px solid var(--border); border-left: 3px solid var(--accent); }
+.item { border-color: var(--border); }
+.item:hover, .item.sel { border-color: var(--ink); }
+.item.sel { box-shadow: inset 4px 0 0 var(--signal); }
+
+/* Floating map panels: solid paper, hard 1px navy edge */
+.legend, .probe, .gx-probe, .gx-time, .gx-nodata, #panel-toggle { border: 1px solid #071426; }
+:root[data-theme="dark"] .legend, :root[data-theme="dark"] .probe, :root[data-theme="dark"] .gx-probe, :root[data-theme="dark"] .gx-time { border-color: #3A4E6B; }
+.legend { font-size: 12px; }
+.legend .legend-toggle { border-color: var(--border); font-family: var(--f-mono); }
+.legend .legend-more { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.gx-time { padding: 10px 12px 20px; }
+.gx-time button { border-color: var(--rule); }
+#gx-label { font: 500 12px/1.25 var(--f-mono); }
+#gx-now { font: 500 11.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .05em; }
+.gx-probe .gp-f { color: var(--signal); }
+body.gx #map { background: #071426; }
+.leaflet-bar { border: 1px solid #071426 !important; border-radius: 0 !important; box-shadow: none !important; }
+.leaflet-bar a { border-radius: 0 !important; color: #071426; font-family: var(--f-mono); }
+.leaflet-bar a:hover { background: #F8F8F6; }
+.station-icon .lab { font-family: var(--f-mono); font-weight: 500; font-size: 12px; }
+
+/* Search results */
+.search-results { border: 1px solid #071426; padding: 0; background: var(--surface); }
+.sr { border-bottom: 1px solid var(--grid); padding: 10px 12px; }
+.sr:hover, .sr.sel { background: var(--grid); box-shadow: inset 3px 0 0 var(--signal); }
+
+/* Settings dialog */
+#settings { border: 1px solid var(--rule); padding: 20px 22px; }
+#settings::backdrop { background: rgba(4, 12, 24, .6); }
+#settings h3 { font: 500 11.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-2); border-top: 1px solid var(--border); padding-top: 14px; }
+.pal.on { border-color: var(--ink); box-shadow: inset 0 -3px 0 var(--signal); }
+
+/* Forecast day strip: a ruled table of days instead of rounded cards */
+.fx-days { gap: 0; border: 1px solid var(--rule); padding: 0; }
+.fx-day { border: 0; border-right: 1px solid var(--border); background: var(--surface); padding: 10px; width: 118px; }
+.fx-day:last-child { border-right: 0; }
+.fx-dn { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-2); }
+.fx-ic { font: 600 15px/1.2 var(--f-display); letter-spacing: -.01em; margin: 4px 0 2px; }
+.fx-t { font-family: var(--f-display); font-size: 17px; }
+.rate { font: 600 10.5px/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; padding: 2px 6px; }
+
+/* AI coach chat */
+.chat .msg.user { background: var(--accent); color: var(--accent-ink); }
+.chat .msg.assistant { border-color: var(--border); border-left: 3px solid var(--signal); }
+
+/* Coach Kits: split editorial layout, photos in fixed frames */
+.kits-hero { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 20px; align-items: end; padding-bottom: 18px; border-bottom: 3px solid var(--rule); }
+.kits-hero img { width: 96px; height: 96px; }
+.kits-hero h1, .kit-copy h2 { font-family: var(--f-display); }
+.kits-hero h1 { font-size: 46px; margin: 0; border: 0; padding: 0; }
+.kits-hero .lede { margin: 6px 0 0; }
+.kit-grid { gap: 0; border-left: 1px solid var(--rule); border-top: 1px solid var(--rule); }
+.kit { border: 0; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.kit img { aspect-ratio: 4 / 5; }
+.kit:hover { border-color: var(--rule); box-shadow: inset 0 -4px 0 var(--signal); }
+.kit-price { font-family: var(--f-display); }
+.store-grid { gap: 0; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); border: 1px solid var(--rule); }
+.store { border: 0; padding: 22px; background: var(--surface); }
+.store + .store { border-left: 1px solid var(--rule); background: var(--page); }
+.store:hover { box-shadow: inset 0 -4px 0 var(--signal); }
+.store-name { font: 700 34px/1 var(--f-display); letter-spacing: -.02em; }
+.store-go, .kit-store { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.kit-feature { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 0; padding: 0; background: var(--surface); border: 1px solid var(--rule); align-items: stretch; }
+.kit-feature img { aspect-ratio: 16 / 9; object-fit: cover; height: 100%; border-right: 1px solid var(--rule); }
+.kit-copy { padding: 24px; }
+.kit-copy h2 { border: 0; padding: 0; font-size: 28px; letter-spacing: -.02em; }
+.kit-copy .kit-tag { font: 500 12px/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--signal); }
+.kit-btn { background: var(--accent); color: var(--accent-ink); padding: 12px 18px; font-weight: 600; }
+.kit-btn + .kit-btn { background: transparent; color: var(--ink); outline: 1px solid var(--rule); outline-offset: -1px; }
+.kit-btn:hover { filter: none; background: var(--signal); color: #071426; }
+
+@media (max-width: 900px) {
+  main { height: auto; }
+  .top { padding-block: 0 0; }
+  .brand { padding-block: 10px 6px; }
+  .search { padding-bottom: 8px; }
+  .tabs { border-top: 1px solid var(--hdr-line); }
+  .tabs a { min-height: 46px; padding: 0 12px; }
+  .gear { bottom: auto; top: 12px; }
+  .panel { border-right: 0; border-top: 1px solid var(--rule); padding-top: 22px; }
+  h1 { font-size: 29px; }
+  .store-grid, .kit-feature { grid-template-columns: minmax(0, 1fr); }
+  .store + .store { border-left: 0; border-top: 1px solid var(--rule); }
+  .kit-feature img { border-right: 0; border-bottom: 1px solid var(--rule); }
+  .kits-hero { grid-template-columns: 64px minmax(0, 1fr); gap: 14px; }
+  .kits-hero img { width: 64px; height: 64px; }
+  .kits-hero h1 { font-size: 34px; }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -339,7 +535,7 @@ main.wide .panel { border-right: 0; }
     <a href="#plan" data-tab="plan">Day Planner</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
   </nav>
-  <button type="button" id="settings-btn" class="gear" aria-label="Settings" title="Settings: units, colours, theme">&#9881;</button>
+  <button type="button" id="settings-btn" class="gear" aria-label="Settings" title="Settings: units, colours, theme"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4h16M1 9h16M1 14h16"/><rect x="4" y="2" width="3" height="4" fill="var(--hdr)"/><rect x="11" y="7" width="3" height="4" fill="var(--hdr)"/><rect x="6" y="12" width="3" height="4" fill="var(--hdr)"/></svg></button>
 </header>
 
 <dialog id="settings" aria-labelledby="settings-title">
@@ -659,8 +855,8 @@ main.wide .panel { border-right: 0; }
         <div class="kit-copy">
           <h2>Sailing Coaching Kits</h2>
           <p class="kit-tag">Made by sailors, used by sailors.</p>
-          <p>Easily moved around on a whiteboard as opposed to the competition that are magnetic sheets. Much better for showing how boats are navigating on the course.</p>
-          <p>Set sail for success with the Sailing Coaching Kit, the ultimate training companion for sailors of all skill levels! Whether you're navigating your first regatta or fine-tuning advanced techniques, this high-quality, made-in-the-USA kit is designed to enhance your sailing journey.</p>
+          <p>The pieces slide around a whiteboard, so you can show exactly how boats work the course. Much easier to move than magnetic sheets.</p>
+          <p>Five boats with sliding sails, numbered marks, wind and current arrows. Everything you need to draw a race and talk it through, from a first regatta to advanced tactics. Made in the USA.</p>
           <div class="kit-buttons">
             <a class="kit-btn" href="https://www.etsy.com/shop/NJPboatworks" target="_blank" rel="noopener">Buy on Etsy</a>
             <a class="kit-btn" href="https://www.amazon.com/dp/B0FJKP17SW" target="_blank" rel="noopener">Buy on Amazon</a>
@@ -4463,7 +4659,7 @@ async function renderForecast() {
     const rainTot = i.reduce((s, k) => s + rain[k] * 3, 0), cl = i.reduce((s, k) => s + cloud[k], 0) / i.length;
     const day = i.filter((k) => { const hh = new Date(GX.run + H[k] * 3600e3).getHours(); return hh >= 9 && hh <= 18; }), dk = day.length ? day : i;
     const mu = dk.reduce((s, k) => s + u[k], 0), mv = dk.reduce((s, k) => s + v[k], 0), mdir = (deg(Math.atan2(-mu, -mv)) + 360) % 360;
-    const icon = rainTot > 5 ? "🌧️" : rainTot > 1 ? "🌦️" : cl > 70 ? "☁️" : cl > 35 ? "⛅" : "☀️";
+    const icon = rainTot > 5 ? "Rain" : rainTot > 1 ? "Showers" : cl > 70 ? "Cloudy" : cl > 35 ? "Part sun" : "Sunny";
     const sail = wmax * 1.943844 > 25 ? ["tough", "Windy"] : rainTot > 8 ? ["tough", "Wet"] : wmax * 1.943844 >= 6 ? ["great", "Sailable"] : ["calm", "Light"];
     return `<div class="fx-day"><div class="fx-dn">${d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div><div class="fx-ic">${icon}</div>
       <div class="fx-t">${fmtTemp(tmax)} <span>${fmtTemp(tmin)}</span></div><div>${compass(mdir)} ${fmtWindMs(wmax)}</div><div class="fx-g">gusts ${fmtWindMs(gmax)}</div>
