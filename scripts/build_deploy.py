@@ -44,7 +44,7 @@ def main():
         shutil.copy(SITE / f, OUT / f)
     (OUT / "config.js").write_text(CONFIG)
     shutil.copytree(SITE / "tiles", OUT / "tiles")
-    for sub in ("iberia", "west", "lakes", "hawaii", "depth", "global"):   # other regions and the water-depth tiles
+    for sub in ("iberia", "west", "lakes", "hawaii", "depth", "global", "world"):   # other regions and the water-depth tiles
         if (SITE / sub).exists():
             shutil.copytree(SITE / sub, OUT / sub)
     shutil.copy(ROOT / "deploy" / "DEPLOY.md", OUT / "DEPLOY.md")

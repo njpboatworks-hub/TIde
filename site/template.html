@@ -168,7 +168,8 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .gx-probe { position: absolute; z-index: 560; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 300px; }
 .gx-probe .gp-h { color: var(--muted); font-size: 11.5px; margin-bottom: 2px; } .gx-probe .gp-f { color: var(--accent); font-size: 11.5px; margin-top: 3px; }
 .gx-nodata { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 530; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
-body.gx .maptools .seg:not(#basemap-tools), body.gx #liftmap-btn, body.gx #tide-toggle { display: none !important; }
+body.gx .maptools .seg, body.gx #liftmap-btn, body.gx #tide-toggle { display: none !important; }
+body.gx #map { background: #26313d; }
 .fx-days { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; }
 .fx-day { flex: none; width: 112px; border: 1px solid var(--border); border-radius: 12px; padding: 8px; background: var(--surface); font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; scroll-snap-align: start; }
 .fx-dn { font-weight: 600; } .fx-ic { font-size: 24px; line-height: 1.1; } .fx-t { font-weight: 600; font-size: 14px; } .fx-t span { color: var(--muted); font-weight: 500; } .fx-g, .fx-r { color: var(--ink-2); }
@@ -3663,7 +3664,7 @@ async function initLabels() {
   labelLayer = new LabelLayer().addTo(map); setNames(labelsOn);
   await loadPlaces(); labelLayer.redrawSoon();
   const b = $("#label-toggle");
-  b.addEventListener("click", () => { labelsOn = !labelsOn; b.classList.toggle("active", labelsOn); b.setAttribute("aria-pressed", String(labelsOn)); b.textContent = labelsOn ? "Names on" : "Names off"; setNames(labelsOn); labelLayer.redraw(); });
+  b.addEventListener("click", () => { labelsOn = !labelsOn; b.classList.toggle("active", labelsOn); b.setAttribute("aria-pressed", String(labelsOn)); b.textContent = labelsOn ? "Names on" : "Names off"; setNames(labelsOn); labelLayer.redraw(); if (GXO.on) gxDrawLabels(); });
 }
 
 /* =================== Coach kits =================== */
@@ -3893,7 +3894,7 @@ const CUR_PALETTES = {
 };
 const US_LOCALE = /^en-US/.test(navigator.language || "");
 const SET_DEF = { wind: "kt", cur: "kt", temp: US_LOCALE ? "F" : "C", rain: US_LOCALE ? "in" : "mm", theme: "auto", windPal: "classic", curPal: "classic",
-  custom: ["#3c5ab4", "#2fb4c8", "#3cb46e", "#ebcd32", "#eb5a32", "#a0289b"], lift: "", header: "", particles: true, density: 1, speed: 1, opacity: 0.8 };
+  custom: ["#3c5ab4", "#2fb4c8", "#3cb46e", "#ebcd32", "#eb5a32", "#a0289b"], lift: "", header: "", particles: true, density: 1, speed: 1, opacity: 0.9 };
 let SET = Object.assign({}, SET_DEF, store("nockdSettings") || {});
 const HEX = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 function windStops() {
@@ -4128,7 +4129,7 @@ async function gxRender() {
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
   ctx.drawImage(off, 0, 0, W * S, H * S);
   GX.lats = lats; GX.lons = lons; GX.S = S; GX.px = px; GX.py = py;
-  gxParticlesRestart();
+  gxParticlesRestart(); gxDrawLabels();
 }
 // Moving lines: each particle drifts with the wind (or current) and leaves a fading trail.
 function gxParticlesRestart() {
@@ -4192,13 +4193,109 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (basemap === "drawn" && !GX.on ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8 });
+const stateStyle = () => (GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
-  const want = on ? (basemap === "drawn" && !GX.on ? "dark" : "bright") : null;
+  const want = on && !GX.on ? (basemap === "drawn" ? "dark" : "bright") : null;
   for (const k of ["dark", "bright"]) { const l = namesLayer(k); if (k === want && !map.hasLayer(l)) l.addTo(map); if (k !== want && map.hasLayer(l)) map.removeLayer(l); }
   if (labelLayer) labelLayer.redrawSoon();
+}
+
+// Outlines and names for the Wind Map: coastlines and country borders (Natural Earth, public domain, via the
+// world-atlas package; 1:50m everywhere, 1:10m tiles once zoomed in), US state borders and names (US Census), and
+// city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
+const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
+const gxCoastStyle = () => ({ color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => ({ color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
+async function gxOutlines(on) {
+  GXO.on = on;
+  if (!GXO.group) {
+    map.createPane("gxLinePane").style.zIndex = 430; map.getPane("gxLinePane").style.pointerEvents = "none";
+    map.createPane("gxLabelPane").style.zIndex = 440; map.getPane("gxLabelPane").style.pointerEvents = "none";
+    GXO.renderer = L.canvas({ pane: "gxLinePane", padding: 0.5 }); GXO.group = L.layerGroup();
+    GXO.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("gxLabelPane"));
+    map.on("zoomanim", (e) => GXO.on && zoomCanvas(GXO.cv, e.center, e.zoom));
+    map.on("moveend", () => { if (GXO.on) { gxFineTiles(); gxDrawLabels(); } });
+  }
+  if (!on) { map.removeLayer(GXO.group); GXO.cv.style.display = "none"; return; }
+  GXO.cv.style.display = ""; GXO.group.addTo(map);
+  if (!GXO.coarse) {
+    try {
+      const [c, b] = await Promise.all(["world/coast-50m.json", "world/borders-50m.json"].map((u) => fetch(u).then((r) => r.json())));
+      GXO.coarse = L.layerGroup([L.polyline(lonLat(b), { ...gxBorderStyle(), renderer: GXO.renderer }), L.polyline(lonLat(c), { ...gxCoastStyle(), renderer: GXO.renderer })]);
+    } catch (_) { return; }
+  }
+  try { const r = await fetch("states.json"); if (r.ok) GXO.statesLab = (await r.json()).labels || []; } catch (_) {}
+  loadWorld().then(() => gxDrawLabels());
+  gxFineTiles();
+}
+async function gxFineTiles() { // 1:10m coast tiles when zoomed in, 1:50m when zoomed out
+  if (!GXO.on || !GXO.coarse) return;
+  const fine = map.getZoom() >= 6, b = map.getBounds(), want = new Set();
+  if (fine) for (let la = Math.floor(b.getSouth() / 10) * 10; la < b.getNorth(); la += 10) for (let lo = Math.floor(b.getWest() / 10) * 10; lo < b.getEast(); lo += 10) want.add(`${la}_${(((lo + 180) % 360) + 360) % 360 - 180}`);
+  if (want.size > 12) want.clear();
+  const useFine = want.size > 0;
+  if (useFine && GXO.group.hasLayer(GXO.coarse)) GXO.group.removeLayer(GXO.coarse);
+  if (!useFine && !GXO.group.hasLayer(GXO.coarse)) GXO.group.addLayer(GXO.coarse);
+  for (const [k, l] of GXO.fine) if (l && !want.has(k) && GXO.group.hasLayer(l)) GXO.group.removeLayer(l);
+  for (const k of want) {
+    if (!GXO.fine.has(k)) {
+      GXO.fine.set(k, null);
+      fetch(`world/c10/${k}.json`).then((r) => (r.ok ? r.json() : { c: [], b: [] })).then((t) => {
+        const l = L.layerGroup([L.polyline(lonLat(t.b), { ...gxBorderStyle(), renderer: GXO.renderer }), L.polyline(lonLat(t.c), { ...gxCoastStyle(), renderer: GXO.renderer })]);
+        GXO.fine.set(k, l); if (GXO.on && map.getZoom() >= 6) GXO.group.addLayer(l);
+      }).catch(() => GXO.fine.delete(k));
+    } else { const l = GXO.fine.get(k); if (l && !GXO.group.hasLayer(l)) GXO.group.addLayer(l); }
+  }
+}
+function gxLabelValue(lat, lon) {
+  const F = GX.f0 && GX.f0.main; if (!F) return "";
+  const v = gxValue(F, lat, lon); if (!Number.isFinite(v)) return "";
+  switch (GX.layer) {
+    case "temp": return `${Math.round(tempNum(v))}°`;
+    case "wind": case "gust": return SET.wind === "bft" ? fmtWindMs(v).replace("Force ", "F") : `${Math.round(windNum(v))}`;
+    case "rain": return v < 0.1 ? "" : SET.rain === "in" ? `${(v / 25.4).toFixed(2)}"` : `${v.toFixed(1)}`;
+    case "cloud": return `${Math.round(v)}%`;
+    default: return "";
+  }
+}
+function gxDrawLabels() {
+  const c = GXO.cv; if (!GXO.on || !c) return;
+  sizeCanvas(c); const ctx = c.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y);
+  if (!labelsOn) return;
+  const z = map.getZoom(), boxes = [], fits = (x, y, w, h) => { for (const q of boxes) if (x < q[0] + q[2] && x + w > q[0] && y < q[1] + q[3] && y + h > q[1]) return false; boxes.push([x - 6, y - 4, w + 12, h + 8]); return true; };
+  const font = css("--f-body");
+  ctx.lineJoin = "round"; ctx.textAlign = "center";
+  // state names, light and spaced, behind the cities
+  if (GXO.statesLab && z >= 3.5 && z < 9) {
+    ctx.font = `600 ${z >= 6 ? 12 : 10.5}px ${font}`; if ("letterSpacing" in ctx) ctx.letterSpacing = "1.5px";
+    for (const [n, la, lo, area] of GXO.statesLab) {
+      if (area < (z < 4.5 ? 6 : z < 5.5 ? 1.5 : 0)) continue;
+      const p = map.latLngToContainerPoint([la, lo]), t = n.toUpperCase(), w = ctx.measureText(t).width;
+      if (p.x < 0 || p.y < 0 || p.x > size.x || p.y > size.y || !fits(p.x - w / 2, p.y - 7, w, 14)) continue;
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.25)"; ctx.fillStyle = "rgba(255,255,255,.6)";
+      ctx.strokeText(t, p.x, p.y + 4); ctx.fillText(t, p.x, p.y + 4);
+    }
+  }
+  if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+  if (!WORLD) return;
+  const b = map.getBounds().pad(0.02), maxN = Math.round((size.x * size.y) / 9000);
+  let n = 0;
+  for (const p of WORLD) { // biggest towns first
+    if (n >= maxN) break;
+    if (p.lat < b.getSouth() || p.lat > b.getNorth()) continue;
+    let lon = p.lon; while (lon < b.getWest()) lon += 360; while (lon > b.getEast()) lon -= 360; if (lon < b.getWest()) continue;
+    const pt = map.latLngToContainerPoint([p.lat, lon]), val = gxLabelValue(p.lat, p.lon);
+    ctx.font = `600 13px ${font}`; const w1 = ctx.measureText(p.n).width; ctx.font = `600 12.5px ${font}`; const w2 = val ? ctx.measureText(val).width : 0;
+    const w = Math.max(w1, w2), h = val ? 32 : 16;
+    if (pt.x - w / 2 < 4 || pt.x + w / 2 > size.x - 4 || pt.y - 8 < 4 || pt.y + h > size.y - 4 || !fits(pt.x - w / 2, pt.y - 8, w, h)) continue;
+    ctx.lineWidth = 3.2; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.fillStyle = "#fff";
+    ctx.font = `600 13px ${font}`; ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
+    if (val) { ctx.font = `600 12.5px ${font}`; ctx.strokeText(val, pt.x, pt.y + 20); ctx.fillText(val, pt.x, pt.y + 20); }
+    n++;
+  }
 }
 async function enterGlobal(kind) {
   if (!gxLayerObj) {
@@ -4211,7 +4308,8 @@ async function enterGlobal(kind) {
   if (arrowLayer && map.hasLayer(arrowLayer)) map.removeLayer(arrowLayer);
   if (currentLayer && map.hasLayer(currentLayer)) map.removeLayer(currentLayer);
   if (!map.hasLayer(gxLayerObj)) gxLayerObj.addTo(map);
-  setNames(labelsOn);
+  if (baseLayer && map.hasLayer(baseLayer)) map.removeLayer(baseLayer); // weather colours on a plain background, outlines on top
+  setNames(labelsOn); gxOutlines(true);
   $("#gx-time").hidden = false; document.body.classList.add("gx"); if (GX.thin) setTimeout(GX.thin, 50);
   try { await gxLoadMeta(); } catch (e) { showMsg($(kind === "weather" ? "#fx-msg" : "#gx-msg"), e.message); return; }
   if (!GX.started) {
@@ -4227,6 +4325,8 @@ async function enterGlobal(kind) {
 function leaveGlobal() {
   GX.on = false; gxStop(); cancelAnimationFrame(GX.anim);
   if (gxLayerObj && map.hasLayer(gxLayerObj)) map.removeLayer(gxLayerObj);
+  if (GXO.group) gxOutlines(false);
+  if (baseLayer && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
   if (arrowLayer && !map.hasLayer(arrowLayer)) arrowLayer.addTo(map);
   if (currentLayer && !map.hasLayer(currentLayer)) currentLayer.addTo(map);
   $("#gx-time").hidden = true; $("#gx-probe").hidden = true; $("#gx-nodata").hidden = true; document.body.classList.remove("gx"); setNames(labelsOn);

@@ -12,7 +12,7 @@ import sys
 
 import shapefile
 from shapely.geometry import shape, mapping
-from shapely.ops import linemerge, unary_union
+from shapely.ops import linemerge, polylabel, unary_union
 
 from backend.config import ROOT
 
@@ -25,11 +25,11 @@ def main(zpath):
         rec = dict(zip(names, sr.record))
         if rec["STUSPS"] in ("PR", "VI", "GU", "MP", "AS"):
             continue
-        st.append((rec["STUSPS"], shape(sr.shape.__geo_interface__).buffer(0)))
+        st.append((rec["STUSPS"], shape(sr.shape.__geo_interface__).buffer(0), rec["NAME"]))
     lines = []
     for i in range(len(st)):  # each state's edge where a later state lies right next to it (each border once)
         a = st[i][1]
-        later = [b for _, b in st[i + 1:] if a.envelope.buffer(0.01).intersects(b.envelope)]
+        later = [b for _, b, _n in st[i + 1:] if a.envelope.buffer(0.01).intersects(b.envelope)]
         if not later:
             continue
         x = a.boundary.intersection(unary_union(later).buffer(0.003))
@@ -42,7 +42,12 @@ def main(zpath):
         coords = [rnd(geo["coordinates"])]
     else:
         coords = [rnd(c) for c in geo["coordinates"] if len(c) > 1]
-    out = {"type": "Feature", "properties": {"source": "US Census Bureau cb_2023_us_state_5m"}, "geometry": {"type": "MultiLineString", "coordinates": coords}}
+    labels = []  # a label spot well inside each state's biggest piece of land
+    for code, g, name in st:
+        big = max(getattr(g, "geoms", [g]), key=lambda q: q.area)
+        p = polylabel(big, tolerance=0.05)
+        labels.append([name, round(p.y, 3), round(p.x, 3), round(big.area, 1)])
+    out = {"type": "Feature", "properties": {"source": "US Census Bureau cb_2023_us_state_5m"}, "geometry": {"type": "MultiLineString", "coordinates": coords}, "labels": labels}
     (ROOT / "site" / "states.json").write_text(json.dumps(out, separators=(",", ":")))
     print(f"{len(coords)} border lines, {(ROOT / 'site' / 'states.json').stat().st_size // 1024} KB")
 
