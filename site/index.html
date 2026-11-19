@@ -4762,14 +4762,16 @@ async function gxRender() {
   const seq = ++gxRenderSeq, F = await gxFields(GX.t).catch(() => null);
   if (seq !== gxRenderSeq || !GX.on) return;
   GX.f0 = F;
-  const cv = GX.cv, size = map.getSize(); sizeCanvas(cv);
-  const ctx = cv.getContext("2d"); ctx.clearRect(0, 0, size.x, size.y);
+  const cv = GX.cv, size = map.getSize();
+  // the colour canvas is drawn 30% bigger than the view on every side, so panning shows colour, not gaps, and it is
+  // scaled along with Leaflet's zoom animation (see GxLayer); it is only replaced once the new picture is ready
+  const px = Math.round(size.x * 0.3), py = Math.round(size.y * 0.3), CW = size.x + 2 * px, CH = size.y + 2 * py;
   $("#gx-nodata").hidden = !!(F && F.main);
-  if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : "No forecast for this time."; return; }
-  const S = 4, W = Math.ceil(size.x / S), H = Math.ceil(size.y / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
+  if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : "No forecast for this time."; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
+  const S = 4, W = Math.ceil(CW / S), H = Math.ceil(CH / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
   const lats = new Float64Array(H), lons = new Float64Array(W);
-  for (let j = 0; j < H; j++) lats[j] = map.containerPointToLatLng([0, j * S + S / 2]).lat;
-  for (let i = 0; i < W; i++) lons[i] = map.containerPointToLatLng([i * S + S / 2, 0]).lng;
+  for (let j = 0; j < H; j++) lats[j] = map.containerPointToLatLng([0, j * S + S / 2 - py]).lat;
+  for (let i = 0; i < W; i++) lons[i] = map.containerPointToLatLng([i * S + S / 2 - px, 0]).lng;
   for (let j = 0; j < H; j++) {
     const la = lats[j]; if (la > 85.05 || la < -85.05) continue;
     for (let i = 0; i < W; i++) {
@@ -4778,9 +4780,15 @@ async function gxRender() {
     }
   }
   const off = document.createElement("canvas"); off.width = W; off.height = H; off.getContext("2d").putImageData(img, 0, 0);
+  // swap in the new picture in one step (no blank frame)
+  const dpr = window.devicePixelRatio || 1;
+  L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py]));
+  cv._tl = map.containerPointToLatLng([-px, -py]); cv._z = map.getZoom();
+  cv.width = CW * dpr; cv.height = CH * dpr; cv.style.width = CW + "px"; cv.style.height = CH + "px";
+  const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
   ctx.drawImage(off, 0, 0, W * S, H * S);
-  GX.lats = lats; GX.lons = lons; GX.S = S;
+  GX.lats = lats; GX.lons = lons; GX.S = S; GX.px = px; GX.py = py;
   gxParticlesRestart();
 }
 // Moving lines: each particle drifts with the wind (or current) and leaves a fading trail.
@@ -4790,7 +4798,7 @@ function gxParticlesRestart() {
   const F = GX.f0 && GX.f0.flow; if (!GX.on || !SET.particles || !F || !GX.lats || false) return;
   const n = Math.round(Math.min(6000, (size.x * size.y) / 260 * SET.density));
   const cur = GX.layer === "current", gain = (cur ? 1.6 : 0.09) * SET.speed;
-  const ll = (x, y) => { const j = Math.max(0, Math.min(GX.lats.length - 1, Math.round(y / GX.S))), i = Math.max(0, Math.min(GX.lons.length - 1, Math.round(x / GX.S))); return [GX.lats[j], GX.lons[i]]; };
+  const ll = (x, y) => { const j = Math.max(0, Math.min(GX.lats.length - 1, Math.round((y + GX.py) / GX.S))), i = Math.max(0, Math.min(GX.lons.length - 1, Math.round((x + GX.px) / GX.S))); return [GX.lats[j], GX.lons[i]]; };
   const spawn = (p) => { p.x = Math.random() * size.x; p.y = Math.random() * size.y; p.age = Math.floor(Math.random() * 80); };
   GX.parts = Array.from({ length: n }, () => { const p = {}; spawn(p); return p; });
   const dark = !["temp", "rain"].includes(GX.layer);
@@ -4812,14 +4820,18 @@ function gxParticlesRestart() {
   };
   GX.anim = requestAnimationFrame(step);
 }
+// The colour canvas stays on screen while the map moves: it slides with the map when dragged and is scaled with
+// Leaflet's zoom animation (like the map tiles), then redrawn sharp at the end. Only the moving lines pause.
 const GxLayer = L.Layer.extend({
   onAdd(m) {
-    GX.cv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
-    m.on("movestart zoomstart", this._hide, this); m.on("moveend", this._show, this);
+    GX.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
+    m.on("movestart zoomstart", this._pause, this); m.on("moveend", this._show, this); m.on("zoomanim", this._anim, this); m.on("zoom", this._zoom, this);
   },
-  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); GX.cv = GX.pv = null; m.off("movestart zoomstart", this._hide, this); m.off("moveend", this._show, this); },
-  _hide() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.cv) GX.cv.style.opacity = 0; if (GX.pv) GX.pv.style.opacity = 0; },
-  _show() { if (!GX.cv) return; const p = map.containerPointToLayerPoint([0, 0]); L.DomUtil.setPosition(GX.cv, p); L.DomUtil.setPosition(GX.pv, p); GX.cv.style.opacity = 1; GX.pv.style.opacity = 1; gxRender(); },
+  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); GX.cv = GX.pv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
+  _pause() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.pv) { GX.pv.style.transition = "opacity .15s"; GX.pv.style.opacity = 0; } },
+  _anim(e) { zoomCanvas(GX.cv, e.center, e.zoom); },
+  _zoom() { if (!map._animatingZoom) zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); },
+  _show() { if (!GX.cv) return; L.DomUtil.setPosition(GX.pv, map.containerPointToLayerPoint([0, 0])); gxRender().then(() => { if (GX.pv) GX.pv.style.opacity = 1; }); },
 });
 let gxLayerObj = null, eoxLabels = {};
 // Place names for the whole world (towns, cities, countries, seas), drawn by EOX from OpenStreetMap data. White text
