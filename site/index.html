@@ -1367,7 +1367,7 @@ main.wide .panel { border-right: 0; }
       </div>
       <div class="seg" id="tide-tools" role="group" aria-label="Tides on the map">
         <button type="button" id="tide-toggle" class="active" aria-pressed="true">Tides &amp; currents on</button>
-        <button type="button" id="label-toggle" class="active" aria-pressed="true">Names on</button>
+        <button type="button" id="label-toggle" title="Place names and state borders" class="active" aria-pressed="true">Names on</button>
       </div>
     </div>
   </section>
@@ -3026,6 +3026,30 @@ function alongChannel(u, w, ch, keepSpeed) {
   return [u + (tu - u) * k, w + (tw - w) * k];
 }
 function inCoastGrid(lat, lon) { const g = COAST && COAST.grid; return !!g && lat >= g.lat0 && lon >= g.lon0 && lat <= g.lat0 + g.ny * g.res && lon <= g.lon0 + g.nx * g.res; }
+// Offshore, past the reach of the tidal estimate (about 20 km from a NOAA current station), the Coast Map shows NOAA's
+// global ocean model (RTOFS, the same data as the Wind Map's Current layer) for the selected time. Between the two the
+// tidal estimate fades out and the ocean current fades in.
+const OCN = { key: null, F: null, busy: false };
+function oceanCurrentAt(lat, lon) {
+  if (!OCN.F) return null;
+  const u = gxSample(OCN.F, "A", lat, lon), v = gxSample(OCN.F, "B", lat, lon);
+  return Number.isFinite(u) && Number.isFinite(v) ? { u: u * 1.943844, w: v * 1.943844 } : null; // knots
+}
+async function ensureOcean() {
+  if (OCN.busy) return; OCN.busy = true;
+  try {
+    await gxLoadMeta();
+    const ms = coastMode === "live" && LIVE ? liveTimeMs() : Date.now(), pr = gxPair("c", (ms - GX.run) / 3600e3);
+    const key = pr ? pr.join(",") : "none";
+    if (key !== OCN.key) {
+      OCN.key = key;
+      if (!pr) OCN.F = null;
+      else { const [a, b] = await Promise.all([gxStep("c", pr[0]), gxStep("c", pr[1])]); OCN.F = { a, b, w: pr[2] }; }
+      if (currentLayer && activeTab === "coast") currentLayer.redraw();
+    }
+  } catch (_) { /* no worldwide data: tidal estimate only */ }
+  OCN.busy = false;
+}
 function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
   if (!inCoastGrid(lat, lon)) return null; // outside this region's land/water data (e.g. Cuba): draw nothing
   if (!landChecked && isCoastLand(lat, lon)) return null;
@@ -3034,9 +3058,14 @@ function flowAt(lat, lon, states, landChecked, quick, wind, cx, cy, mpp) {
   // Wind drift is worked out for the hover card only; the arrows show the tidal current.
   let dr = driftFrom(wind, dp);
   if (dr) { const [a, b] = shoreAdjust(lat, lon, dr.u, dr.w, true); dr = { u: a, w: b, sp: Math.hypot(a, b) }; }
-  if (!tid) return null;
+  const oc = oceanCurrentAt(lat, lon);
+  if (!tid) {
+    if (!oc) return null;
+    const sp = Math.hypot(oc.u, oc.w);
+    return { u: oc.u, w: oc.w, sp, dir: (deg(Math.atan2(oc.u, oc.w)) + 360) % 360, tidal: null, ocean: true, tsp: sp, drift: dr, dsp: dr ? dr.sp : 0, depth: dp, kind: "ocean", conf: 0.35 };
+  }
   const fade = Math.max(0, Math.min(1, (1 - tid.nearest / CUR_RADIUS_KM) / 0.35));
-  let tu = tid.u * fade, tw = tid.w * fade;
+  let tu = tid.u * fade + (oc ? oc.u * (1 - fade) : 0), tw = tid.w * fade + (oc ? oc.w * (1 - fade) : 0);
   // in a narrow channel the water can only move along it: turn the flow onto the channel line (flood/ebb kept)
   const ch = channelAt(lat, lon, cx, cy, mpp);
   if (ch && ch.conf > 0.35) { // only when the flow already runs roughly along the channel (no flipping at junctions)
@@ -3113,6 +3142,7 @@ const CurrentLayer = L.Layer.extend({
     const wide = L.latLngBounds([b.getSouth() - padLat, b.getWest() - padLon], [b.getNorth() + padLat, b.getEast() + padLon]);
     curStates = TIDES ? stationStates(t, wide) : [];
     if (TIDES && TIDES.tides.length) ensureWaterNet();
+    ensureOcean();
     const flood = css("--flood"), ebb = css("--ebb"), drift = css("--drift"), ink = css("--ink-2"), sur = css("--surface");
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     // Station screen positions, to keep estimates from crowding them
@@ -3298,7 +3328,7 @@ function currentLegendKey() {
   if (!tidesOn) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
      <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>${cKt(1).replace(/\.0 /, " ")}</span><span>${cKt(2).replace(/\.0 /, " ")}</span><span>${cKt(3)}+</span></div>
-     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. The moving arrows are the tidal current between them: flood runs in toward land and up rivers, ebb runs out toward the sea. In bays and rivers the speed follows the channel: the water that fills or drains everything behind a spot must pass through it, so it runs faster through narrows and deep channels and slows over shallows and toward the head of a cove${DEPTH ? " (depths from NOAA depth models)" : ""}. Strength and timing come from the NOAA current stations, or where there is none nearby, from how fast the tide is rising or falling at the nearest tide stations, so spring and neap tides are included. Colour and length show speed. Wind drift is not drawn; tap the water to see it. Estimates, not for navigation.</div>`;
+     <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. The moving arrows are the tidal current between them: flood runs in toward land and up rivers, ebb runs out toward the sea. In bays and rivers the speed follows the channel: the water that fills or drains everything behind a spot must pass through it, so it runs faster through narrows and deep channels and slows over shallows and toward the head of a cove${DEPTH ? " (depths from NOAA depth models)" : ""}. Strength and timing come from the NOAA current stations, or where there is none nearby, from how fast the tide is rising or falling at the nearest tide stations, so spring and neap tides are included. Colour and length show speed. Wind drift is not drawn; tap the water to see it. Far offshore, past the reach of the tide stations, the arrows switch smoothly to NOAA&#39;s global ocean-current model (Gulf Stream, eddies, wind drift). Estimates, not for navigation.</div>`;
 }
 function liveLegendBody(head) {
   return head + tideLegendKey() + currentLegendKey() + `<div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
@@ -3612,6 +3642,7 @@ function probeHtml(cp, ll) {
     const sz = map.getSize(), mpp = map.distance(map.containerPointToLatLng([0, sz.y / 2]), map.containerPointToLatLng([100, sz.y / 2])) / 100;
     const fw = flowAt(ll.lat, ll.lng, states, true, false, windHere(cp.x, cp.y, ll.lat, ll.lng), cp.x, cp.y, mpp), c = fw && fw.tidal;
     if (!fw) rows.push(`<div class="pr"><span class="pk">Tide</span><span>${!TIDES.currents.length ? (REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data for this region") : `no NOAA current station within ${CUR_RADIUS_KM} km by water`}</span></div>`);
+    else if (fw.ocean) rows.push(`<div class="pr"><span class="pk">Ocean current</span><span>${cKt(fw.sp)}</span><span>toward ${Math.round(fw.dir)}°</span><span style="color:var(--muted)">(NOAA global ocean model offshore: Gulf Stream, eddies, wind drift; tidal streams out here are not included)</span></div>`);
     else rows.push(`<div class="pr"><span class="pk">Tidal current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "slack (almost still)" : `${fw.kind} ${cKt(fw.sp)}`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}${c && c.estimated ? `<span style="color:var(--muted)">(estimated from the rise and fall of the tide; no current station nearby)</span>` : ""}</div>`);
     if (fw && fw.dsp >= 0.05) rows.push(`<div class="pr"><span class="pk">Wind drift</span><span style="color:var(--muted)">about ${cKt(fw.dsp)} on top of the tide (about 3% of the wind; not drawn)</span></div>`);
     const dp = depthAt(ll.lat, ll.lng);
@@ -4799,7 +4830,20 @@ function namesLayer(kind) {
   return eoxLabels[kind];
 }
 const worldNamesOn = () => Object.values(eoxLabels).some((l) => map.hasLayer(l));
+// US state borders (US Census Bureau), drawn on every map with the place names.
+let stateLines = null;
+async function setStates(on) {
+  if (!map.getPane("statePane")) { map.createPane("statePane").style.zIndex = 448; map.getPane("statePane").style.pointerEvents = "none"; }
+  if (on && !stateLines) {
+    try { const r = await fetch("states.json"); if (!r.ok) return; stateLines = L.geoJSON(await r.json(), { pane: "statePane", interactive: false, style: stateStyle }); } catch (_) { return; }
+  }
+  if (!stateLines) return;
+  stateLines.setStyle(stateStyle());
+  if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
+}
+const stateStyle = () => (basemap === "drawn" && !GX.on ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8 });
 function setNames(on) {
+  setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
   const want = on ? (basemap === "drawn" && !GX.on ? "dark" : "bright") : null;
   for (const k of ["dark", "bright"]) { const l = namesLayer(k); if (k === want && !map.hasLayer(l)) l.addTo(map); if (k !== want && map.hasLayer(l)) map.removeLayer(l); }
