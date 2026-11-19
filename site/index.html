@@ -1189,11 +1189,9 @@ body.gx #map { background: #071426; }
   </div>
   <nav class="tabs" aria-label="Sections">
     <a href="#coast" data-tab="coast" class="active">Coast Map</a>
-    <a href="#wind" data-tab="wind">Wind Map</a>
-    <a href="#weather" data-tab="weather">Forecast</a>
+    <a href="#wind" data-tab="wind">Forecast</a>
     <a href="#race" data-tab="race">Race Planning</a>
     <a href="#debrief" data-tab="debrief">Coach Debrief</a>
-    <a href="#plan" data-tab="plan">Day Planner</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
   </nav>
   <button type="button" id="settings-btn" class="gear" aria-label="Settings" title="Settings: units, colours, theme"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4h16M1 9h16M1 14h16"/><rect x="4" y="2" width="3" height="4" fill="var(--hdr)"/><rect x="11" y="7" width="3" height="4" fill="var(--hdr)"/><rect x="6" y="12" width="3" height="4" fill="var(--hdr)"/></svg></button>
@@ -1328,7 +1326,7 @@ body.gx #map { background: #071426; }
 
     <!-- WIND MAP: worldwide wind, gusts, currents and weather -->
     <div class="tab" id="tab-wind" hidden>
-      <h1>Wind map</h1>
+      <h1>Forecast</h1>
       <p class="lede">Wind, gusts, ocean currents, rain, temperature and cloud for the whole world, up to 16 days ahead. Hover or tap the map for the numbers at any spot, and press play to watch the weather move.</p>
       <div id="gx-msg" class="note warn" hidden></div>
       <div class="seg gx-layers" id="gx-layers" role="group" aria-label="Map layer">
@@ -1342,7 +1340,7 @@ body.gx #map { background: #071426; }
         <li>Wind and weather come from NOAA's Global Forecast System (GFS) on a grid about 50 km apart. It shows the big picture: fronts, storms, trade winds and sea breezes over big areas. Near shore, a bay or a harbor, use the Coast Map, which adds local stations, land shelter and lifts and headers.</li>
         <li>Ocean currents come from NOAA's global ocean model (RTOFS), about 8 days ahead: the Gulf Stream, eddies and wind-driven drift. It does not include tidal streams; the Coast Map has those near US and Iberian shores.</li>
         <li>Forecasts get less certain the further ahead you look. After about 5 days, treat them as a rough guide and check again closer to the day.</li>
-        <li>Change units and colours with the gear button at the top right.</li>
+        <li>Change units and colours with the settings button at the top right.</li>
       </ul>
     </div>
 
@@ -5364,6 +5362,8 @@ function initGlobal() {
 /* =================== routing & boot =================== */
 let activeTab = "planner";
 function showTab(name) {
+  if (name === "weather") { location.replace("#wind"); return; } // old Forecast tab and Day Planner were merged away; keep old links working
+  if (name === "plan") { location.replace("#coast"); return; }
   if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather"].includes(name)) name = "coast";
   const global = name === "wind" || name === "weather";
   if (GX.on && !global) leaveGlobal();
