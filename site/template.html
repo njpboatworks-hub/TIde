@@ -4047,6 +4047,7 @@ async function gxFields(t) { // the two decoded steps for the active layer (and 
   const get = async (src) => { const pr = gxPair(src, t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
   out.main = await get(L0.src);
   out.flow = GX.layer === "current" ? out.main : L0.src === "w" ? out.main : await get("w");
+  out.x = L0.src === "x" ? out.main : await get("x"); // temperature for the city labels
   return out;
 }
 function gxSample(F, arr, lat, lon) { // bilinear sample of one array of a step pair; NaN where no data (land for currents)
@@ -4250,16 +4251,9 @@ async function gxFineTiles() { // 1:10m coast tiles when zoomed in, 1:50m when z
     } else { const l = GXO.fine.get(k); if (l && !GXO.group.hasLayer(l)) GXO.group.addLayer(l); }
   }
 }
-function gxLabelValue(lat, lon) {
-  const F = GX.f0 && GX.f0.main; if (!F) return "";
-  const v = gxValue(F, lat, lon); if (!Number.isFinite(v)) return "";
-  switch (GX.layer) {
-    case "temp": return `${Math.round(tempNum(v))}°`;
-    case "wind": case "gust": return SET.wind === "bft" ? fmtWindMs(v).replace("Force ", "F") : `${Math.round(windNum(v))}`;
-    case "rain": return v < 0.1 ? "" : SET.rain === "in" ? `${(v / 25.4).toFixed(2)}"` : `${v.toFixed(1)}`;
-    case "cloud": return `${Math.round(v)}%`;
-    default: return "";
-  }
+function gxLabelValue(lat, lon) { // city labels always show the air temperature, whatever layer is on
+  const F = GX.f0 && GX.f0.x; if (!F) return "";
+  const v = gxSample(F, "A", lat, lon); return Number.isFinite(v) ? `${Math.round(tempNum(v))}°` : "";
 }
 function gxDrawLabels() {
   const c = GXO.cv; if (!GXO.on || !c) return;
