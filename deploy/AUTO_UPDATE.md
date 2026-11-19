@@ -11,7 +11,11 @@ GitHub runs `.github/workflows/refresh.yml` every morning. It downloads new data
    - Name `NETLIFY_AUTH_TOKEN`, value = the token
    - Name `NETLIFY_SITE_ID`, value = the site ID
 4. **Run it once by hand:** repository > **Actions** > **Refresh wind data** > **Run workflow**.
-   It takes a few minutes. A green check means your site is updated.
+   It takes about 20 to 30 minutes (the worldwide wind, weather and ocean-current forecast is the slow part).
+   A green check means your site is updated.
+
+**New Netlify account?** Use the new account's token and the new site's Site ID: replace both secrets in step 3.
+The Wind Map and Forecast tabs need this daily run; without it their forecast stops at the day the folder was built.
 
 ## Changing the schedule
 Edit the `cron` line in `.github/workflows/refresh.yml`. Times are UTC.

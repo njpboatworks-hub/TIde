@@ -476,7 +476,7 @@ def live(HOURS=168):
 
 
 # ---------------------------------------------------------------- tides
-def tides(days_ahead=8):
+def tides(days_ahead=16):
     from scripts.tides_snapshot import main as tides_main
     OUT.mkdir(parents=True, exist_ok=True)
     tz = R["tz"]((R["BB"][1] + R["BB"][3]) / 2, (R["BB"][0] + R["BB"][2]) / 2)

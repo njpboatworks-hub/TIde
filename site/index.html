@@ -802,6 +802,41 @@ tbody tr.sel { outline: 2px solid var(--accent); outline-offset: -2px; }
 .item .meta { color: var(--muted); font-size: 12.5px; }
 .item .tag { margin-left: auto; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--axis); border-radius: 999px; padding: 2px 8px; }
 .rate { display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: 700; font-size: 12px; }
+.gear { border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 999px; width: 38px; height: 38px; padding: 0; font-size: 20px; line-height: 1; margin-left: 6px; flex: none; }
+#settings { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); color: var(--ink); width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 16px 18px; }
+#settings::backdrop { background: rgba(10, 14, 20, .45); }
+#settings h3 { font-size: 14px; margin: 16px 0 8px; }
+.set-head { display: flex; justify-content: space-between; align-items: center; }
+.set-head h2 { margin: 0; } .set-head button { font-size: 22px; padding: 2px 10px; }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px 14px; }
+.set-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ink-2); }
+.set-grid label.chk { flex-direction: row; align-items: center; gap: 8px; }
+.pals { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.pal { display: flex; flex-direction: column; gap: 5px; padding: 6px 8px; text-align: left; font-size: 12.5px; }
+.pal i { display: block; height: 10px; border-radius: 5px; }
+.pal.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+.customs { display: flex; gap: 8px; flex-wrap: wrap; } .customs input { width: 42px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: 6px; background: none; }
+.gx-layers { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 10px; }
+.gx-time { position: absolute; left: 12px; right: 12px; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); z-index: 520;
+  display: flex; align-items: center; gap: 10px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px 18px; box-shadow: 0 4px 18px rgba(0,0,0,.18); }
+.gx-time button { padding: 6px 10px; flex: none; }
+.gx-track { position: relative; flex: 1; min-width: 0; }
+.gx-track input { width: 100%; margin: 0; }
+.gx-ticks { position: absolute; left: 0; right: 0; top: 20px; height: 12px; font-size: 10px; color: var(--muted); pointer-events: none; }
+.gx-ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+
+#gx-label { font: 600 13px/1.2 var(--f-body); min-width: 118px; text-align: right; }
+.gx-probe { position: absolute; z-index: 560; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; line-height: 1.45; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,.2); max-width: 300px; }
+.gx-probe .gp-h { color: var(--muted); font-size: 11.5px; margin-bottom: 2px; } .gx-probe .gp-f { color: var(--accent); font-size: 11.5px; margin-top: 3px; }
+.gx-nodata { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 530; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+body.gx .maptools .seg:not(#basemap-tools), body.gx #liftmap-btn, body.gx #tide-toggle { display: none !important; }
+.fx-days { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x proximity; }
+.fx-day { flex: none; width: 112px; border: 1px solid var(--border); border-radius: 12px; padding: 8px; background: var(--surface); font-size: 12.5px; display: flex; flex-direction: column; gap: 3px; scroll-snap-align: start; }
+.fx-dn { font-weight: 600; } .fx-ic { font-size: 24px; line-height: 1.1; } .fx-t { font-weight: 600; font-size: 14px; } .fx-t span { color: var(--muted); font-weight: 500; } .fx-g, .fx-r { color: var(--ink-2); }
+.fx-day .rate { align-self: flex-start; margin-top: 2px; }
+body.gx .legend { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100% - 250px); }
+@media (max-width: 760px) { .gx-time { left: 6px; right: 6px; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px; } #gx-label { min-width: 0; font-size: 11.5px; max-width: 92px; } body.gx .legend { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); } }
+.surge { color: #b8611a; }
 .plan-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 #plan-pick .plan-chips button { font: inherit; font-size: 13px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--axis); background: var(--surface); color: var(--ink); cursor: pointer; }
 #plan-pick .plan-chips button:hover { border-color: var(--accent); }
@@ -837,7 +872,10 @@ body.board #race-board-exit { display: block; }
 
 .legend { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); z-index: 500; background: var(--surface); color: var(--ink);
   border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; max-width: 270px; }
-.legend { padding-right: 30px; }
+.legend { padding-right: 30px; display: flex; flex-direction: column; max-height: calc(100% - 170px); min-height: 0; }
+.legend .legend-body { overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding-right: 4px; scrollbar-width: thin; }
+.legend:not(.more) .fine { display: none; }
+.legend .legend-more { margin-top: 6px; border: 0; background: none; padding: 2px 0; color: var(--accent); font: 600 12px/1.2 var(--f-body); cursor: pointer; text-align: left; }
 .legend .legend-toggle { position: absolute; top: 4px; right: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); border-radius: 7px; min-width: 24px; height: 22px; padding: 0 6px; font: 600 12px/1 var(--f-body); cursor: pointer; }
 .legend.min { padding: 4px; }
 .legend.min .legend-body { display: none; }
@@ -929,11 +967,16 @@ main.wide .panel { border-right: 0; }
   .mapwrap { height: 55vh; order: -1; }
   main.panel-min { grid-template-columns: minmax(0, 1fr); }
   main.panel-min .mapwrap { height: calc(100vh - 110px); }
-  .tabs { margin-left: 0; }
+  .tabs { margin-left: 0; flex-wrap: nowrap; overflow-x: auto; width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-right: 48px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { white-space: nowrap; flex: none; }
+  .top { position: sticky; } .gear { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: 10px; }
+  .leaflet-control-attribution { font-size: 9px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100vw; }
+  .gx-time { bottom: calc(22px + env(safe-area-inset-bottom, 0px)) !important; }
+  body.gx .legend { bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important; }
   .row { grid-template-columns: 1fr; }
-  .legend { max-width: 210px; font-size: 11.5px; padding: 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 34%; overflow-y: auto; overscroll-behavior: contain; }
-  .legend .fine { display: none; }  /* phones: keep the key, drop the long notes (they are on the hover card and in the side panel) */
-  .legend .fine, #field-readout, #tide-readout { display: none; }
+  .legend { max-width: 210px; font-size: 11.5px; padding: 6px 30px 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 40%; }
+  #field-readout, #tide-readout { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
@@ -949,12 +992,21 @@ main.wide .panel { border-right: 0; }
   </div>
   <nav class="tabs" aria-label="Sections">
     <a href="#coast" data-tab="coast" class="active">Coast Map</a>
+    <a href="#wind" data-tab="wind">Wind Map</a>
+    <a href="#weather" data-tab="weather">Forecast</a>
     <a href="#race" data-tab="race">Race Planning</a>
     <a href="#debrief" data-tab="debrief">Coach Debrief</a>
     <a href="#plan" data-tab="plan">Day Planner</a>
     <a href="#kits" data-tab="kits">Coach Kits</a>
   </nav>
+  <button type="button" id="settings-btn" class="gear" aria-label="Settings" title="Settings: units, colours, theme">&#9881;</button>
 </header>
+
+<dialog id="settings" aria-labelledby="settings-title">
+  <div class="set-head"><h2 id="settings-title">Settings</h2><button type="button" id="settings-close" aria-label="Close settings">&times;</button></div>
+  <div id="settings-body"></div>
+  <p class="hint">Saved on this device.</p>
+</dialog>
 
 <main>
   <section class="panel">
@@ -1075,6 +1127,48 @@ main.wide .panel { border-right: 0; }
         <p class="hint" id="plan-msg" style="margin:6px 0 0"></p>
       </div>
       <p class="hint">"Great" = wind 6 to 18 kt with gentle current (0.7 kt or less). "Choppy" = current of 0.8 kt or more running against the wind, which stands up short, steep waves. Wind is the National Weather Service (or MET Norway) forecast; tide and current are NOAA predictions or estimates between stations (see the Coast Map key). Not for navigation.</p>
+    </div>
+
+    <!-- WIND MAP: worldwide wind, gusts, currents and weather -->
+    <div class="tab" id="tab-wind" hidden>
+      <h1>Wind map</h1>
+      <p class="lede">Wind, gusts, ocean currents, rain, temperature and cloud for the whole world, up to 16 days ahead. Hover or tap the map for the numbers at any spot, and press play to watch the weather move.</p>
+      <div id="gx-msg" class="note warn" hidden></div>
+      <div class="seg gx-layers" id="gx-layers" role="group" aria-label="Map layer">
+        <button type="button" data-l="wind" class="active">Wind</button><button type="button" data-l="gust">Gusts</button><button type="button" data-l="current">Current</button>
+        <button type="button" data-l="rain">Rain</button><button type="button" data-l="temp">Temperature</button><button type="button" data-l="cloud">Cloud</button>
+      </div>
+      <p class="hint" id="gx-run"></p>
+      <div id="gx-stale" class="note warn" hidden></div>
+      <h2>Good to know</h2>
+      <ul class="advice">
+        <li>Wind and weather come from NOAA's Global Forecast System (GFS) on a grid about 50 km apart. It shows the big picture: fronts, storms, trade winds and sea breezes over big areas. Near shore, a bay or a harbor, use the Coast Map, which adds local stations, land shelter and lifts and headers.</li>
+        <li>Ocean currents come from NOAA's global ocean model (RTOFS), about 8 days ahead: the Gulf Stream, eddies and wind-driven drift. It does not include tidal streams; the Coast Map has those near US and Iberian shores.</li>
+        <li>Forecasts get less certain the further ahead you look. After about 5 days, treat them as a rough guide and check again closer to the day.</li>
+        <li>Change units and colours with the gear button at the top right.</li>
+      </ul>
+    </div>
+
+    <!-- FORECAST: 16-day weather for one spot -->
+    <div class="tab" id="tab-weather" hidden>
+      <h1>Forecast</h1>
+      <p class="lede">Weather for the next 16 days at any spot in the world: wind and gusts, temperature, rain, cloud, pressure and ocean current.</p>
+      <div id="fx-msg" class="note warn" hidden></div>
+      <div id="fx-out" hidden>
+        <p class="hint" id="fx-where"></p>
+        <div class="fx-days" id="fx-days"></div>
+        <h2>Wind and gusts</h2><div class="chart"><canvas id="fx-wind"></canvas></div>
+        <h2>Temperature</h2><div class="chart"><canvas id="fx-temp"></canvas></div>
+        <h2>Rain and cloud</h2><div class="chart"><canvas id="fx-rain"></canvas></div>
+        <h2>Air pressure</h2><p class="hint">Falling pressure often means wind and rain are coming; rising pressure usually means clearing.</p><div class="chart"><canvas id="fx-pres"></canvas></div>
+        <div id="fx-cur-wrap" hidden><h2>Ocean current</h2><div class="chart"><canvas id="fx-cur"></canvas></div></div>
+      </div>
+      <div class="form" id="fx-pick">
+        <p style="margin:0 0 8px"><b id="fx-pick-title">Pick a spot anywhere in the world.</b> Tap the map, search in the box at the top, use your location, or choose one:</p>
+        <div class="plan-chips"><button type="button" id="fx-geo">Use my location</button><span id="fx-venues"></span></div>
+        <p class="hint" id="fx-msg2" style="margin:6px 0 0"></p>
+      </div>
+      <p class="hint">NOAA Global Forecast System (GFS) and Real-Time Ocean Forecast System (RTOFS), refreshed by the site's daily update. Model values for a 50 km (weather) or 25 km (current) area, not a measurement at your exact spot. Not for navigation.</p>
     </div>
 
     <!-- RACE PLANNING (sits above the Coast Map controls, which set the conditions) -->
@@ -1253,6 +1347,14 @@ main.wide .panel { border-right: 0; }
     <button type="button" id="race-board-exit" class="primary" onclick="toggleBoard()">Exit big screen</button>
     <div id="map" role="region" aria-label="Map of Newport and Narragansett Bay"></div>
     <div class="legend" id="map-legend" hidden></div>
+    <div class="gx-probe" id="gx-probe" hidden></div>
+    <div class="gx-nodata" id="gx-nodata" hidden></div>
+    <div class="gx-time" id="gx-time" hidden>
+      <button type="button" id="gx-play" aria-label="Play">&#9654;</button>
+      <div class="gx-track"><input type="range" id="gx-slider" min="0" max="384" value="0" aria-label="Forecast time"><div class="gx-ticks" id="gx-ticks"></div></div>
+      <span id="gx-label"></span>
+      <button type="button" id="gx-now">Now</button>
+    </div>
     <div class="probe" id="probe" hidden></div>
     <div class="maptools">
       <button id="liftmap-btn" type="button">Show venue lift map</button>
@@ -1534,11 +1636,14 @@ function drawStations(vals) {
 }
 function hex(h) { h = h.replace("#", ""); return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); }
 function divergingColor(x, max, neg, pos) { const t = Math.max(-1, Math.min(1, x / max)), mid = hex(css("--neutral")), end = hex(t < 0 ? neg : pos), a = Math.abs(t); return `rgb(${mid.map((m, i) => Math.round(m + (end[i] - m) * a)).join(",")})`; }
+let legendMore = false;
 let legendMin = (() => { try { return localStorage.getItem("legendMin") === "1"; } catch (_) { return false; } })();
 function setLegend(html) {
   const el = $("#map-legend"); el.hidden = !html; if (!html) { el.innerHTML = ""; return; }
-  el.classList.toggle("min", legendMin);
-  el.innerHTML = `<button type="button" class="legend-toggle" aria-expanded="${!legendMin}" title="${legendMin ? "Show the map key" : "Hide the map key"}">${legendMin ? "Map key ▸" : "–"}</button>${legendMin && tidesOn && activeTab === "coast" ? `<div class="mini-cur"><span>Current</span><i style="background:${speedGradient()}"></i><span>still · 1 · 2 · 3+ kt</span></div>` : ""}<div class="legend-body">${html}</div>`;
+  el.classList.toggle("min", legendMin); el.classList.toggle("more", legendMore);
+  const hasFine = html.includes('class="fine"');
+  el.innerHTML = `<button type="button" class="legend-toggle" aria-expanded="${!legendMin}" title="${legendMin ? "Show the map key" : "Hide the map key"}">${legendMin ? "Map key ▸" : "–"}</button>${legendMin && tidesOn && activeTab === "coast" ? `<div class="mini-cur"><span>Current</span><i style="background:${speedGradient()}"></i><span>still · 1 · 2 · 3+ kt</span></div>` : ""}<div class="legend-body">${html}${hasFine ? `<button type="button" class="legend-more">${legendMore ? "Less ▴" : "How this works ▾"}</button>` : ""}</div>`;
+  const more = el.querySelector(".legend-more"); if (more) more.addEventListener("click", () => { legendMore = !legendMore; setLegend(html); });
   el.querySelector(".legend-toggle").addEventListener("click", () => {
     legendMin = !legendMin; try { localStorage.setItem("legendMin", legendMin ? "1" : "0"); } catch (_) {}
     setLegend(html);
@@ -2029,7 +2134,7 @@ function initArrows() {
     const w = heatSample(e.containerPoint.x, e.containerPoint.y);
     if (!w) { el.textContent = "Too far from any station to estimate."; return; }
     const lf = Math.round(w.lift);
-    el.textContent = `Here: from ${Math.round(w.dir)}° at ${r1(w.spd)} kt, ${Math.abs(lf) < 1.5 ? "about average" : (lf > 0 ? "lifted " : "headed ") + Math.abs(lf) + "°"} on ${arrowTack === "stbd" ? "starboard" : "port"}` +
+    el.textContent = `Here: from ${Math.round(w.dir)}° at ${wKt(w.spd, 1)}, ${Math.abs(lf) < 1.5 ? "about average" : (lf > 0 ? "lifted " : "headed ") + Math.abs(lf) + "°"} on ${arrowTack === "stbd" ? "starboard" : "port"}` +
       (w.steady != null ? `, ${coastMode === "custom" && activeTab === "coast" ? "consistency" : "steadiness"} ${Math.round(w.steady * 100)}%.` : ".");
   });
 }
@@ -2236,7 +2341,7 @@ function coastLegend() {
   const tackName = arrowTack === "stbd" ? "starboard" : "port";
   if (coastMode === "custom") {
     const { dir, spd } = customWind();
-    return divLegend(`Breeze from ${dir}° (${compass(dir)}) at ${spd} kt, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
+    return divLegend(`Breeze from ${dir}° (${compass(dir)}) at ${wKt(spd)}, ${tackName} tack`, "headed 8°", "lifted 8°", "--header", "--lift") +
       `<div class="ends"><span>compared with the ${dir}° breeze you set</span></div>
        <div class="fine" style="color:var(--ink-2)">Hover or tap the water for wind, current and tide.</div>
        <div class="fine">How each spot usually bends and slows a regional breeze from this direction, measured at ${Object.keys(EFFECTS).length} stations (May to October, 9 AM to 6 PM, ${COAST.years[0]} to ${COAST.years[1]}) and spread across the water, with the rough land-friction rule near shore. Model estimate, not a forecast.</div>`;
@@ -2255,7 +2360,7 @@ function drawCoastStations() {
     if (!LIVE) return;
     const acc = css("--accent"), sur = css("--surface"), names = Object.fromEntries(COAST.stations.map((s) => [s.id, s.name]));
     for (const o of LIVE.obs) L.circleMarker([o.lat, o.lon], { radius: 4, color: sur, weight: 1.5, fillColor: acc, fillOpacity: 1 })
-      .bindTooltip(`<b>${esc(names[o.id] || o.name || o.id.replace("asos_", "").toUpperCase())}</b><br>Latest: from ${o.dir}° at ${o.spd} kt${o.gust ? `, gusts ${Math.round(o.gust)}` : ""}<br>${timeLabel(Date.parse(o.time))} (${o.kind})`, { direction: "top", offset: [0, -6] })
+      .bindTooltip(`<b>${esc(names[o.id] || o.name || o.id.replace("asos_", "").toUpperCase())}</b><br>Latest: from ${o.dir}° at ${wKt(o.spd)}${o.gust ? `, gusts ${wKt(o.gust)}` : ""}<br>${timeLabel(Date.parse(o.time))} (${o.kind})`, { direction: "top", offset: [0, -6] })
       .addTo(layers.coastStations);
     return;
   }
@@ -2263,8 +2368,8 @@ function drawCoastStations() {
   for (const s of COAST.stations) {
     const w = stationWind(s);
     let tip;
-    if (coastMode === "custom") tip = w ? `With a ${customWind().dir}° breeze this spot usually reads ${Math.round(w.d)}° at ${r1(w.v)} kt<br>Bend ${fmtSigned(Math.round(w.off))} · consistency ${Math.round(w.steady * 100)}%` : "Not enough hours with a breeze from this direction";
-    else tip = w ? `Typically from ${w.d}° at ${w.v} kt<br>Steadiness ${Math.round(w.steady * 100)}%` : "No data for this month and hour";
+    if (coastMode === "custom") tip = w ? `With a ${customWind().dir}° breeze this spot usually reads ${Math.round(w.d)}° at ${wKt(w.v, 1)}<br>Bend ${fmtSigned(Math.round(w.off))} · consistency ${Math.round(w.steady * 100)}%` : "Not enough hours with a breeze from this direction";
+    else tip = w ? `Typically from ${w.d}° at ${wKt(w.v)}<br>Steadiness ${Math.round(w.steady * 100)}%` : "No data for this month and hour";
     L.circleMarker([s.lat, s.lon], { radius: 4, color: sur, weight: 1.5, fillColor: acc, fillOpacity: w ? 1 : 0.3 })
       .bindTooltip(`<b>${esc(s.name)}</b><br>${tip}`, { direction: "top", offset: [0, -6] }).addTo(layers.coastStations);
   }
@@ -2278,7 +2383,7 @@ function renderCoastNear() {
     const c = map.getCenter(), cl = Math.cos(rad(c.lat)), names = Object.fromEntries(COAST.stations.map((s) => [s.id, s.name]));
     const rows = LIVE.obs.map((o) => ({ o, km: Math.hypot((o.lat - c.lat) * 111.32, (o.lon - c.lng) * 111.32 * cl) })).sort((a, b) => a.km - b.km).slice(0, 6);
     $("#coast-near tbody").innerHTML = rows.map(({ o, km }) => { const nm = names[o.id] || o.name || o.id.replace("asos_", "").toUpperCase();
-      return `<tr><td>${esc(nm.length > 34 ? nm.slice(0, 33) + "…" : nm)}</td><td>${Math.round(km)} km</td><td>${o.dir}°</td><td>${o.spd} kt</td><td>${o.gust ? Math.round(o.gust) + " kt" : "–"}</td></tr>`; }).join("");
+      return `<tr><td>${esc(nm.length > 34 ? nm.slice(0, 33) + "…" : nm)}</td><td>${Math.round(km)} km</td><td>${o.dir}°</td><td>${wKt(o.spd)}</td><td>${o.gust ? wKt(o.gust) : "–"}</td></tr>`; }).join("");
     return;
   }
   const c = map.getCenter(), cl = Math.cos(rad(c.lat)), custom = coastMode === "custom";
@@ -2290,7 +2395,7 @@ function renderCoastNear() {
   $("#coast-near tbody").innerHTML = rows.map(({ s, km }) => {
     const w = stationWind(s);
     const last = !w ? "–" : custom ? fmtSigned(Math.round(w.off)) : Math.round(w.steady * 100) + "%";
-    return `<tr><td>${esc(s.name.length > 34 ? s.name.slice(0, 33) + "…" : s.name)}</td><td>${Math.round(km)} km</td><td>${w ? Math.round(w.d) + "°" : "–"}</td><td>${w ? r1(w.v) + " kt" : "–"}</td><td>${last}</td></tr>`;
+    return `<tr><td>${esc(s.name.length > 34 ? s.name.slice(0, 33) + "…" : s.name)}</td><td>${Math.round(km)} km</td><td>${w ? Math.round(w.d) + "°" : "–"}</td><td>${w ? wKt(w.v, 1) : "–"}</td><td>${last}</td></tr>`;
   }).join("");
 }
 function drawDial() {
@@ -2392,10 +2497,12 @@ async function loadLive() {
   LIVE = rd.live; TIDES = rd.tides;
   // Days covered by both the forecast and the tide window, from today
   const now = nyParts(Date.now()), sel = $("#live-day"); sel.innerHTML = "";
-  for (let k = 0; k < 9; k++) {
+  const gfsMs = LIVE.fc.gfs_from != null ? LIVE.fcStart + LIVE.fc.gfs_from * 3600e3 : Infinity;
+  for (let k = 0; k < 17; k++) {
     const dt = new Date(Date.UTC(now.y, now.m - 1, now.d + k, 12)), y = dt.getUTCFullYear(), m = dt.getUTCMonth() + 1, d = dt.getUTCDate();
     if (nyToUtc(y, m, d, 0) > LIVE.fcStart + LIVE.fc.hours * 3600e3) break;
-    sel.insertAdjacentHTML("beforeend", `<option value="${y}-${m}-${d}">${dayLabel(y, m, d)}${k === 0 ? " (today)" : ""}</option>`);
+    const longRange = nyToUtc(y, m, d, 12) >= gfsMs; // past the NWS / MET Norway forecast: NOAA GFS, less certain
+    sel.insertAdjacentHTML("beforeend", `<option value="${y}-${m}-${d}">${dayLabel(y, m, d)}${k === 0 ? " (today)" : longRange ? " (long range)" : ""}</option>`);
   }
   if (liveIsNow || !sel.value) { $("#live-hour").value = now.h; liveIsNow = true; }
   liveTz = regionTz(); liveLabels();
@@ -2838,6 +2945,23 @@ function openTideAt(lat, lon, states, landChecked, quick) {
   const sp = Math.hypot(u, w);
   return { u, w, sp, dir: (deg(Math.atan2(u, w)) + 360) % 360, flood: sg >= 0, nearest, n: used, conf: Math.max(0.3, 1 - nearest / CUR_RADIUS_KM), depth: useDepth ? dp : null, ratio };
 }
+// Live correction: how far NOAA's real-time gauges say the water is running above or below the prediction (wind,
+// river flow, air pressure). Shown as a note; it fades out for times more than a day away.
+let SURGE = null;
+fetch("surge.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((j) => { SURGE = j; }).catch(() => {});
+function surgeNear(lat, lon) {
+  if (!SURGE || !SURGE.st || REGION.id === "iberia" || REGION.id === "lakes") return null;
+  const ageH = (Date.now() - Date.parse(SURGE.time)) / 3600e3; if (ageH > 36) return null;
+  let best = null, bd = 50; const cl = Math.cos(rad(lat));
+  for (const g of SURGE.st) { const km = Math.hypot((g[2] - lat) * 111.32, (g[3] - lon) * 111.32 * cl); if (km < bd) { bd = km; best = g; } }
+  return best && Math.abs(best[4]) >= 0.3 ? { name: best[1], ft: best[4], km: bd, ageH } : null;
+}
+function surgeTxt(lat, lon, whenMs) {
+  const g = surgeNear(lat, lon); if (!g) return "";
+  const away = Math.abs((whenMs ?? Date.now()) - Date.parse(SURGE.time)) / 3600e3; if (away > 30) return "";
+  const v = tideUnits() === "m" ? `${(g.ft * 0.3048).toFixed(1)} m` : `${Math.abs(g.ft).toFixed(1)} ft`;
+  return ` <span class="surge">· gauge at ${esc(g.name)} reads ${v} ${g.ft > 0 ? "above" : "below"} the prediction (wind or river water), so expect ${g.ft > 0 ? "higher" : "lower"} water${away > 6 ? " if the weather holds" : ""}</span>`;
+}
 function tideAt(lat, lon, t) {
   const cl = Math.cos(rad(lat)), cand = [];
   for (const s of TIDES.tides) { const km = Math.hypot((s.lat - lat) * 111.32, (s.lon - lon) * 111.32 * cl); if (km <= TIDE_RADIUS_KM) cand.push([km, s]); }
@@ -3173,7 +3297,7 @@ function tideLegendKey() {
 function currentLegendKey() {
   if (!tidesOn) return "";
   return `<div style="margin-top:6px"><b>Tidal current ${coastMode === "live" ? "at the selected time" : "now"}</b></div>
-     <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>1 kt</span><span>2 kt</span><span>3+ kt</span></div>
+     <div class="bar" style="background:${speedGradient()}"></div><div class="ends"><span>still</span><span>${cKt(1).replace(/\.0 /, " ")}</span><span>${cKt(2).replace(/\.0 /, " ")}</span><span>${cKt(3)}+</span></div>
      <div class="fine">Bold arrows are NOAA prediction stations${map.getZoom() < 10 ? " (the strongest in each area when zoomed out)" : " (numbers are knots)"}. The moving arrows are the tidal current between them: flood runs in toward land and up rivers, ebb runs out toward the sea. In bays and rivers the speed follows the channel: the water that fills or drains everything behind a spot must pass through it, so it runs faster through narrows and deep channels and slows over shallows and toward the head of a cove${DEPTH ? " (depths from NOAA depth models)" : ""}. Strength and timing come from the NOAA current stations, or where there is none nearby, from how fast the tide is rising or falling at the nearest tide stations, so spring and neap tides are included. Colour and length show speed. Wind drift is not drawn; tap the water to see it. Estimates, not for navigation.</div>`;
 }
 function liveLegendBody(head) {
@@ -3216,7 +3340,7 @@ function renderTidePanel() {
     const ev = nc.s.ev, v = curAt(nc.s, t), nxt = ev.find((e) => e[0] > t);
     const state = v == null ? "–" : Math.abs(v) < 15 ? "Slack" : v > 0 ? "Flooding" : "Ebbing";
     const dir = v == null ? null : v > 0 ? nc.s.flood : nc.s.ebb;
-    tiles.push(`<div class="tile"><div class="k">Current</div><div class="v">${v == null ? "–" : Math.abs(v / 100).toFixed(1) + " kt"}</div><div class="s">${state}${dir != null && Math.abs(v) >= 15 ? " toward " + dir + "°" : ""} · next ${nxt ? (nxt[1] === 0 ? "slack" : "max " + (nxt[1] > 0 ? "flood " : "ebb ") + Math.abs(nxt[1] / 100).toFixed(1) + " kt") + " at " + hourLabelMin(nxt[0]) : "–"}</div></div>`);
+    tiles.push(`<div class="tile"><div class="k">Current</div><div class="v">${v == null ? "–" : cKt(Math.abs(v / 100))}</div><div class="s">${state}${dir != null && Math.abs(v) >= 15 ? " toward " + dir + "°" : ""} · next ${nxt ? (nxt[1] === 0 ? "slack" : "max " + (nxt[1] > 0 ? "flood " : "ebb ") + Math.abs(nxt[1] / 100).toFixed(1) + " kt") + " at " + hourLabelMin(nxt[0]) : "–"}</div></div>`);
     const flood = css("--flood"), ebb = css("--ebb");
     makeChart("current-chart", { type: "line", data: { labels, datasets: [
       { label: "Current (kt, + flood / − ebb)", data: steps.map((m) => { const x = curAt(nc.s, m); return x == null ? null : +(x / 100).toFixed(2); }),
@@ -3271,15 +3395,21 @@ function initLive() {
     let best = null, bd = 14; for (const c of currentPts) { const d = Math.hypot(c.x - e.containerPoint.x, c.y - e.containerPoint.y); if (d < bd) { bd = d; best = c; } }
     const t = liveNaiveMin(), tide = tideAt(lat, lng, t);
     const tideTxt = tide ? ` Tide about ${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"} (estimated from ${tide.n} station${tide.n > 1 ? "s" : ""}).` : " No tide station close enough to estimate the tide.";
-    if (best) { el.textContent = `NOAA station ${best.s.name}: ${Math.abs(best.v) < 0.15 ? "slack" : (best.v > 0 ? "flooding " : "ebbing ") + Math.abs(best.v).toFixed(1) + " kt toward " + (best.v > 0 ? best.s.flood : best.s.ebb) + "°"}.` + tideTxt; return; }
+    if (best) { el.textContent = `NOAA station ${best.s.name}: ${Math.abs(best.v) < 0.15 ? "slack" : (best.v > 0 ? "flooding " : "ebbing ") + cKt(Math.abs(best.v)) + " toward " + (best.v > 0 ? best.s.flood : best.s.ebb) + "°"}.` + tideTxt; return; }
     const cur = curStates.length ? currentAt(lat, lng, curStates, lpx === false) : null;
-    el.textContent = (cur ? `Estimated current: ${cur.sp < 0.15 ? "slack" : (cur.flood ? "flooding " : "ebbing ") + cur.sp.toFixed(1) + " kt toward " + Math.round(cur.dir) + "°"} (from ${cur.n} station${cur.n > 1 ? "s" : ""}, nearest ${cur.nearest.toFixed(1)} km).`
+    el.textContent = (cur ? `Estimated current: ${cur.sp < 0.15 ? "slack" : (cur.flood ? "flooding " : "ebbing ") + cKt(cur.sp) + " toward " + Math.round(cur.dir) + "°"} (from ${cur.n} station${cur.n > 1 ? "s" : ""}, nearest ${cur.nearest.toFixed(1)} km).`
       : `No current station within ${CUR_RADIUS_KM} km by water.`) + tideTxt;
   });
 }
 
 /* =================== Place search =================== */
-let PLACES = null, searchPin = null, searchSel = -1, searchHits = [];
+let PLACES = null, WORLD = null, searchPin = null, searchSel = -1, searchHits = [];
+async function loadWorld() { // 34,000 world towns and cities (GeoNames), loaded on first search
+  if (WORLD) return WORLD;
+  try { const r = await fetch("world.json"); WORLD = r.ok ? (await r.json()).map((p, i) => ({ n: p[0], d: p[1], lat: p[2], lon: p[3], pop: p[4], k: "world", i, l: (p[0] + " " + p[1]).toLowerCase() })) : []; }
+  catch (_) { WORLD = []; }
+  return WORLD;
+}
 const US_STATES = { ME: "Maine", NH: "New Hampshire", MA: "Massachusetts", RI: "Rhode Island", CT: "Connecticut", NY: "New York", NJ: "New Jersey", PA: "Pennsylvania",
   DE: "Delaware", MD: "Maryland", VA: "Virginia", NC: "North Carolina", SC: "South Carolina", GA: "Georgia", FL: "Florida", AL: "Alabama", MS: "Mississippi",
   LA: "Louisiana", TX: "Texas", CA: "California", OR: "Oregon", WA: "Washington", HI: "Hawaii", MN: "Minnesota", WI: "Wisconsin", IL: "Illinois",
@@ -3305,22 +3435,38 @@ function searchPlaces(q) {
     if (p.r === REGION.id) sc -= 0.2;                // the region on screen first
     hits.push([sc, n, p]);
   }
+  const have = new Set(hits.filter((h) => h[2].k === "town").map((h) => `${h[2].n}|${Math.round(h[2].lat * 10)}|${Math.round(h[2].lon * 10)}`));
+  for (let n = 0; WORLD && n < WORLD.length; n++) { // world towns: after the regions' own places, bigger towns first
+    const p = WORLD[n], name = p.n.toLowerCase().replace(/,/g, ""), all = p.l.replace(/,/g, "");
+    let sc;
+    if (name === q) sc = 0.6; else if (name.startsWith(q)) sc = 1.6; else if (all.includes(q)) sc = 3.6; else if (words.length > 1 && words.every((w) => all.includes(w))) sc = 4.6; else continue;
+    if (GX.on) sc -= 0.5;
+    if (have.has(`${p.n}|${Math.round(p.lat * 10)}|${Math.round(p.lon * 10)}`)) continue;
+    hits.push([sc, 1e6 + n, p]);
+  }
   hits.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   return hits.slice(0, 10).map((h) => h[2]);
 }
 const KIND_LABEL = { town: "Town", tide: "Tide station", current: "Current station", wind: "Wind station", place: "Harbor, bay or point" };
 function renderSearch() {
   const box = $("#search-results");
-  if (!searchHits.length) { box.hidden = !$("#place-search").value.trim(); box.innerHTML = box.hidden ? "" : `<div class="sr-empty">No matching places in the covered regions</div>`; return; }
-  box.innerHTML = searchHits.map((p, i) => `<button type="button" role="option" class="sr ${i === searchSel ? "sel" : ""}" data-i="${i}" aria-selected="${i === searchSel}"><span>${esc(p.n)}</span><span class="sr-k">${esc(p.k === "town" ? p.d : p.k === "place" ? p.d : KIND_LABEL[p.k])}</span></button>`).join("");
+  if (!searchHits.length) { box.hidden = !$("#place-search").value.trim(); box.innerHTML = box.hidden ? "" : `<div class="sr-empty">No matching places</div>`; return; }
+  box.innerHTML = searchHits.map((p, i) => `<button type="button" role="option" class="sr ${i === searchSel ? "sel" : ""}" data-i="${i}" aria-selected="${i === searchSel}"><span>${esc(p.n)}</span><span class="sr-k">${esc(p.k === "town" || p.k === "place" || p.k === "world" ? p.d : KIND_LABEL[p.k])}</span></button>`).join("");
   box.hidden = false;
   box.querySelectorAll(".sr").forEach((el) => el.addEventListener("mousedown", (e) => { e.preventDefault(); goToPlace(searchHits[+el.dataset.i]); }));
 }
 function goToPlace(p) {
   if (!p) return;
   $("#search-results").hidden = true; $("#place-search").value = p.k === "town" ? `${p.n}, ${p.d}` : p.n; $("#place-search").blur();
+  const inCoast = Object.values(REGIONS).some((r) => r.has(p.lat, p.lon));
+  if (GX.on || (p.k === "world" && !inCoast)) { // Wind Map / Forecast, or a town outside the coast-map regions
+    if (!GX.on) location.hash = "#wind";
+    setTimeout(() => { map.setView([p.lat, p.lon], Math.max(map.getZoom(), 8)); if (activeTab === "weather") setFxSpot(p.lat, p.lon, p.n); }, GX.on ? 0 : 400);
+    return;
+  }
+  if (p.k === "world") p = { ...p, r: Object.values(REGIONS).find((r) => r.has(p.lat, p.lon)).id };
   const go = () => {
-    map.setView([p.lat, p.lon], p.k === "town" ? 12 : 13);
+    map.setView([p.lat, p.lon], p.k === "town" || p.k === "world" ? 12 : 13);
     if (planMode) { setPlanSpot(p.lat, p.lon, p.n, false); return; }
     if (searchPin) map.removeLayer(searchPin);
     searchPin = L.circleMarker([p.lat, p.lon], { radius: 7, color: css("--surface"), weight: 2, fillColor: css("--ink"), fillOpacity: 1 })
@@ -3332,8 +3478,8 @@ function goToPlace(p) {
 }
 function initSearch() {
   const inp = $("#place-search");
-  inp.addEventListener("focus", loadPlaces);
-  inp.addEventListener("input", async () => { await loadPlaces(); searchHits = searchPlaces(inp.value); searchSel = searchHits.length ? 0 : -1; renderSearch(); });
+  inp.addEventListener("focus", () => { loadPlaces(); loadWorld(); });
+  inp.addEventListener("input", async () => { await loadPlaces(); await loadWorld(); searchHits = searchPlaces(inp.value); searchSel = searchHits.length ? 0 : -1; renderSearch(); });
   inp.addEventListener("keydown", (e) => {
     if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (!searchHits.length) return; searchSel = (searchSel + (e.key === "ArrowDown" ? 1 : -1) + searchHits.length) % searchHits.length; renderSearch(); }
     else if (e.key === "Enter") { e.preventDefault(); goToPlace(searchHits[Math.max(0, searchSel)]); }
@@ -3402,6 +3548,7 @@ function setBasemap(kind) {
   document.querySelectorAll("#basemap-tools button").forEach((b) => b.classList.toggle("active", b.dataset.base === basemap));
   restyleLand();
   if (arrowLayer) arrowLayer.redraw();
+  if (typeof labelsOn !== "undefined") setNames(labelsOn);
 }
 function restyleLand() {
   const s = shoreStyle(); if (layers.land) layers.land.setStyle(s);
@@ -3454,7 +3601,7 @@ function probeHtml(cp, ll) {
   const w = heatSample(cp.x, cp.y);
   if (w) {
     const d = arrowTack === "port" ? -w.lift : w.lift; // + = wind veered (more right) than the local average
-    rows.push(`<div class="pr"><span class="pk">Wind</span><span>from ${Math.round(w.dir)}° (${compass(w.dir)}) at ${r1(w.spd)} kt</span></div>`);
+    rows.push(`<div class="pr"><span class="pk">Wind</span><span>from ${Math.round(w.dir)}° (${compass(w.dir)}) at ${wKt(w.spd, 1)}</span></div>`);
     rows.push(`<div class="pr"><span class="pk">Starboard</span>${liftWord(d)}</div><div class="pr"><span class="pk">Port</span>${liftWord(-d)}</div>`);
   } else if (arrowTack === "off") rows.push(`<div class="pr"><span class="pk">Wind</span><span>hidden (turn it on above the map)</span></div>`);
   else rows.push(`<div class="pr"><span class="pk">Wind</span><span>no data here (too far from a station)</span></div>`);
@@ -3465,12 +3612,12 @@ function probeHtml(cp, ll) {
     const sz = map.getSize(), mpp = map.distance(map.containerPointToLatLng([0, sz.y / 2]), map.containerPointToLatLng([100, sz.y / 2])) / 100;
     const fw = flowAt(ll.lat, ll.lng, states, true, false, windHere(cp.x, cp.y, ll.lat, ll.lng), cp.x, cp.y, mpp), c = fw && fw.tidal;
     if (!fw) rows.push(`<div class="pr"><span class="pk">Tide</span><span>${!TIDES.currents.length ? (REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data for this region") : `no NOAA current station within ${CUR_RADIUS_KM} km by water`}</span></div>`);
-    else rows.push(`<div class="pr"><span class="pk">Tidal current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "slack (almost still)" : `${fw.kind} ${fw.sp.toFixed(1)} kt`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}${c && c.estimated ? `<span style="color:var(--muted)">(estimated from the rise and fall of the tide; no current station nearby)</span>` : ""}</div>`);
-    if (fw && fw.dsp >= 0.05) rows.push(`<div class="pr"><span class="pk">Wind drift</span><span style="color:var(--muted)">about ${fw.dsp.toFixed(1)} kt on top of the tide (about 3% of the wind; not drawn)</span></div>`);
+    else rows.push(`<div class="pr"><span class="pk">Tidal current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "slack (almost still)" : `${fw.kind} ${cKt(fw.sp)}`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}${c && c.estimated ? `<span style="color:var(--muted)">(estimated from the rise and fall of the tide; no current station nearby)</span>` : ""}</div>`);
+    if (fw && fw.dsp >= 0.05) rows.push(`<div class="pr"><span class="pk">Wind drift</span><span style="color:var(--muted)">about ${cKt(fw.dsp)} on top of the tide (about 3% of the wind; not drawn)</span></div>`);
     const dp = depthAt(ll.lat, ll.lng);
     if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.confined > 0.5 ? " (current here follows the channel: faster where deep and narrow)" : ""}</span></div>`);
     const tide = tideAt(ll.lat, ll.lng, t), nearT = TIDES.timebase === "utc" ? nearest(TIDES.tides, ll.lat, ll.lng) : null;
-    rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}` : REGION.id === "lakes" ? "almost none (Great Lakes)" : "no tide station within 20 km"}</span></div>`);
+    rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}${surgeTxt(ll.lat, ll.lng, coastMode === "live" && LIVE ? liveTimeMs() : Date.now())}` : REGION.id === "lakes" ? "almost none (Great Lakes)" : "no tide station within 20 km"}</span></div>`);
     when = coastMode === "live" ? `${hourLabel(+$("#live-hour").value)} on the selected date` : "now";
   }
   const src = coastMode === "live" ? (useObs() ? "live readings" : "forecast") : coastMode === "custom" ? "the breeze you set" : "typical wind for the month and hour";
@@ -3891,7 +4038,7 @@ function renderRacePanel() {
   const pts = legPoints(); let tot = 0; for (let i = 1; i < pts.length; i++) tot += distM(pts[i - 1], pts[i]);
   const w = windAtCourse();
   $("#race-summary").innerHTML = `${pts.length - 1} legs, ${(tot / 1852).toFixed(2)} nm sailed in total. Start line ${Math.round(distM(M.rc, M.pin))} m.` +
-    (w ? ` Wind at the course: ${Math.round(w.dir)}° at ${r1(w.spd)} kt; course axis ${RACE.axis}°${Math.abs(wrap180(w.dir - RACE.axis)) > 5 ? ` (${Math.round(Math.abs(wrap180(w.dir - RACE.axis)))}° off the wind)` : ""}.` : "");
+    (w ? ` Wind at the course: ${Math.round(w.dir)}° at ${wKt(w.spd, 1)}; course axis ${RACE.axis}°${Math.abs(wrap180(w.dir - RACE.axis)) > 5 ? ` (${Math.round(Math.abs(wrap180(w.dir - RACE.axis)))}° off the wind)` : ""}.` : "");
 }
 let racePlacing = false;
 function initRace() {
@@ -4079,14 +4226,15 @@ async function renderDayPlan() {
       else if (csp > 1.2) { rate = "tough"; word = "Strong current"; }
     }
     labels.push(hourLabel(h)); data.wind.push(w ? r1(w.spd) : null); data.tide.push(tide ? +tide.h.toFixed(2) : null); data.cur.push(cur ? +csp.toFixed(2) : null);
-    rows.push({ h, rate, html: `<tr class="${rate === "great" ? "best" : ""}"><td>${hourLabel(h)}</td><td>${w ? `${Math.round(w.dir)}° ${compass(w.dir)} · ${Math.round(w.spd)} kt` : "–"}</td>
-      <td>${tide ? `${tide.h.toFixed(1)} ${u} ${tide.rising ? "▲" : "▼"}` : "–"}</td><td>${cur ? (csp < 0.1 ? "slack" : `${cur.flood ? "flood" : "ebb"} ${csp.toFixed(1)} kt`) : "–"}</td><td><span class="rate ${rate}">${word}</span></td></tr>` });
+    rows.push({ h, rate, html: `<tr class="${rate === "great" ? "best" : ""}"><td>${hourLabel(h)}</td><td>${w ? `${Math.round(w.dir)}° ${compass(w.dir)} · ${wKt(w.spd)}` : "–"}</td>
+      <td>${tide ? `${tide.h.toFixed(1)} ${u} ${tide.rising ? "▲" : "▼"}` : "–"}</td><td>${cur ? (csp < 0.1 ? "slack" : `${cur.flood ? "flood" : "ebb"} ${cKt(csp)}`) : "–"}</td><td><span class="rate ${rate}">${word}</span></td></tr>` });
   }
   $("#plan-table tbody").innerHTML = rows.map((r) => r.html).join("");
   const great = rows.filter((r) => r.rate === "great").map((r) => r.h);
   const spans = []; for (const h of great) { const last = spans[spans.length - 1]; if (last && last[1] === h - 1) last[1] = h; else spans.push([h, h]); }
   $("#plan-best").textContent = spans.length ? `Best hours: ${spans.map(([a, b]) => (a === b ? hourLabel(a) : `${hourLabel(a)} to ${hourLabel(b)}`)).join(", ")}.` : "No hour that day has both a sailable breeze and gentle current here. Check the table for the best compromise.";
-  $("#plan-where").textContent = `For ${planSpot.name ? planSpot.name + ", " : ""}${c.lat.toFixed(3)}°, ${c.lng.toFixed(3)}° (${REGION.name}).${isCoastLand(c.lat, c.lng) ? " This spot is on land, so there is no current here: tap the water for the current." : ""}`;
+  const sg = surgeNear(c.lat, c.lng);
+  $("#plan-where").textContent = `${sg ? `Right now the ${sg.name} gauge reads ${Math.abs(sg.ft).toFixed(1)} ft ${sg.ft > 0 ? "above" : "below"} the predicted tide (wind or river water); today's tides may run ${sg.ft > 0 ? "higher" : "lower"} than shown. ` : ""}For ${planSpot.name ? planSpot.name + ", " : ""}${c.lat.toFixed(3)}°, ${c.lng.toFixed(3)}° (${REGION.name}).${isCoastLand(c.lat, c.lng) ? " This spot is on land, so there is no current here: tap the water for the current." : ""}`;
   makeChart("plan-chart", { type: "line", data: { labels, datasets: [
     { label: "Wind (kt)", data: data.wind, borderColor: css("--accent"), yAxisID: "y", tension: 0.3, pointRadius: 2 },
     { label: "Current (kt)", data: data.cur, borderColor: "#1baf7a", yAxisID: "y1", tension: 0.3, pointRadius: 2 },
@@ -4113,7 +4261,7 @@ const LabelLayer = L.Layer.extend({
     const z = map.getZoom(), b = map.getBounds().pad(0.05), boxes = [], sat = basemap !== "drawn";
     const fits = (x, y, w, h) => { for (const q of boxes) if (x < q[0] + q[2] && x + w > q[0] && y < q[1] + q[3] && y + h > q[1]) return false; boxes.push([x - 4, y - 3, w + 8, h + 6]); return true; };
     for (const t of tidePts) boxes.push([t.x + 6, t.y - 12, 90, 24]); // keep clear of the tide labels
-    const towns = z < 6 ? 12 : z < 8 ? 40 : z < 10 ? 90 : 160, maxMarine = z < 8 ? -1 : z < 9 ? 0 : z < 10 ? 1 : z < 11 ? 2 : z < 12 ? 3 : 4;
+    const towns = worldNamesOn() ? 0 : z < 6 ? 12 : z < 8 ? 40 : z < 10 ? 90 : 160, maxMarine = z < 8 ? -1 : z < 9 ? 0 : z < 10 ? 1 : z < 11 ? 2 : z < 12 ? 3 : 4;
     let nTown = 0, nAll = 0;
     const draw = (p, marine) => {
       const pt = map.latLngToContainerPoint([p.lat, p.lon]);
@@ -4141,10 +4289,11 @@ const LabelLayer = L.Layer.extend({
 let labelLayer = null, labelsOn = true;
 async function initLabels() {
   map.createPane("labelPane").style.zIndex = 460; map.getPane("labelPane").style.pointerEvents = "none";
-  labelLayer = new LabelLayer().addTo(map);
+  map.createPane("namesPane").style.zIndex = 455; map.getPane("namesPane").style.pointerEvents = "none";
+  labelLayer = new LabelLayer().addTo(map); setNames(labelsOn);
   await loadPlaces(); labelLayer.redrawSoon();
   const b = $("#label-toggle");
-  b.addEventListener("click", () => { labelsOn = !labelsOn; b.classList.toggle("active", labelsOn); b.setAttribute("aria-pressed", String(labelsOn)); b.textContent = labelsOn ? "Names on" : "Names off"; labelLayer.redraw(); });
+  b.addEventListener("click", () => { labelsOn = !labelsOn; b.classList.toggle("active", labelsOn); b.setAttribute("aria-pressed", String(labelsOn)); b.textContent = labelsOn ? "Names on" : "Names off"; setNames(labelsOn); labelLayer.redraw(); });
 }
 
 /* =================== Coach kits =================== */
@@ -4354,10 +4503,523 @@ function renderModel() {
     <div class="note info">Live forecasts from current NOAA readings need the full SailIQ Wind app running on a computer. This hosted page can't connect to outside data feeds.</div>`;
 }
 
+/* =================== Settings (units, colours, theme, animation) =================== */
+const PALETTES = { // wind speed palettes, stops in knots
+  classic: [[0, [80, 100, 190]], [4, [60, 130, 200]], [8, [50, 170, 190]], [12, [60, 180, 110]], [16, [140, 195, 60]], [20, [235, 205, 50]], [25, [245, 150, 40]], [30, [230, 80, 50]], [38, [200, 40, 110]], [48, [150, 50, 170]], [60, [235, 220, 245]]],
+  bright: [[0, [40, 90, 255]], [5, [0, 190, 255]], [10, [0, 230, 120]], [15, [180, 240, 0]], [20, [255, 220, 0]], [25, [255, 140, 0]], [30, [255, 40, 40]], [40, [230, 0, 160]], [55, [140, 0, 220]]],
+  ocean: [[0, [12, 30, 70]], [6, [20, 70, 140]], [12, [30, 130, 190]], [18, [60, 190, 220]], [25, [150, 230, 240]], [35, [235, 250, 255]], [50, [255, 255, 255]]],
+  viridis: [[0, [68, 1, 84]], [8, [59, 82, 139]], [16, [33, 145, 140]], [24, [94, 201, 98]], [34, [253, 231, 37]], [50, [255, 255, 200]]],
+  cividis: [[0, [0, 34, 78]], [8, [64, 77, 107]], [16, [124, 123, 120]], [24, [187, 175, 113]], [34, [253, 234, 69]], [50, [255, 250, 200]]],
+  gray: [[0, [30, 30, 30]], [10, [90, 90, 90]], [20, [160, 160, 160]], [35, [225, 225, 225]], [50, [255, 255, 255]]],
+};
+const PALETTE_NAMES = { classic: "Classic", bright: "Bright", ocean: "Ocean blues", viridis: "Viridis", cividis: "Colour-blind safe", gray: "Greyscale", custom: "My colours" };
+const CUR_PALETTES = {
+  classic: [[0, [158, 206, 230]], [0.3, [64, 182, 200]], [0.6, [47, 191, 113]], [1.0, [226, 210, 58]], [1.5, [245, 165, 36]], [2.2, [239, 90, 60]], [3.2, [194, 24, 91]]],
+  bright: [[0, [170, 220, 255]], [0.4, [0, 200, 255]], [0.8, [0, 230, 120]], [1.2, [255, 230, 0]], [1.8, [255, 120, 0]], [2.5, [255, 30, 30]], [3.2, [200, 0, 160]]],
+  ocean: [[0, [190, 225, 245]], [0.6, [100, 180, 230]], [1.2, [40, 120, 200]], [2.0, [20, 60, 150]], [3.2, [10, 20, 80]]],
+  viridis: [[0, [68, 1, 84]], [0.6, [59, 82, 139]], [1.2, [33, 145, 140]], [2.0, [94, 201, 98]], [3.2, [253, 231, 37]]],
+  cividis: [[0, [0, 34, 78]], [0.6, [64, 77, 107]], [1.2, [124, 123, 120]], [2.0, [187, 175, 113]], [3.2, [253, 234, 69]]],
+  gray: [[0, [235, 235, 235]], [1.0, [160, 160, 160]], [2.0, [90, 90, 90]], [3.2, [20, 20, 20]]],
+};
+const US_LOCALE = /^en-US/.test(navigator.language || "");
+const SET_DEF = { wind: "kt", cur: "kt", temp: US_LOCALE ? "F" : "C", rain: US_LOCALE ? "in" : "mm", theme: "auto", windPal: "classic", curPal: "classic",
+  custom: ["#3c5ab4", "#2fb4c8", "#3cb46e", "#ebcd32", "#eb5a32", "#a0289b"], lift: "", header: "", particles: true, density: 1, speed: 1, opacity: 0.8 };
+let SET = Object.assign({}, SET_DEF, store("nockdSettings") || {});
+const HEX = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+function windStops() {
+  if (SET.windPal === "custom") { const c = SET.custom; return c.map((h, i) => [[0, 6, 12, 20, 30, 45][i], HEX(h)]); }
+  return PALETTES[SET.windPal] || PALETTES.classic;
+}
+function curStops() {
+  if (SET.curPal === "custom") { const c = SET.custom; return c.map((h, i) => [[0, 0.5, 1, 1.6, 2.3, 3.2][i], HEX(h)]); }
+  return CUR_PALETTES[SET.curPal] || CUR_PALETTES.classic;
+}
+function lutFrom(stops, max, n = 256) { // n RGB entries over 0..max
+  const lut = new Uint8ClampedArray(n * 3);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1)) * max; let k = 1; while (k < stops.length - 1 && stops[k][0] < x) k++;
+    const [x0, a] = stops[k - 1], [x1, b] = stops[k], f = Math.max(0, Math.min(1, (x - x0) / (x1 - x0 || 1)));
+    for (let c = 0; c < 3; c++) lut[i * 3 + c] = a[c] + (b[c] - a[c]) * f;
+  }
+  return lut;
+}
+const UNIT = {
+  kt: ["kt", 1.943844], mph: ["mph", 2.236936], kmh: ["km/h", 3.6], ms: ["m/s", 1],
+};
+const BFT = [1, 3, 6, 10, 16, 21, 27, 33, 40, 47, 55, 63]; // Beaufort upper limits in knots
+const wKt = (kt, d) => (kt == null || !Number.isFinite(+kt) ? "–" : fmtWindMs(kt / 1.943844, d)); // wind given in knots, shown in the chosen unit
+const cKt = (kt) => (kt == null || !Number.isFinite(+kt) ? "–" : fmtCurMs(kt / 1.943844));     // current given in knots
+function fmtWindMs(ms, digits) { if (ms == null || !Number.isFinite(ms)) return "–"; if (SET.wind === "bft") { const kt = ms * 1.943844; let b = 0; while (b < 12 && kt >= BFT[b]) b++; return `Force ${b}`; } const [u, f] = UNIT[SET.wind] || UNIT.kt; return `${(ms * f).toFixed(digits ?? 0)} ${u}`; }
+function windNum(ms) { const [, f] = UNIT[SET.wind === "bft" ? "kt" : SET.wind] || UNIT.kt; return ms * f; }
+function windUnit() { return SET.wind === "bft" ? "kt" : (UNIT[SET.wind] || UNIT.kt)[0]; }
+function fmtCurMs(ms) { const [u, f] = UNIT[SET.cur] || UNIT.kt; return `${(ms * f).toFixed(1)} ${u}`; }
+function fmtTemp(c) { return c == null ? "–" : SET.temp === "F" ? `${Math.round(c * 9 / 5 + 32)}°F` : `${Math.round(c)}°C`; }
+function tempNum(c) { return SET.temp === "F" ? c * 9 / 5 + 32 : c; }
+function fmtRain(mm, rate) { if (mm == null) return "–"; return SET.rain === "in" ? `${(mm / 25.4).toFixed(2)} in${rate ? "/h" : ""}` : `${mm.toFixed(1)} mm${rate ? "/h" : ""}`; }
+function rainNum(mm) { return SET.rain === "in" ? mm / 25.4 : mm; }
+function applySettings() {
+  const root = document.documentElement;
+  if (SET.theme === "auto") delete root.dataset.theme; else root.dataset.theme = SET.theme;
+  root.style.setProperty("--lift", SET.lift || ""); root.style.setProperty("--header", SET.header || "");
+  if (!SET.lift) root.style.removeProperty("--lift"); if (!SET.header) root.style.removeProperty("--header");
+  CUR_STOPS.splice(0, CUR_STOPS.length, ...curStops()); _curCol.clear();
+  GX.lut = null;
+  if (typeof restyle === "function" && map) { try { restyle(); } catch (_) {} }
+  if (currentLayer) currentLayer.redraw();
+  if (activeTab === "coast") setLegend(arrowLegend());
+  if (GX.on) { gxRender(); gxLegend(); gxParticlesRestart(); }
+  if (activeTab === "weather" && FX.spot) renderForecast();
+  if (planMode) renderDayPlan();
+}
+function saveSettings() { store("nockdSettings", SET); applySettings(); }
+function gradCss(stops, max) { return `linear-gradient(90deg, ${stops.map(([k, c]) => `rgb(${c.join(",")}) ${Math.min(100, Math.round((k / max) * 100))}%`).join(", ")})`; }
+function renderSettings() {
+  const sel = (id, opts, val) => `<select id="${id}">${Object.entries(opts).map(([k, v]) => `<option value="${k}" ${k === val ? "selected" : ""}>${v}</option>`).join("")}</select>`;
+  const palRow = (key, set, max) => Object.keys(PALETTE_NAMES).map((k) => { const st = k === "custom" ? (key === "windPal" ? windStopsFor("custom") : curStopsFor("custom")) : set[k];
+    return `<button type="button" class="pal ${SET[key] === k ? "on" : ""}" data-key="${key}" data-pal="${k}"><i style="background:${gradCss(st, max)}"></i><span>${PALETTE_NAMES[k]}</span></button>`; }).join("");
+  $("#settings-body").innerHTML = `
+    <h3>Units</h3>
+    <div class="set-grid">
+      <label>Wind ${sel("set-wind", { kt: "knots", mph: "mph", kmh: "km/h", ms: "m/s", bft: "Beaufort" }, SET.wind)}</label>
+      <label>Current ${sel("set-cur", { kt: "knots", mph: "mph", kmh: "km/h", ms: "m/s" }, SET.cur)}</label>
+      <label>Temperature ${sel("set-temp", { F: "°F", C: "°C" }, SET.temp)}</label>
+      <label>Rain ${sel("set-rain", { in: "inches", mm: "millimetres" }, SET.rain)}</label>
+    </div>
+    <h3>Wind colours</h3><div class="pals">${palRow("windPal", PALETTES, 50)}</div>
+    <h3>Current colours</h3><div class="pals">${palRow("curPal", CUR_PALETTES, 3.2)}</div>
+    <h3>My colours <span class="hint">(used when "My colours" is picked; light to strong)</span></h3>
+    <div class="customs">${SET.custom.map((h, i) => `<input type="color" value="${h}" data-i="${i}" aria-label="Colour ${i + 1}">`).join("")}</div>
+    <h3>Lift and header colours</h3>
+    <div class="set-grid"><label>Lifted <input type="color" id="set-lift" value="${SET.lift || "#2a78d6"}"></label><label>Headed <input type="color" id="set-header" value="${SET.header || "#e34948"}"></label></div>
+    <h3>Look</h3>
+    <div class="set-grid">
+      <label>Theme ${sel("set-theme", { auto: "Match my device", light: "Light", dark: "Dark" }, SET.theme)}</label>
+      <label>Colour strength <input type="range" id="set-opacity" min="0.3" max="1" step="0.05" value="${SET.opacity}"></label>
+      <label class="chk"><input type="checkbox" id="set-particles" ${SET.particles ? "checked" : ""}> Moving wind lines on the Wind Map</label>
+      <label>How many lines <input type="range" id="set-density" min="0.3" max="2" step="0.1" value="${SET.density}"></label>
+      <label>Line speed <input type="range" id="set-speed" min="0.3" max="2.5" step="0.1" value="${SET.speed}"></label>
+    </div>
+    <p><button type="button" id="set-reset">Reset everything</button></p>`;
+  const on = (id, ev, fn) => $(id).addEventListener(ev, fn);
+  on("#set-wind", "change", (e) => { SET.wind = e.target.value; saveSettings(); });
+  on("#set-cur", "change", (e) => { SET.cur = e.target.value; saveSettings(); });
+  on("#set-temp", "change", (e) => { SET.temp = e.target.value; saveSettings(); });
+  on("#set-rain", "change", (e) => { SET.rain = e.target.value; saveSettings(); });
+  on("#set-theme", "change", (e) => { SET.theme = e.target.value; saveSettings(); });
+  on("#set-lift", "input", (e) => { SET.lift = e.target.value; saveSettings(); });
+  on("#set-header", "input", (e) => { SET.header = e.target.value; saveSettings(); });
+  on("#set-opacity", "input", (e) => { SET.opacity = +e.target.value; saveSettings(); });
+  on("#set-particles", "change", (e) => { SET.particles = e.target.checked; saveSettings(); });
+  on("#set-density", "change", (e) => { SET.density = +e.target.value; saveSettings(); });
+  on("#set-speed", "change", (e) => { SET.speed = +e.target.value; saveSettings(); });
+  on("#set-reset", "click", () => { SET = JSON.parse(JSON.stringify(SET_DEF)); saveSettings(); renderSettings(); });
+  document.querySelectorAll("#settings-body .pal").forEach((b) => b.addEventListener("click", () => { SET[b.dataset.key] = b.dataset.pal; saveSettings(); renderSettings(); }));
+  document.querySelectorAll("#settings-body .customs input").forEach((el) => el.addEventListener("change", () => { SET.custom[+el.dataset.i] = el.value; saveSettings(); renderSettings(); }));
+}
+function windStopsFor(k) { const s = SET.windPal; SET.windPal = k; const r = windStops(); SET.windPal = s; return r; }
+function curStopsFor(k) { const s = SET.curPal; SET.curPal = k; const r = curStops(); SET.curPal = s; return r; }
+function initSettings() {
+  SET.custom = (SET.custom || SET_DEF.custom).slice(0, 6);
+  const dlg = $("#settings");
+  $("#settings-btn").addEventListener("click", () => { renderSettings(); dlg.showModal ? dlg.showModal() : (dlg.hidden = false); });
+  $("#settings-close").addEventListener("click", () => (dlg.close ? dlg.close() : (dlg.hidden = true)));
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  applySettings();
+}
+
+/* =================== Wind Map: worldwide wind, gusts, currents, rain, temperature, cloud =================== */
+// Data: NOAA GFS (wind and weather, 16 days) and NOAA RTOFS (ocean currents, about 8 days), rebuilt by the daily
+// update into global/ (see scripts/global_wx.py). Decoded PNG steps are kept in a small cache.
+const GX = { on: false, meta: null, cache: new Map(), layer: "wind", t: 0, play: null, cv: null, pv: null, anim: null, parts: [], lut: null, f0: null };
+const GX_LAYERS = {
+  wind: { label: "Wind", src: "w" }, gust: { label: "Gusts", src: "w" }, current: { label: "Ocean current", src: "c" },
+  rain: { label: "Rain", src: "x" }, temp: { label: "Temperature", src: "x" }, cloud: { label: "Cloud", src: "x" },
+};
+async function gxLoadMeta() {
+  if (GX.meta) return GX.meta;
+  const r = await fetch("global/meta.json", { cache: "no-cache" });
+  if (!r.ok) throw new Error("The worldwide forecast has not been built yet (global/meta.json missing).");
+  GX.meta = await r.json(); GX.run = Date.parse(GX.meta.gfs.run); GX.crun = GX.meta.rtofs ? Date.parse(GX.meta.rtofs.run) : null;
+  GX.hMax = GX.meta.gfs.hours[GX.meta.gfs.hours.length - 1];
+  return GX.meta;
+}
+function gxImage(url) {
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); res({ w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }); }; img.onerror = () => rej(new Error("could not load " + url)); img.src = url; });
+}
+function gxStep(src, k) {
+  const key = src + k; if (GX.cache.has(key)) { const v = GX.cache.get(key); GX.cache.delete(key); GX.cache.set(key, v); return v; }
+  const p = gxImage(`global/${src}/${k}.png?v=${encodeURIComponent(GX.meta.built || "")}`).then(({ w, h, d }) => {
+    const n = w * h, A = new Float32Array(n), B = new Float32Array(n), C = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
+      if (src === "w") { A[i] = r / 255 * 80 - 40; B[i] = g / 255 * 80 - 40; C[i] = b / 255 * 60; }
+      else if (src === "x") { A[i] = r / 255 * 100 - 50; const s = g / 255; B[i] = s * s * 50; C[i] = b / 255 * 100; }
+      else { if (b < 128) { A[i] = NaN; B[i] = NaN; } else { A[i] = r / 255 * 5 - 2.5; B[i] = g / 255 * 5 - 2.5; } }
+    }
+    return { w, h, A, B, C, cell: src === "c" };
+  });
+  GX.cache.set(key, p); while (GX.cache.size > 36) GX.cache.delete(GX.cache.keys().next().value);
+  p.catch(() => GX.cache.delete(key));
+  return p;
+}
+function gxPair(src, t) { // steps around hour t (hours after the GFS run): [k0, k1, weight] or null outside the data
+  let hours = GX.meta.gfs.hours, tt = t;
+  if (src === "c") { if (!GX.meta.rtofs) return null; hours = GX.meta.rtofs.hours; tt = t + (GX.run - GX.crun) / 3600e3; }
+  if (tt < hours[0] - 3 || tt > hours[hours.length - 1] + 3) return null;
+  tt = Math.max(hours[0], Math.min(hours[hours.length - 1], tt));
+  let k = 0; while (k < hours.length - 2 && hours[k + 1] <= tt) k++;
+  const w = hours[k + 1] === hours[k] ? 0 : Math.max(0, Math.min(1, (tt - hours[k]) / (hours[k + 1] - hours[k])));
+  return [k, Math.min(k + 1, hours.length - 1), w];
+}
+async function gxFields(t) { // the two decoded steps for the active layer (and wind or current for the moving lines)
+  const L0 = GX_LAYERS[GX.layer], out = {};
+  const get = async (src) => { const pr = gxPair(src, t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
+  out.main = await get(L0.src);
+  out.flow = GX.layer === "current" ? out.main : L0.src === "w" ? out.main : await get("w");
+  return out;
+}
+function gxSample(F, arr, lat, lon) { // bilinear sample of one array of a step pair; NaN where no data (land for currents)
+  if (!F) return NaN;
+  const one = (S) => {
+    const res = S.cell ? 0.25 : 0.5, off = S.cell ? 0.5 : 0;
+    let x = ((((lon + 180) % 360) + 360) % 360) / res - off, y = (90 - lat) / res - off;
+    y = Math.max(0, Math.min(S.h - 1.001, y)); const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+    const i0 = ((i % S.w) + S.w) % S.w, i1 = (i0 + 1) % S.w, A = S[arr];
+    const p = [A[j * S.w + i0], A[j * S.w + i1], A[(j + 1) * S.w + i0], A[(j + 1) * S.w + i1]], wt = [(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy];
+    let s = 0, ws = 0; for (let q = 0; q < 4; q++) if (!Number.isNaN(p[q])) { s += p[q] * wt[q]; ws += wt[q]; }
+    return ws > 0.25 ? s / ws : NaN;
+  };
+  const a = one(F.a); if (F.w === 0) return a; const b = one(F.b); return a + (b - a) * F.w;
+}
+function gxValue(F, lat, lon) { // value shown for the active layer, in base units (m/s, mm/h, C, %)
+  switch (GX.layer) {
+    case "wind": case "current": return Math.hypot(gxSample(F, "A", lat, lon), gxSample(F, "B", lat, lon));
+    case "gust": return gxSample(F, "C", lat, lon);
+    case "temp": return gxSample(F, "A", lat, lon);
+    case "rain": return gxSample(F, "B", lat, lon);
+    case "cloud": return gxSample(F, "C", lat, lon);
+  }
+}
+function gxColorFn() {
+  const L = GX.layer;
+  if (L === "wind" || L === "gust") { const lut = lutFrom(windStops(), 60); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 60 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
+  if (L === "current") { const lut = lutFrom(curStops(), 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
+  if (L === "temp") { const st = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]], lut = lutFrom(st, 95); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v + 40) / 95 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
+  if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (v < 0.1 ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.min(255, 120 + v * 60)]; })()); }
+  return (v) => (v < 5 ? null : [235, 240, 245, Math.min(230, v * 2.3)]); // cloud: white veil
+}
+const gxRanges = () => ({ wind: [0, 60, "kt"], gust: [0, 60, "kt"], current: [0, 3.2, "kt"], temp: [-40, 55, "C"], rain: [0, 25, "mm/h"], cloud: [0, 100, "%"] }[GX.layer]);
+function gxLegend() {
+  if (!GX.on) return;
+  const L = GX.layer; let grad, ends;
+  if (L === "wind" || L === "gust") { grad = gradCss(windStops(), 60); const f = windNum(1 / 1.943844); ends = [0, 10, 20, 30, 45, 60].map((k) => Math.round(k * f)); ends = ends.map((x) => `${x}`); ends[ends.length - 1] += ` ${windUnit()}`; }
+  else if (L === "current") { grad = gradCss(curStops(), 3.2); const [u, f] = UNIT[SET.cur] || UNIT.kt; ends = [0, 1, 2, 3.2].map((k) => (k / 1.943844 * f).toFixed(1)); ends[3] += `+ ${u}`; }
+  else if (L === "temp") { grad = "linear-gradient(90deg, rgb(80,40,160), rgb(50,110,220) 21%, rgb(80,190,230) 37%, rgb(120,210,140) 47%, rgb(235,220,80) 58%, rgb(245,140,50) 68%, rgb(210,40,50) 84%, rgb(120,10,40))"; ends = [-40, -20, 0, 20, 40, 55].map((c) => fmtTemp(c)); }
+  else if (L === "rain") { grad = "linear-gradient(90deg, rgb(120,180,240), rgb(40,130,230) 4%, rgb(40,190,90) 12%, rgb(240,210,40) 24%, rgb(240,90,40) 48%, rgb(200,30,160))"; ends = [0.1, 1, 3, 6, 12, 25].map((m) => (SET.rain === "in" ? (m / 25.4).toFixed(2) : m)); ends[5] += SET.rain === "in" ? " in/h" : " mm/h"; }
+  else { grad = "linear-gradient(90deg, rgba(235,240,245,0), rgba(235,240,245,.9))"; ends = ["clear", "", "", "", "overcast"]; }
+  const src = L === "current" ? "NOAA RTOFS ocean model" : "NOAA GFS weather model";
+  setLegend(`<b>${GX_LAYERS[L].label}</b><div class="bar" style="background:${grad}"></div><div class="ends">${ends.map((e) => `<span>${e}</span>`).join("")}</div>
+    <div class="fine">${src}, ${L === "current" ? "about 9 km detail averaged to 0.25° (about 25 km)" : "0.5° grid (about 50 km)"}. Hover or tap for values. ${L === "current" ? "Ocean circulation only (Gulf Stream, eddies, wind drift); tidal streams near shore are on the Coast Map." : "Wind is at 10 m above the surface; local sea breezes and headland effects smaller than the grid are not shown, so use the Coast Map near shore."} Forecast, not for navigation.</div>`);
+}
+function gxTimeLabel(t, short) {
+  const d = new Date(GX.run + t * 3600e3);
+  return d.toLocaleString(undefined, short ? { weekday: "short", hour: "numeric" } : { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+let gxRenderSeq = 0;
+async function gxRender() {
+  if (!GX.on || !GX.meta) return;
+  const seq = ++gxRenderSeq, F = await gxFields(GX.t).catch(() => null);
+  if (seq !== gxRenderSeq || !GX.on) return;
+  GX.f0 = F;
+  const cv = GX.cv, size = map.getSize(); sizeCanvas(cv);
+  const ctx = cv.getContext("2d"); ctx.clearRect(0, 0, size.x, size.y);
+  $("#gx-nodata").hidden = !!(F && F.main);
+  if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : "No forecast for this time."; return; }
+  const S = 4, W = Math.ceil(size.x / S), H = Math.ceil(size.y / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
+  const lats = new Float64Array(H), lons = new Float64Array(W);
+  for (let j = 0; j < H; j++) lats[j] = map.containerPointToLatLng([0, j * S + S / 2]).lat;
+  for (let i = 0; i < W; i++) lons[i] = map.containerPointToLatLng([i * S + S / 2, 0]).lng;
+  for (let j = 0; j < H; j++) {
+    const la = lats[j]; if (la > 85.05 || la < -85.05) continue;
+    for (let i = 0; i < W; i++) {
+      const c = col(gxValue(F.main, la, lons[i])); if (!c) continue;
+      const k = (j * W + i) * 4; img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = c[3] * op;
+    }
+  }
+  const off = document.createElement("canvas"); off.width = W; off.height = H; off.getContext("2d").putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(off, 0, 0, W * S, H * S);
+  GX.lats = lats; GX.lons = lons; GX.S = S;
+  gxParticlesRestart();
+}
+// Moving lines: each particle drifts with the wind (or current) and leaves a fading trail.
+function gxParticlesRestart() {
+  cancelAnimationFrame(GX.anim); GX.anim = null;
+  const pv = GX.pv; if (!pv) return; sizeCanvas(pv); const ctx = pv.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y);
+  const F = GX.f0 && GX.f0.flow; if (!GX.on || !SET.particles || !F || !GX.lats || false) return;
+  const n = Math.round(Math.min(6000, (size.x * size.y) / 260 * SET.density));
+  const cur = GX.layer === "current", gain = (cur ? 1.6 : 0.09) * SET.speed;
+  const ll = (x, y) => { const j = Math.max(0, Math.min(GX.lats.length - 1, Math.round(y / GX.S))), i = Math.max(0, Math.min(GX.lons.length - 1, Math.round(x / GX.S))); return [GX.lats[j], GX.lons[i]]; };
+  const spawn = (p) => { p.x = Math.random() * size.x; p.y = Math.random() * size.y; p.age = Math.floor(Math.random() * 80); };
+  GX.parts = Array.from({ length: n }, () => { const p = {}; spawn(p); return p; });
+  const dark = !["temp", "rain"].includes(GX.layer);
+  const step = () => {
+    if (!GX.on) return;
+    ctx.globalCompositeOperation = "destination-in"; ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(0, 0, size.x, size.y);
+    ctx.globalCompositeOperation = "source-over"; ctx.lineWidth = 1.1; ctx.strokeStyle = dark ? "rgba(255,255,255,0.75)" : "rgba(20,20,30,0.55)";
+    ctx.beginPath();
+    for (const p of GX.parts) {
+      if (p.age++ > 90) { spawn(p); p.age = 0; continue; }
+      const [la, lo] = ll(p.x, p.y), u = gxSample(F, "A", la, lo), v = gxSample(F, "B", la, lo);
+      if (!Number.isFinite(u) || !Number.isFinite(v) || Math.abs(la) > 85) { spawn(p); continue; }
+      const nx = p.x + u * gain, ny = p.y - v * gain;
+      ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); p.x = nx; p.y = ny;
+      if (nx < 0 || ny < 0 || nx > size.x || ny > size.y) spawn(p);
+    }
+    ctx.stroke();
+    GX.anim = requestAnimationFrame(step);
+  };
+  GX.anim = requestAnimationFrame(step);
+}
+const GxLayer = L.Layer.extend({
+  onAdd(m) {
+    GX.cv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
+    m.on("movestart zoomstart", this._hide, this); m.on("moveend", this._show, this);
+  },
+  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); GX.cv = GX.pv = null; m.off("movestart zoomstart", this._hide, this); m.off("moveend", this._show, this); },
+  _hide() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.cv) GX.cv.style.opacity = 0; if (GX.pv) GX.pv.style.opacity = 0; },
+  _show() { if (!GX.cv) return; const p = map.containerPointToLayerPoint([0, 0]); L.DomUtil.setPosition(GX.cv, p); L.DomUtil.setPosition(GX.pv, p); GX.cv.style.opacity = 1; GX.pv.style.opacity = 1; gxRender(); },
+});
+let gxLayerObj = null, eoxLabels = {};
+// Place names for the whole world (towns, cities, countries, seas), drawn by EOX from OpenStreetMap data. White text
+// over satellite imagery and coloured weather, dark text over the drawn map.
+function namesLayer(kind) {
+  if (!eoxLabels[kind]) eoxLabels[kind] = L.tileLayer(`https://tiles.maps.eox.at/wmts/1.0.0/${kind === "dark" ? "overlay_3857" : "overlay_bright_3857"}/default/g/{z}/{y}/{x}.png`, { pane: "namesPane", maxNativeZoom: 16, maxZoom: 19,
+    attribution: 'Names: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, rendering <a href="https://maps.eox.at" target="_blank" rel="noopener">EOX</a>' });
+  return eoxLabels[kind];
+}
+const worldNamesOn = () => Object.values(eoxLabels).some((l) => map.hasLayer(l));
+function setNames(on) {
+  if (!externalMaps() || !map.getPane("namesPane")) return;
+  const want = on ? (basemap === "drawn" && !GX.on ? "dark" : "bright") : null;
+  for (const k of ["dark", "bright"]) { const l = namesLayer(k); if (k === want && !map.hasLayer(l)) l.addTo(map); if (k !== want && map.hasLayer(l)) map.removeLayer(l); }
+  if (labelLayer) labelLayer.redrawSoon();
+}
+async function enterGlobal(kind) {
+  if (!gxLayerObj) {
+    map.createPane("gxPane").style.zIndex = 420; map.getPane("gxPane").style.pointerEvents = "none";
+    gxLayerObj = new GxLayer();
+  }
+  GX.on = true; GX.kind = kind;
+  layers.stations.clearLayers();
+  if (layers.land && map.hasLayer(layers.land)) map.removeLayer(layers.land);
+  if (arrowLayer && map.hasLayer(arrowLayer)) map.removeLayer(arrowLayer);
+  if (currentLayer && map.hasLayer(currentLayer)) map.removeLayer(currentLayer);
+  if (!map.hasLayer(gxLayerObj)) gxLayerObj.addTo(map);
+  setNames(labelsOn);
+  $("#gx-time").hidden = false; document.body.classList.add("gx"); if (GX.thin) setTimeout(GX.thin, 50);
+  try { await gxLoadMeta(); } catch (e) { showMsg($(kind === "weather" ? "#fx-msg" : "#gx-msg"), e.message); return; }
+  if (!GX.started) {
+    GX.started = true; GX.t = Math.max(0, Math.min(GX.hMax, (Date.now() - GX.run) / 3600e3));
+    const v = store("gxView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([30, -40], 3, { animate: false });
+    gxBuildTimeline();
+  }
+  const ageH = (Date.now() - GX.run) / 3600e3;
+  $("#gx-run").textContent = `Weather model run ${new Date(GX.run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${GX.crun ? `; ocean model ${new Date(GX.crun).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}. Forecast runs to ${gxTimeLabel(GX.hMax)}.`;
+  const stale = $("#gx-stale"); stale.hidden = ageH < 36; stale.textContent = `This forecast is ${Math.round(ageH / 24)} days old. It refreshes when the site's daily update runs; until then the early hours are already in the past.`;
+  gxSetTime(GX.t); gxLegend(); gxLayerObj._show();
+}
+function leaveGlobal() {
+  GX.on = false; gxStop(); cancelAnimationFrame(GX.anim);
+  if (gxLayerObj && map.hasLayer(gxLayerObj)) map.removeLayer(gxLayerObj);
+  if (arrowLayer && !map.hasLayer(arrowLayer)) arrowLayer.addTo(map);
+  if (currentLayer && !map.hasLayer(currentLayer)) currentLayer.addTo(map);
+  $("#gx-time").hidden = true; $("#gx-probe").hidden = true; $("#gx-nodata").hidden = true; document.body.classList.remove("gx"); setNames(labelsOn);
+  if (FX.pin) { map.removeLayer(FX.pin); FX.pin = null; }
+}
+function gxBuildTimeline() {
+  const s = $("#gx-slider"); s.max = GX.hMax; s.step = 1;
+  s.addEventListener("input", () => { gxStop(); gxSetTime(+s.value); });
+  $("#gx-play").addEventListener("click", () => (GX.play ? gxStop() : gxStart()));
+  $("#gx-now").addEventListener("click", () => { gxStop(); gxSetTime(Math.max(0, Math.min(GX.hMax, (Date.now() - GX.run) / 3600e3))); });
+  // day ticks at local midnights
+  const ticks = []; const d0 = new Date(GX.run); d0.setHours(24, 0, 0, 0);
+  for (let d = d0.getTime(); d < GX.run + GX.hMax * 3600e3; d += 864e5) { const h = (d - GX.run) / 3600e3; ticks.push(`<span style="left:${(h / GX.hMax) * 100}%">${new Date(d + 12 * 3600e3).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}</span>`); }
+  $("#gx-ticks").innerHTML = ticks.join("");
+  const thin = () => { const w = $("#gx-ticks").offsetWidth || 400, every = Math.max(1, Math.ceil((ticks.length * 56) / w)); document.querySelectorAll("#gx-ticks span").forEach((el, i) => (el.style.display = i % every ? "none" : "")); };
+  thin(); window.addEventListener("resize", thin); map.on("resize", thin); GX.thin = thin;
+  document.querySelectorAll("#gx-layers button").forEach((b) => b.addEventListener("click", () => gxSetLayer(b.dataset.l)));
+  map.on("mousemove", (e) => GX.on && gxProbe(e.latlng, e.containerPoint));
+  map.on("mouseout", () => ($("#gx-probe").hidden = true));
+  map.on("click", (e) => { if (!GX.on) return; if (activeTab === "weather") setFxSpot(e.latlng.lat, e.latlng.lng, null); else gxProbe(e.latlng, e.containerPoint); });
+  map.on("moveend", () => { if (GX.on) store("gxView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom() }); });
+}
+function gxSetLayer(l) {
+  GX.layer = l; document.querySelectorAll("#gx-layers button").forEach((b) => b.classList.toggle("active", b.dataset.l === l));
+  gxLegend(); gxRender();
+}
+let gxTimer = null;
+function gxSetTime(t) {
+  GX.t = t; $("#gx-slider").value = Math.round(t); $("#gx-label").textContent = gxTimeLabel(t);
+  clearTimeout(gxTimer); gxTimer = setTimeout(gxRender, GX.play ? 0 : 60);
+  // warm the cache for the next steps
+  const pr = gxPair("w", t + 6); if (pr) { gxStep("w", pr[1]).catch(() => {}); if (GX_LAYERS[GX.layer].src !== "w") { const q = gxPair(GX_LAYERS[GX.layer].src, t + 6); if (q) gxStep(GX_LAYERS[GX.layer].src, q[1]).catch(() => {}); } }
+}
+function gxStart() { $("#gx-play").textContent = "❚❚"; $("#gx-play").setAttribute("aria-label", "Pause"); GX.play = setInterval(() => { let t = GX.t + 1; if (t > GX.hMax) t = 0; gxSetTime(t); }, 180); }
+function gxStop() { if (GX.play) clearInterval(GX.play); GX.play = null; const b = $("#gx-play"); if (b) { b.textContent = "▶"; b.setAttribute("aria-label", "Play"); } }
+async function gxProbe(ll, cp) {
+  const box = $("#gx-probe"); if (!GX.meta) return;
+  const lat = ll.lat, lon = ll.lng;
+  const pair = async (src) => { const pr = gxPair(src, GX.t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
+  const [W, X, C] = await Promise.all([pair("w"), pair("x"), pair("c")]).catch(() => [null, null, null]);
+  const rows = [];
+  if (W) { const u = gxSample(W, "A", lat, lon), v = gxSample(W, "B", lat, lon), g = gxSample(W, "C", lat, lon), sp = Math.hypot(u, v), dir = (deg(Math.atan2(-u, -v)) + 360) % 360;
+    rows.push(`<div><b>Wind</b> ${fmtWindMs(sp)} from ${compass(dir)} (${Math.round(dir)}°), gusts ${fmtWindMs(g)}</div>`); }
+  if (C) { const u = gxSample(C, "A", lat, lon), v = gxSample(C, "B", lat, lon); if (Number.isFinite(u)) { const sp = Math.hypot(u, v), dir = (deg(Math.atan2(u, v)) + 360) % 360; rows.push(`<div><b>Current</b> ${fmtCurMs(sp)} toward ${compass(dir)} (${Math.round(dir)}°)</div>`); } }
+  if (X) { const t = gxSample(X, "A", lat, lon), r = gxSample(X, "B", lat, lon), c = gxSample(X, "C", lat, lon);
+    rows.push(`<div><b>Air</b> ${fmtTemp(t)} · ${r < 0.1 ? "dry" : `rain ${fmtRain(r, true)}`} · cloud ${Math.round(c)}%</div>`); }
+  if (!rows.length) { box.hidden = true; return; }
+  box.innerHTML = `<div class="gp-h">${lat.toFixed(2)}°, ${(((lon + 180) % 360 + 360) % 360 - 180).toFixed(2)}° · ${gxTimeLabel(GX.t)}</div>${rows.join("")}${activeTab === "weather" ? `<div class="gp-f">Tap to get the 16-day forecast here</div>` : ""}`;
+  const size = map.getSize(); box.hidden = false;
+  const bw = box.offsetWidth, bh = box.offsetHeight;
+  box.style.left = `${Math.min(size.x - bw - 8, cp.x + 16)}px`; box.style.top = `${Math.max(8, Math.min(size.y - bh - 70, cp.y - bh - 12))}px`;
+}
+
+/* =================== Forecast tab: 16 days for one spot =================== */
+const FX = { spot: store("fxSpot"), pin: null, tiles: new Map() };
+async function fxTile(kind, la, lo) {
+  const key = `${kind}${la}_${lo}`; if (FX.tiles.has(key)) return FX.tiles.get(key);
+  const p = fetch(`global/${kind}/${la}_${lo}.bin.gz?v=${encodeURIComponent(GX.meta.built || "")}`).then((r) => (r.ok ? r.arrayBuffer() : null)).then(async (b) => {
+    if (!b) return null; let u = new Uint8Array(b);
+    if (u[0] === 0x1f && u[1] === 0x8b) { // gzip (unless the server already unpacked it)
+      if (typeof DecompressionStream === "undefined") throw new Error("This browser is too old to read the forecast files. Please update it.");
+      u = new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
+    }
+    return u;
+  }).catch((e) => { if (/too old/.test(e.message)) showMsg($("#fx-msg"), e.message); return null; });
+  FX.tiles.set(key, p); return p;
+}
+async function fxSeries(lat, lon) {
+  await gxLoadMeta();
+  const m = GX.meta.gfs, nst = m.hours.length, la = Math.floor(lat / 10) * 10, lo = Math.floor((((lon + 180) % 360 + 360) % 360 - 180) / 10) * 10;
+  const T = await fxTile("p", la, lo); if (!T) return null;
+  const n = 11, r = la + 10 - lat, c = (((lon - lo) % 360) + 360) % 360, i = Math.min(9, Math.floor(c)), j = Math.min(9, Math.floor(r)), fx = c - i, fy = r - j;
+  const vars = m.tile.vars, enc = m.tile.enc, out = {};
+  vars.forEach((name, vi) => {
+    const [a, b] = enc[name], arr = new Float32Array(nst);
+    for (let s = 0; s < nst; s++) {
+      const base = (vi * nst + s) * n * n, g = (jj, ii) => T[base + jj * n + ii];
+      const q = g(j, i) * (1 - fx) * (1 - fy) + g(j, i + 1) * fx * (1 - fy) + g(j + 1, i) * (1 - fx) * fy + g(j + 1, i + 1) * fx * fy;
+      let v = a + (q * (b - a)) / 254; if (name === "rain") v = v * v * 50; arr[s] = v;
+    }
+    out[name] = arr;
+  });
+  out.hours = m.hours;
+  if (GX.meta.rtofs && lat > -80 && lat < 90) { // ocean current at the spot
+    const R = GX.meta.rtofs, cl = Math.floor(lat / 10) * 10, Q = await fxTile("q", cl, lo);
+    if (Q) {
+      const k = R.hours.length, rr = (cl + 10 - lat) / 0.25 - 0.5, cc = (((lon - lo) % 360) + 360) % 360 / 0.25 - 0.5;
+      const ci = Math.max(0, Math.min(39, Math.floor(cc))), cj = Math.max(0, Math.min(39, Math.floor(rr))), gx = Math.max(0, Math.min(1, cc - ci)), gy = Math.max(0, Math.min(1, rr - cj));
+      const cu = new Float32Array(k), cv = new Float32Array(k); let wet = false;
+      for (let s = 0; s < k; s++) {
+        let su = 0, sv = 0, ws = 0;
+        for (const [dj, di, w] of [[0, 0, (1 - gx) * (1 - gy)], [0, 1, gx * (1 - gy)], [1, 0, (1 - gx) * gy], [1, 1, gx * gy]]) {
+          const o = (s * 41 + cj + dj) * 41 + ci + di, a = Q[o], b = Q[k * 41 * 41 + o]; if (a === 255) continue;
+          su += (-2.5 + (a * 5) / 254) * w; sv += (-2.5 + (b * 5) / 254) * w; ws += w;
+        }
+        if (ws > 0.3) { cu[s] = su / ws; cv[s] = sv / ws; wet = true; } else { cu[s] = NaN; cv[s] = NaN; }
+      }
+      if (wet) out.cur = { u: cu, v: cv, hours: R.hours.map((h) => h + (GX.crun - GX.run) / 3600e3) };
+    }
+  }
+  return out;
+}
+async function setFxSpot(lat, lon, name) {
+  lon = (((lon + 180) % 360) + 360) % 360 - 180;
+  await loadPlaces();
+  if (!name) { let best = null, bd = 15; const cl = Math.cos(rad(lat)); for (const p of PLACES || []) { const km = Math.hypot((p.lat - lat) * 111.32, (p.lon - lon) * 111.32 * cl); if (km < bd) { bd = km; best = p; } } if (best) name = `near ${best.n}`; }
+  FX.spot = { lat, lon, name: name || null }; store("fxSpot", FX.spot);
+  renderForecast();
+}
+function fxUseLocation() {
+  const msg = $("#fx-msg2");
+  if (!navigator.geolocation) { msg.textContent = "This browser can't share your location. Tap the map or search instead."; return; }
+  msg.textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition((p) => { msg.textContent = ""; map.setView([p.coords.latitude, p.coords.longitude], Math.max(map.getZoom(), 7)); setFxSpot(p.coords.latitude, p.coords.longitude, "Your location"); },
+    () => { msg.textContent = "Location wasn't shared (or the page is inside a frame that blocks it). Tap the map or search instead."; }, { timeout: 10000, maximumAge: 600000 });
+}
+async function renderForecast() {
+  if (activeTab !== "weather") return;
+  $("#fx-out").hidden = !FX.spot; $("#fx-pick-title").textContent = FX.spot ? "Forecast somewhere else?" : "Pick a spot anywhere in the world.";
+  if (FX.pin) { map.removeLayer(FX.pin); FX.pin = null; }
+  if (!FX.spot) return;
+  const { lat, lon } = FX.spot;
+  FX.pin = L.circleMarker([lat, lon], { radius: 8, color: "#fff", weight: 3, fillColor: "#e8562a", fillOpacity: 1, interactive: false }).bindTooltip(esc(FX.spot.name || "Your spot"), { permanent: true, direction: "right", offset: [10, 0] }).addTo(map);
+  let S; try { S = await fxSeries(lat, lon); } catch (e) { showMsg($("#fx-msg"), e.message); return; }
+  if (!S) { showMsg($("#fx-msg"), "No forecast data for this spot."); return; }
+  $("#fx-where").textContent = `${FX.spot.name ? FX.spot.name + " · " : ""}${lat.toFixed(2)}°, ${lon.toFixed(2)}°. Times are in your device's time zone (${Intl.DateTimeFormat().resolvedOptions().timeZone}). NOAA GFS model run ${new Date(GX.run).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric" })}.`;
+  // resample to every 3 hours so the charts have an even time axis
+  const H = [], now = (Date.now() - GX.run) / 3600e3; for (let h = Math.max(0, Math.ceil(now / 3) * 3 - 3); h <= GX.hMax; h += 3) H.push(h);
+  const at = (arr, hours, h) => { let k = 0; while (k < hours.length - 2 && hours[k + 1] <= h) k++; const w = Math.max(0, Math.min(1, (h - hours[k]) / (hours[k + 1] - hours[k] || 1))); return arr[k] + (arr[k + 1] - arr[k]) * w; };
+  const u = H.map((h) => at(S.u, S.hours, h)), v = H.map((h) => at(S.v, S.hours, h)), gust = H.map((h) => at(S.gust, S.hours, h)), temp = H.map((h) => at(S.temp, S.hours, h)),
+    rain = H.map((h) => Math.max(0, at(S.rain, S.hours, h))), cloud = H.map((h) => at(S.cloud, S.hours, h)), pres = H.map((h) => at(S.pres, S.hours, h));
+  const spd = u.map((x, i) => Math.hypot(x, v[i])), dir = u.map((x, i) => (deg(Math.atan2(-x, -v[i])) + 360) % 360);
+  const labels = H.map((h) => gxTimeLabel(h, true));
+  // day cards
+  const days = new Map();
+  H.forEach((h, i) => { const d = new Date(GX.run + h * 3600e3), key = d.toDateString(); if (!days.has(key)) days.set(key, { d, i: [] }); days.get(key).i.push(i); });
+  const cards = [...days.values()].filter((x) => x.i.length >= 3).map(({ d, i }) => {
+    const tmax = Math.max(...i.map((k) => temp[k])), tmin = Math.min(...i.map((k) => temp[k])), wmax = Math.max(...i.map((k) => spd[k])), gmax = Math.max(...i.map((k) => gust[k]));
+    const rainTot = i.reduce((s, k) => s + rain[k] * 3, 0), cl = i.reduce((s, k) => s + cloud[k], 0) / i.length;
+    const day = i.filter((k) => { const hh = new Date(GX.run + H[k] * 3600e3).getHours(); return hh >= 9 && hh <= 18; }), dk = day.length ? day : i;
+    const mu = dk.reduce((s, k) => s + u[k], 0), mv = dk.reduce((s, k) => s + v[k], 0), mdir = (deg(Math.atan2(-mu, -mv)) + 360) % 360;
+    const icon = rainTot > 5 ? "🌧️" : rainTot > 1 ? "🌦️" : cl > 70 ? "☁️" : cl > 35 ? "⛅" : "☀️";
+    const sail = wmax * 1.943844 > 25 ? ["tough", "Windy"] : rainTot > 8 ? ["tough", "Wet"] : wmax * 1.943844 >= 6 ? ["great", "Sailable"] : ["calm", "Light"];
+    return `<div class="fx-day"><div class="fx-dn">${d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</div><div class="fx-ic">${icon}</div>
+      <div class="fx-t">${fmtTemp(tmax)} <span>${fmtTemp(tmin)}</span></div><div>${compass(mdir)} ${fmtWindMs(wmax)}</div><div class="fx-g">gusts ${fmtWindMs(gmax)}</div>
+      <div class="fx-r">${rainTot < 0.2 ? "dry" : fmtRain(rainTot)}</div><span class="rate ${sail[0]}">${sail[1]}</span></div>`;
+  });
+  $("#fx-days").innerHTML = cards.join("");
+  const wu = windUnit();
+  makeChart("fx-wind", { type: "line", data: { labels, datasets: [
+    { label: `Wind (${wu})`, data: spd.map((x) => +windNum(x).toFixed(1)), borderColor: css("--accent"), tension: 0.3, fill: false },
+    { label: `Gusts (${wu})`, data: gust.map((x) => +windNum(x).toFixed(1)), borderColor: "#e8562a", borderDash: [5, 4], tension: 0.3 },
+    { label: "Direction", data: spd.map((x, i) => (i % 2 ? null : +windNum(x).toFixed(1))), showLine: false, pointStyle: "triangle", pointRadius: 5, pointRotation: dir.map((d) => (d + 180) % 360), borderColor: css("--ink-2"), backgroundColor: css("--ink-2") } ] },
+    options: { plugins: { tooltip: { callbacks: { label: (c) => (c.datasetIndex === 2 ? `from ${compass(dir[c.dataIndex])} (${Math.round(dir[c.dataIndex])}°)` : `${c.dataset.label}: ${c.formattedValue}`) } } }, scales: { x: { ticks: { maxTicksLimit: 16, autoSkip: true } }, y: { beginAtZero: true, title: { display: true, text: wu } } } } });
+  makeChart("fx-temp", { type: "line", data: { labels, datasets: [{ label: `Temperature (°${SET.temp})`, data: temp.map((c) => +tempNum(c).toFixed(1)), borderColor: "#e8562a", tension: 0.3, fill: false }] },
+    options: { scales: { x: { ticks: { maxTicksLimit: 16 } } } } });
+  makeChart("fx-rain", { type: "bar", data: { labels, datasets: [
+    { type: "bar", label: `Rain (${SET.rain === "in" ? "in" : "mm"} per 3 h)`, data: rain.map((r) => +rainNum(r * 3).toFixed(2)), backgroundColor: "#2a78d6", yAxisID: "y" },
+    { type: "line", label: "Cloud (%)", data: cloud.map((c) => Math.round(c)), borderColor: "#9aa5ad", tension: 0.3, yAxisID: "y1" } ] },
+    options: { scales: { x: { ticks: { maxTicksLimit: 16 } }, y: { beginAtZero: true, title: { display: true, text: SET.rain === "in" ? "in" : "mm" } }, y1: { position: "right", min: 0, max: 100, grid: { drawOnChartArea: false }, title: { display: true, text: "cloud %" } } } } });
+  makeChart("fx-pres", { type: "line", data: { labels, datasets: [{ label: "Pressure (hPa)", data: pres.map((p) => +p.toFixed(1)), borderColor: "#7c5ce0", tension: 0.3 }] }, options: { scales: { x: { ticks: { maxTicksLimit: 16 } } } } });
+  const cw = $("#fx-cur-wrap"); cw.hidden = !S.cur;
+  if (S.cur) {
+    const CH = H.filter((h) => h <= S.cur.hours[S.cur.hours.length - 1]);
+    const cu = CH.map((h) => at(S.cur.u, S.cur.hours, h)), cv2 = CH.map((h) => at(S.cur.v, S.cur.hours, h));
+    const [cun, cf] = UNIT[SET.cur] || UNIT.kt;
+    makeChart("fx-cur", { type: "line", data: { labels: CH.map((h) => gxTimeLabel(h, true)), datasets: [{ label: `Ocean current (${cun})`, data: cu.map((x, i) => +(Math.hypot(x, cv2[i]) * cf).toFixed(2)), borderColor: "#1baf7a", tension: 0.3 },
+      { label: "Toward", data: cu.map((x, i) => (i % 2 ? null : +(Math.hypot(x, cv2[i]) * cf).toFixed(2))), showLine: false, pointStyle: "triangle", pointRadius: 5, pointRotation: cu.map((x, i) => (deg(Math.atan2(x, cv2[i])) + 360) % 360), borderColor: "#1baf7a", backgroundColor: "#1baf7a" }] },
+      options: { plugins: { tooltip: { callbacks: { label: (c) => (c.datasetIndex === 1 ? `toward ${compass((deg(Math.atan2(cu[c.dataIndex], cv2[c.dataIndex])) + 360) % 360)}` : `${c.dataset.label}: ${c.formattedValue}`) } } }, scales: { x: { ticks: { maxTicksLimit: 16 } }, y: { beginAtZero: true } } } });
+  }
+}
+function renderFxPicker() {
+  const v = [["Newport, RI", 41.47, -71.36], ["Annapolis", 38.95, -76.42], ["San Francisco Bay", 37.84, -122.40], ["Miami", 25.75, -80.15], ["Chicago", 41.88, -87.58], ["Honolulu", 21.27, -157.85],
+    ["Solent, UK", 50.78, -1.30], ["Lisbon", 38.68, -9.30], ["Palma de Mallorca", 39.55, 2.62], ["Kiel, Germany", 54.40, 10.20], ["Sydney Harbour", -33.85, 151.25], ["Auckland", -36.83, 174.80], ["Cape Town", -33.90, 18.40], ["Hong Kong", 22.28, 114.17]];
+  $("#fx-venues").innerHTML = v.map((x, i) => `<button type="button" data-i="${i}">${esc(x[0])}</button>`).join("");
+  document.querySelectorAll("#fx-venues button").forEach((b) => b.addEventListener("click", () => { const x = v[+b.dataset.i]; map.setView([x[1], x[2]], 7); setFxSpot(x[1], x[2], x[0]); }));
+}
+function initGlobal() {
+  $("#fx-geo").addEventListener("click", fxUseLocation);
+  renderFxPicker();
+}
+
 /* =================== routing & boot =================== */
 let activeTab = "planner";
 function showTab(name) {
-  if (!["coast", "race", "plan", "debrief", "kits"].includes(name)) name = "coast";
+  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather"].includes(name)) name = "coast";
+  const global = name === "wind" || name === "weather";
+  if (GX.on && !global) leaveGlobal();
   const overlay = name === "race" || name === "plan" ? name : null, race = overlay === "race"; if (overlay) name = "coast";
   planMode = overlay === "plan"; if (!planMode) drawPlanPin();
   if (raceMode && !race) leaveRace();
@@ -4374,9 +5036,10 @@ function showTab(name) {
   if (planMode) setTimeout(renderDayPlan, 400);
   layers.track.clearLayers(); if (liftOn) toggleLiftMap(false); setLegend(null);
   if (name === "planner") { planResult ? updateSlider() : drawStations({}); fitStations(); }
+  else if (global) { enterGlobal(name).then(() => { if (name === "weather") renderForecast(); else if (FX.pin) { map.removeLayer(FX.pin); FX.pin = null; } }); }
   else if (name === "coast") { layers.stations.clearLayers(); enterCoast(); }
   else drawStations({});
-  if (arrowLayer) arrowLayer.redraw();
+  if (arrowLayer && !global) arrowLayer.redraw();
   if (name === "debrief" && currentTrack) drawTrack(true);
   setTimeout(() => map.invalidateSize(), 50);
 }
@@ -4402,7 +5065,7 @@ async function boot() {
   }
   $("#loading").hidden = true;
   renderKits();
-  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initPanelToggle(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initPlanner(); initDebrief(); renderModel();
+  chartDefaults(); initMap(); initArrows(); initTiles(); initCoast(); initLive(); initSearch(); initBasemap(); initPanelToggle(); initTideToggle(); initProbe(); initDepth(); initRace(); initLabels(); initSettings(); initGlobal(); initPlanner(); initDebrief(); renderModel();
   $("#liftmap-btn").addEventListener("click", () => toggleLiftMap());
   window.addEventListener("hashchange", () => showTab(location.hash.slice(1)));
   showTab(location.hash.slice(1) || "coast");

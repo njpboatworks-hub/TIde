@@ -12,7 +12,7 @@ on:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +29,9 @@ jobs:
       - name: Download tide and current predictions
         run: python -m scripts.tides_snapshot
 
+      - name: Live tide correction (how far real-time NOAA gauges read above or below the prediction)
+        run: python -m scripts.tide_residual
+
       - name: West Coast, Great Lakes and Hawaii - latest readings, NWS forecast, NOAA tides and currents
         run: |
           for r in west lakes hawaii; do python -m scripts.us_build $r live tides; done
@@ -43,6 +46,15 @@ jobs:
           else
             echo "Not Monday: keeping last week's tide predictions"
           fi
+
+      - name: Worldwide wind and weather (NOAA GFS, 16 days) and ocean currents (NOAA RTOFS, 8 days)
+        run: |
+          pip install eccodes netCDF4 pillow
+          python -m scripts.global_wx gfs
+          python -m scripts.global_wx rtofs || echo "Ocean currents not refreshed today (keeping the previous run)"
+
+      - name: Continue the coast-map forecasts past the NWS 7 days with GFS (to 16 days)
+        run: python -m scripts.extend_forecast
 
       - name: Build the website folder
         run: python -m scripts.build_deploy

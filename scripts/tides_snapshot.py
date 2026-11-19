@@ -7,7 +7,7 @@ For every station we store the predicted events:
   tides:    high and low water times with heights (feet above MLLW)
 The page draws the usual smooth (cosine) curve between events.
 
-Usage: python -m scripts.tides_snapshot [days_ahead=8]
+Usage: python -m scripts.tides_snapshot [days_ahead=16]
 Writes site/tides.json.
 """
 from __future__ import annotations
@@ -42,7 +42,7 @@ def east(lat, lon):
     return in_region(lat, lon)
 
 
-def main(days_ahead: int = 8, in_region=None, out=None, tz="America/New_York"):
+def main(days_ahead: int = 16, in_region=None, out=None, tz="America/New_York"):
     inside = in_region or east
     out = out or OUT
     start = date.today() - timedelta(days=1)
@@ -107,4 +107,4 @@ def main(days_ahead: int = 8, in_region=None, out=None, tz="America/New_York"):
 
 
 if __name__ == "__main__":
-    main(int(sys.argv[1]) if len(sys.argv) > 1 else 8)
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else 16)

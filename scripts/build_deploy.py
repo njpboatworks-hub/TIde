@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json", "world.json", "surge.json"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -44,7 +44,7 @@ def main():
         shutil.copy(SITE / f, OUT / f)
     (OUT / "config.js").write_text(CONFIG)
     shutil.copytree(SITE / "tiles", OUT / "tiles")
-    for sub in ("iberia", "west", "lakes", "hawaii", "depth"):   # other regions and the water-depth tiles
+    for sub in ("iberia", "west", "lakes", "hawaii", "depth", "global"):   # other regions and the water-depth tiles
         if (SITE / sub).exists():
             shutil.copytree(SITE / sub, OUT / sub)
     shutil.copy(ROOT / "deploy" / "DEPLOY.md", OUT / "DEPLOY.md")

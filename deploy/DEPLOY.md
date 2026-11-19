@@ -52,3 +52,15 @@ publishes them, the 3 arc-second Coastal Relief Model elsewhere), in the `depth`
 
 Sources: NOAA NDBC, CO-OPS and NCEI (depth), National Weather Service, MET Norway, Iowa Environmental Mesonet, US Census Bureau,
 GSHHG shoreline (LGPL), and OpenStreetMap contributors. Not for navigation.
+
+## Wind Map, Forecast and worldwide data (added November 2026)
+
+- `global/` holds the worldwide forecast: NOAA GFS wind, gusts, rain, temperature, cloud and pressure (16 days, 0.5 degree)
+  and NOAA RTOFS ocean currents (about 8 days, 0.25 degree). It is rebuilt by `python -m scripts.global_wx` and is
+  roughly 140 MB, so this folder is much bigger than before.
+- The forecast only stays current if the daily GitHub update runs (see AUTO_UPDATE.md). A dragged-in folder keeps the
+  forecast from the day it was built; the Wind Map shows a warning once the forecast is more than about a day and a half old.
+- `world.json`: about 34,000 world towns for the search box (GeoNames, CC BY 4.0).
+- `surge.json`: how far NOAA's real-time tide gauges read above or below the predicted tide (`scripts.tide_residual`).
+- Place names on the maps come from EOX's overlay tiles (OpenStreetMap data); they need the satellite setting
+  (`externalMaps: true` in config.js), like the satellite imagery.
