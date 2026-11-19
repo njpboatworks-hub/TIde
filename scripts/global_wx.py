@@ -214,7 +214,7 @@ def build_rtofs(meta):
         cell = (jj * 1440 + ii).ravel()
         del la, lo, dlo, dla, ang, cl, jj, ii
         n = nx * ny; npad = (n + 4095) // 4096 * 4096
-        U, V, hours = [], [], []
+        U, V, T, hours = [], [], [], []
         for fh in RTOFS_STEPS:
             name = f"rtofs_glo.t00z.f{fh:02d}.archs"
             btxt = get(f"{RTOFS}/rtofs.{day}/{name}.b")
@@ -229,6 +229,7 @@ def build_rtofs(meta):
             mm = np.memmap(afile, dtype=">f4", mode="r")
             F = lambda key: np.array(mm[pos[key] * npad: pos[key] * npad + n], np.float32).reshape(ny, nx)
             u = F("u_btrop0") + F("u-vel.1"); v = F("v_btrop0") + F("v-vel.1")
+            sst = F("temp1") if "temp1" in pos else None  # top layer temperature = sea surface temperature, deg C
             del mm; afile.unlink()
             bad = ~(np.isfinite(u) & np.isfinite(v)) | (np.abs(u) > 100) | (np.abs(v) > 100)
             ue = (u * ca - v * sa); vn = (u * sa + v * ca)
@@ -239,6 +240,12 @@ def build_rtofs(meta):
             with np.errstate(invalid="ignore", divide="ignore"):
                 U.append(np.where(cnt > 0, su / cnt, np.nan).reshape(720, 1440).astype(np.float32))
                 V.append(np.where(cnt > 0, sv / cnt, np.nan).reshape(720, 1440).astype(np.float32))
+            if sst is not None:
+                ok = np.isfinite(sst) & (sst > -5) & (sst < 40) & ~bad
+                wt = ok.ravel().astype(np.float64); nt = np.bincount(cell, wt, 1440 * 720)
+                st = np.bincount(cell, np.where(ok, sst, 0).ravel() * wt, 1440 * 720)
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    T.append(np.where(nt > 0, st / nt, np.nan).reshape(720, 1440).astype(np.float32))
             hours.append(fh)
             print(f"  f{fh:03d} max {float(np.nanmax(np.hypot(U[-1], V[-1]))):.2f} m/s", flush=True)
     finally:
@@ -248,6 +255,15 @@ def build_rtofs(meta):
     water = np.isfinite(U[0])
     for k, (u, v) in enumerate(zip(U, V)):
         png(OUT / "c" / f"{k}.png", q8(u, -2.5, 2.5), q8(v, -2.5, 2.5), np.where(water, 255, 0))
+    # sea surface temperature, same steps: R = -3..35 C, B = 255 on water
+    if len(T) == len(hours):
+        (OUT / "s").mkdir(parents=True, exist_ok=True)
+        for k, t in enumerate(T):
+            png(OUT / "s" / f"{k}.png", q8(t, -3, 35), np.zeros_like(t), np.where(np.isfinite(t), 255, 0))
+        meta["sst"] = {"png": [-3, 35]}
+        print(f"  water temperature {float(np.nanmin(T[0])):.1f} to {float(np.nanmax(T[0])):.1f} C", flush=True)
+    else:
+        meta.pop("sst", None)
     # current tiles, 41x41 at 0.25 degree; row 0 = north edge
     (OUT / "q").mkdir(parents=True, exist_ok=True)
     for f in (OUT / "q").glob("*.bin*"):

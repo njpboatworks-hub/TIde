@@ -796,10 +796,10 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
     <!-- WIND MAP: worldwide wind, gusts, currents and weather -->
     <div class="tab" id="tab-wind" hidden>
       <h1>Forecast</h1>
-      <p class="lede">Wind, gusts, ocean currents, rain, temperature and cloud for the whole world, up to 16 days ahead. Hover or tap the map for the numbers at any spot, and press play to watch the weather move.</p>
+      <p class="lede">Wind, gusts, ocean currents, water temperature, rain, air temperature and cloud for the whole world, up to 16 days ahead. Hover or tap the map for the numbers at any spot, and press play to watch the weather move.</p>
       <div id="gx-msg" class="note warn" hidden></div>
       <div class="seg gx-layers" id="gx-layers" role="group" aria-label="Map layer">
-        <button type="button" data-l="wind" class="active">Wind</button><button type="button" data-l="gust">Gusts</button><button type="button" data-l="current">Current</button>
+        <button type="button" data-l="wind" class="active">Wind</button><button type="button" data-l="gust">Gusts</button><button type="button" data-l="current">Current</button><button type="button" data-l="sst">Water temp</button>
         <button type="button" data-l="rain">Rain</button><button type="button" data-l="temp">Temperature</button><button type="button" data-l="cloud">Cloud</button>
       </div>
       <p class="hint" id="gx-run"></p>
@@ -1508,9 +1508,10 @@ function baseNode(lat, lon) {
 function lattice(cache, sp, lat, lon, node) {
   const fx = lon / sp, fy = lat / sp, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
   let u = 0, v = 0, s = 0, w = 0, ws = 0, cv = 0;
+  let sub = cache.get(sp); if (!sub) cache.set(sp, (sub = new Map())); // one numeric-keyed map per spacing (faster than string keys)
   for (const [a, b, wt] of [[j, i, (1 - tx) * (1 - ty)], [j, i + 1, tx * (1 - ty)], [j + 1, i, (1 - tx) * ty], [j + 1, i + 1, tx * ty]]) {
-    const key = sp + "|" + a + "|" + b; let n = cache.get(key);
-    if (n === undefined) { n = node(a * sp, b * sp); cache.set(key, n); }
+    const key = a * 1e6 + b; let n = sub.get(key);
+    if (n === undefined) { n = node(a * sp, b * sp); sub.set(key, n); }
     if (!n || wt <= 0) continue;
     u += n[0] * wt; v += n[1] * wt; w += wt; cv += (n[3] ?? 1) * wt; if (!Number.isNaN(n[2])) { s += n[2] * wt; ws += wt; }
   }
@@ -1520,11 +1521,15 @@ function lattice(cache, sp, lat, lon, node) {
 // Reference for lifted/headed: the same open-water wind field, averaged (Gaussian) over ~15 km around the spot. The
 // colour then shows how a spot differs from the rest of its own race area: land shelter and local station effects.
 const REF_PTS = (() => { const a = [[0, 0, 1]]; for (const r of [6, 12, 20]) for (let k = 0; k < 8; k++) { const t = (k * Math.PI) / 4 + (r === 12 ? Math.PI / 8 : 0); a.push([r * Math.sin(t), r * Math.cos(t), Math.exp(-(r * r) / (2 * 12 * 12))]); } return a; })();
-function refNode(lat, lon) {
+// Zoomed far out, each shading cell is tens of km wide, so the ~15 km average is built from a grid that scales with the
+// view (a quarter of the reference spacing, never finer than 0.04 degree = the fixed grid used when zoomed in).
+const REF_FNS = new Map();
+function refNodeFor(rsp) { let f = REF_FNS.get(rsp); if (!f) { const base = Math.max(0.04, rsp / 4); REF_FNS.set(rsp, (f = (lat, lon) => refNode(lat, lon, base))); } return f; }
+function refNode(lat, lon, base = 0.04) {
   if (!obsBuckets) obsBuckets = bucketize(coastField.obs);
   const cl = Math.cos(rad(lat)); let su = 0, sv = 0, sw = 0;
   for (const [dx, dy, g] of REF_PTS) {
-    const b = lattice(baseCache, 0.04, lat + dy / 111.32, lon + dx / (111.32 * cl), baseNode); if (!b) continue;
+    const b = lattice(baseCache, base, lat + dy / 111.32, lon + dx / (111.32 * cl), baseNode); if (!b) continue;
     const m = Math.hypot(b[0], b[1]) || 1; su += (b[0] / m) * g; sv += (b[1] / m) * g; sw += g;
   }
   return sw > 0.2 ? [su, sv, NaN] : null;
@@ -1632,7 +1637,7 @@ function computeCoastHeat() {
       for (let k = 0; k < n; k++) if (OK[k]) LIFT[k] = signedLift(DIR[k], (deg(Math.atan2(bu[k], bv[k])) + 360) % 360) * COV[k] * COV[k];
     } else { // zoomed far out: the field's own 15 km average from the geographic lattice
       for (let j = 0; j < gy; j++) for (let i = 0; i < gx; i++) { const k = j * gx + i; if (!OK[k]) continue;
-        const ll = map.containerPointToLatLng([(i + 0.5) * HEAT_STEP, (j + 0.5) * HEAT_STEP]), rr = lattice(refCache, rsp, ll.lat, ll.lng, refNode);
+        const ll = map.containerPointToLatLng([(i + 0.5) * HEAT_STEP, (j + 0.5) * HEAT_STEP]), rr = lattice(refCache, rsp, ll.lat, ll.lng, refNodeFor(rsp));
         LIFT[k] = signedLift(DIR[k], rr ? (deg(Math.atan2(rr[0], rr[1])) + 360) % 360 : DIR[k]) * COV[k] * COV[k]; }
     }
   }
@@ -1731,8 +1736,8 @@ function onLandPx(x, y) { // true/false from the drawn shoreline, null if outsid
   if (x < 0 || y < 0 || x >= landMask.w || y >= landMask.h) return null;
   return landMask.data[(y * landMask.w + x) * 4 + 3] > 127;
 }
-function sizeCanvas(c) {
-  const s = map.getSize(), dpr = window.devicePixelRatio || 1;
+function sizeCanvas(c, maxDpr = 4) {
+  const s = map.getSize(), dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
   L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0]));
   c._tl = map.containerPointToLatLng([0, 0]); c._z = map.getZoom();
   c.width = s.x * dpr; c.height = s.y * dpr; c.style.width = s.x + "px"; c.style.height = s.y + "px";
@@ -3258,12 +3263,14 @@ function landPath() {
   // Rings are projected once (Web Mercator at zoom 0) and cached, then scaled to the view; points closer than
   // ~0.7 px to the previous one are skipped, so a zoomed-out coastline costs a fraction of the work.
   const sc = map.getZoomScale(map.getZoom(), 0), org = map.getPixelOrigin(), pane = map._getMapPanePos(), ox = org.x - pane.x, oy = org.y - pane.y;
+  const VW = map.getSize().x, VH = map.getSize().y;
   const addRings = (l) => {
     if (!l._mx) { const out = []; const walk = (ll) => { if (!ll.length) return; if (ll[0] instanceof L.LatLng) { const a = new Float64Array(ll.length * 2); ll.forEach((p, i) => { const q = map.project(p, 0); a[2 * i] = q.x; a[2 * i + 1] = q.y; }); out.push(a); } else ll.forEach(walk); }; walk(l.getLatLngs()); l._mx = out; }
     for (const a of l._mx) {
       const n = a.length / 2; let px = 0, py = 0, minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
       for (let i = 0; i < n; i++) { const x = a[2 * i] * sc - ox, y = a[2 * i + 1] * sc - oy; if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; }
       if (maxx - minx < 1 && maxy - miny < 1) continue;
+      if (maxx < -2 || maxy < -2 || minx > VW + 2 || miny > VH + 2) continue; // wholly off screen: cannot change any visible pixel
       for (let i = 0; i < n; i++) {
         const x = a[2 * i] * sc - ox, y = a[2 * i + 1] * sc - oy;
         if (i === 0) path.moveTo(x, y); else if (i < n - 1 && Math.abs(x - px) < 0.7 && Math.abs(y - py) < 0.7) continue; else path.lineTo(x, y);
@@ -4330,6 +4337,7 @@ const GX = { on: false, meta: null, cache: new Map(), layer: "wind", t: 0, play:
 const GX_LAYERS = {
   wind: { label: "Wind", src: "w" }, gust: { label: "Gusts", src: "w" }, current: { label: "Ocean current", src: "c" },
   rain: { label: "Rain", src: "x" }, temp: { label: "Temperature", src: "x" }, cloud: { label: "Cloud", src: "x" },
+  sst: { label: "Water temperature", src: "s" },
 };
 async function gxLoadMeta() {
   if (GX.meta) return GX.meta;
@@ -4350,9 +4358,10 @@ function gxStep(src, k) {
       const r = d[i * 4], g = d[i * 4 + 1], b = d[i * 4 + 2];
       if (src === "w") { A[i] = r / 255 * 80 - 40; B[i] = g / 255 * 80 - 40; C[i] = b / 255 * 60; }
       else if (src === "x") { A[i] = r / 255 * 100 - 50; const s = g / 255; B[i] = s * s * 50; C[i] = b / 255 * 100; }
+      else if (src === "s") { A[i] = b < 128 ? NaN : r / 255 * 38 - 3; }
       else { if (b < 128) { A[i] = NaN; B[i] = NaN; } else { A[i] = r / 255 * 5 - 2.5; B[i] = g / 255 * 5 - 2.5; } }
     }
-    return { w, h, A, B, C, cell: src === "c" };
+    return { w, h, A, B, C, cell: src === "c" || src === "s" };
   });
   GX.cache.set(key, p); while (GX.cache.size > 36) GX.cache.delete(GX.cache.keys().next().value);
   p.catch(() => GX.cache.delete(key));
@@ -4360,7 +4369,8 @@ function gxStep(src, k) {
 }
 function gxPair(src, t) { // steps around hour t (hours after the GFS run): [k0, k1, weight] or null outside the data
   let hours = GX.meta.gfs.hours, tt = t;
-  if (src === "c") { if (!GX.meta.rtofs) return null; hours = GX.meta.rtofs.hours; tt = t + (GX.run - GX.crun) / 3600e3; }
+  if (src === "s" && !GX.meta.sst) return null;
+  if (src === "c" || src === "s") { if (!GX.meta.rtofs) return null; hours = GX.meta.rtofs.hours; tt = t + (GX.run - GX.crun) / 3600e3; }
   if (tt < hours[0] - 3 || tt > hours[hours.length - 1] + 3) return null;
   tt = Math.max(hours[0], Math.min(hours[hours.length - 1], tt));
   let k = 0; while (k < hours.length - 2 && hours[k + 1] <= tt) k++;
@@ -4371,7 +4381,7 @@ async function gxFields(t) { // the two decoded steps for the active layer (and 
   const L0 = GX_LAYERS[GX.layer], out = {};
   const get = async (src) => { const pr = gxPair(src, t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
   out.main = await get(L0.src);
-  out.flow = GX.layer === "current" ? out.main : L0.src === "w" ? out.main : await get("w");
+  out.flow = GX.layer === "current" ? out.main : L0.src === "w" ? out.main : GX.layer === "sst" ? await get("c") : await get("w"); // water temperature: lines follow the current
   out.x = L0.src === "x" ? out.main : await get("x"); // temperature for the city labels
   return out;
 }
@@ -4392,7 +4402,7 @@ function gxValue(F, lat, lon) { // value shown for the active layer, in base uni
   switch (GX.layer) {
     case "wind": case "current": return Math.hypot(gxSample(F, "A", lat, lon), gxSample(F, "B", lat, lon));
     case "gust": return gxSample(F, "C", lat, lon);
-    case "temp": return gxSample(F, "A", lat, lon);
+    case "temp": case "sst": return gxSample(F, "A", lat, lon);
     case "rain": return gxSample(F, "B", lat, lon);
     case "cloud": return gxSample(F, "C", lat, lon);
   }
@@ -4402,18 +4412,27 @@ function gxColorFn() {
   if (L === "wind" || L === "gust") { const lut = lutFrom(windStops(), 60); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 60 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
   if (L === "current") { const lut = lutFrom(curStops(), 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "temp") { const st = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]], lut = lutFrom(st, 95); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v + 40) / 95 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
+  if (L === "sst") { const lut = lutFrom(SST_STOPS, 34); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v + 2) / 34 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (v < 0.1 ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.min(255, 120 + v * 60)]; })()); }
   return (v) => (v < 5 ? null : [235, 240, 245, Math.min(230, v * 2.3)]); // cloud: white veil
 }
-const gxRanges = () => ({ wind: [0, 60, "kt"], gust: [0, 60, "kt"], current: [0, 3.2, "kt"], temp: [-40, 55, "C"], rain: [0, 25, "mm/h"], cloud: [0, 100, "%"] }[GX.layer]);
+// water temperature colours, -2..32 C (stored as C + 2 so the stops start at 0)
+const SST_STOPS = [[0, [60, 30, 130]], [5, [40, 80, 200]], [10, [40, 150, 220]], [14, [60, 190, 190]], [18, [110, 200, 120]], [22, [230, 215, 70]], [26, [245, 145, 50]], [30, [215, 50, 50]], [34, [130, 15, 50]]];
+const gxRanges = () => ({ sst: [-2, 32, "C"],  wind: [0, 60, "kt"], gust: [0, 60, "kt"], current: [0, 3.2, "kt"], temp: [-40, 55, "C"], rain: [0, 25, "mm/h"], cloud: [0, 100, "%"] }[GX.layer]);
 function gxLegend() {
   if (!GX.on) return;
   const L = GX.layer; let grad, ends;
   if (L === "wind" || L === "gust") { grad = gradCss(windStops(), 60); const f = windNum(1 / 1.943844); ends = [0, 10, 20, 30, 45, 60].map((k) => Math.round(k * f)); ends = ends.map((x) => `${x}`); ends[ends.length - 1] += ` ${windUnit()}`; }
   else if (L === "current") { grad = gradCss(curStops(), 3.2); const [u, f] = UNIT[SET.cur] || UNIT.kt; ends = [0, 1, 2, 3.2].map((k) => (k / 1.943844 * f).toFixed(1)); ends[3] += `+ ${u}`; }
   else if (L === "temp") { grad = "linear-gradient(90deg, rgb(80,40,160), rgb(50,110,220) 21%, rgb(80,190,230) 37%, rgb(120,210,140) 47%, rgb(235,220,80) 58%, rgb(245,140,50) 68%, rgb(210,40,50) 84%, rgb(120,10,40))"; ends = [-40, -20, 0, 20, 40, 55].map((c) => fmtTemp(c)); }
+  else if (L === "sst") { grad = gradCss(SST_STOPS, 34); ends = [0, 10, 20, 30].map((c) => fmtTemp(c)); }
   else if (L === "rain") { grad = "linear-gradient(90deg, rgb(120,180,240), rgb(40,130,230) 4%, rgb(40,190,90) 12%, rgb(240,210,40) 24%, rgb(240,90,40) 48%, rgb(200,30,160))"; ends = [0.1, 1, 3, 6, 12, 25].map((m) => (SET.rain === "in" ? (m / 25.4).toFixed(2) : m)); ends[5] += SET.rain === "in" ? " in/h" : " mm/h"; }
   else { grad = "linear-gradient(90deg, rgba(235,240,245,0), rgba(235,240,245,.9))"; ends = ["clear", "", "", "", "overcast"]; }
+  if (L === "sst") {
+    setLegend(`<b>${GX_LAYERS[L].label}</b><div class="bar" style="background:${grad}"></div><div class="ends">${ends.map((e) => `<span>${e}</span>`).join("")}</div>
+    <div class="fine">Sea surface temperature from the NOAA RTOFS ocean model, about 8 days ahead, averaged to 0.25° (about 25 km). Moving lines show the ocean current. Shallow bays, harbors and river mouths can be several degrees different from the open water shown here.</div>`);
+    return;
+  }
   const src = L === "current" ? "NOAA RTOFS ocean model" : "NOAA GFS weather model";
   setLegend(`<b>${GX_LAYERS[L].label}</b><div class="bar" style="background:${grad}"></div><div class="ends">${ends.map((e) => `<span>${e}</span>`).join("")}</div>
     <div class="fine">${src}, ${L === "current" ? "about 9 km detail averaged to 0.25° (about 25 km)" : "0.5° grid (about 50 km)"}. Hover or tap for values. ${L === "current" ? "Ocean circulation only (Gulf Stream, eddies, wind drift); tidal streams near shore are on the Coast Map." : "Wind is at 10 m above the surface; local sea breezes and headland effects smaller than the grid are not shown, so use the Coast Map near shore."} Forecast, not for navigation.</div>`);
@@ -4433,7 +4452,7 @@ async function gxRender() {
   // scaled along with Leaflet's zoom animation (see GxLayer); it is only replaced once the new picture is ready
   const px = Math.round(size.x * 0.3), py = Math.round(size.y * 0.3), CW = size.x + 2 * px, CH = size.y + 2 * py;
   $("#gx-nodata").hidden = !!(F && F.main);
-  if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : "No forecast for this time."; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
+  if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : GX.layer === "sst" ? "Water temperature forecast reaches about 8 days ahead. Move the time back to see it." : "No forecast for this time."; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
   const S = 4, W = Math.ceil(CW / S), H = Math.ceil(CH / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
   const lats = new Float64Array(H), lons = new Float64Array(W);
   for (let j = 0; j < H; j++) lats[j] = map.containerPointToLatLng([0, j * S + S / 2 - py]).lat;
@@ -4460,11 +4479,18 @@ async function gxRender() {
 // Moving lines: each particle drifts with the wind (or current) and leaves a fading trail.
 function gxParticlesRestart() {
   cancelAnimationFrame(GX.anim); GX.anim = null;
-  const pv = GX.pv; if (!pv) return; sizeCanvas(pv); const ctx = pv.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y);
+  const pv = GX.pv; if (!pv) return; sizeCanvas(pv, 2); const ctx = pv.getContext("2d"), size = map.getSize(); ctx.clearRect(0, 0, size.x, size.y);
   const F = GX.f0 && GX.f0.flow; if (!GX.on || !SET.particles || !F || !GX.lats || false) return;
   const n = Math.round(Math.min(6000, (size.x * size.y) / 260 * SET.density));
-  const cur = GX.layer === "current", gain = (cur ? 1.6 : 0.09) * SET.speed;
-  const ll = (x, y) => { const j = Math.max(0, Math.min(GX.lats.length - 1, Math.round((y + GX.py) / GX.S))), i = Math.max(0, Math.min(GX.lons.length - 1, Math.round((x + GX.px) / GX.S))); return [GX.lats[j], GX.lons[i]]; };
+  const cur = GX.layer === "current" || GX.layer === "sst", gain = (cur ? 1.6 : 0.09) * SET.speed;
+  // particles read the flow on the colour layer's grid (every GX.S px); each grid point is sampled once, then remembered
+  const LATS = GX.lats, LONS = GX.lons, GS = GX.S, GPX = GX.px, GPY = GX.py;
+  const NI = LONS.length, NJ = LATS.length, MU = new Float32Array(NI * NJ), MV = new Float32Array(NI * NJ), MK = new Uint8Array(NI * NJ);
+  const flowAt = (x, y) => {
+    const j = Math.max(0, Math.min(NJ - 1, Math.round((y + GPY) / GS))), i = Math.max(0, Math.min(NI - 1, Math.round((x + GPX) / GS))), k = j * NI + i;
+    if (!MK[k]) { const la = LATS[j], lo = LONS[i]; MK[k] = Math.abs(la) > 85 ? 2 : 1; if (MK[k] === 1) { MU[k] = gxSample(F, "A", la, lo); MV[k] = gxSample(F, "B", la, lo); } }
+    return MK[k] === 2 ? null : k;
+  };
   const spawn = (p) => { p.x = Math.random() * size.x; p.y = Math.random() * size.y; p.age = Math.floor(Math.random() * 80); };
   GX.parts = Array.from({ length: n }, () => { const p = {}; spawn(p); return p; });
   const dark = !["temp", "rain"].includes(GX.layer);
@@ -4475,8 +4501,8 @@ function gxParticlesRestart() {
     ctx.beginPath();
     for (const p of GX.parts) {
       if (p.age++ > 90) { spawn(p); p.age = 0; continue; }
-      const [la, lo] = ll(p.x, p.y), u = gxSample(F, "A", la, lo), v = gxSample(F, "B", la, lo);
-      if (!Number.isFinite(u) || !Number.isFinite(v) || Math.abs(la) > 85) { spawn(p); continue; }
+      const k = flowAt(p.x, p.y), u = k === null ? NaN : MU[k], v = k === null ? NaN : MV[k];
+      if (!Number.isFinite(u) || !Number.isFinite(v)) { spawn(p); continue; }
       const nx = p.x + u * gain, ny = p.y - v * gain;
       ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); p.x = nx; p.y = ny;
       if (nx < 0 || ny < 0 || nx > size.x || ny > size.y) spawn(p);
@@ -4685,11 +4711,12 @@ async function gxProbe(ll, cp) {
   const box = $("#gx-probe"); if (!GX.meta) return;
   const lat = ll.lat, lon = ll.lng;
   const pair = async (src) => { const pr = gxPair(src, GX.t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
-  const [W, X, C] = await Promise.all([pair("w"), pair("x"), pair("c")]).catch(() => [null, null, null]);
+  const [W, X, C, Sst] = await Promise.all([pair("w"), pair("x"), pair("c"), pair("s")]).catch(() => [null, null, null, null]);
   const rows = [];
   if (W) { const u = gxSample(W, "A", lat, lon), v = gxSample(W, "B", lat, lon), g = gxSample(W, "C", lat, lon), sp = Math.hypot(u, v), dir = (deg(Math.atan2(-u, -v)) + 360) % 360;
     rows.push(`<div><b>Wind</b> ${fmtWindMs(sp)} from ${compass(dir)} (${Math.round(dir)}°), gusts ${fmtWindMs(g)}</div>`); }
   if (C) { const u = gxSample(C, "A", lat, lon), v = gxSample(C, "B", lat, lon); if (Number.isFinite(u)) { const sp = Math.hypot(u, v), dir = (deg(Math.atan2(u, v)) + 360) % 360; rows.push(`<div><b>Current</b> ${fmtCurMs(sp)} toward ${compass(dir)} (${Math.round(dir)}°)</div>`); } }
+  if (Sst) { const t = gxSample(Sst, "A", lat, lon); if (Number.isFinite(t)) rows.push(`<div><b>Water</b> ${fmtTemp(t)}</div>`); }
   if (X) { const t = gxSample(X, "A", lat, lon), r = gxSample(X, "B", lat, lon), c = gxSample(X, "C", lat, lon);
     rows.push(`<div><b>Air</b> ${fmtTemp(t)} · ${r < 0.1 ? "dry" : `rain ${fmtRain(r, true)}`} · cloud ${Math.round(c)}%</div>`); }
   if (!rows.length) { box.hidden = true; return; }
