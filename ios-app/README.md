@@ -27,7 +27,7 @@ Run these in Terminal.
 
 ```bash
 git clone https://github.com/njpboatworks-hub/TIde.git
-cd tide/ios-app
+cd TIde/ios-app
 npm install
 cd ..
 python3 -m scripts.build_app
@@ -54,7 +54,7 @@ The app loads its data from `https://nockd.netlify.app/` (saved in `ios-app/data
 
 ## Updating the app later
 
-Run these from the `tide` folder.
+Run these from the `TIde` folder.
 
 ```bash
 git pull
