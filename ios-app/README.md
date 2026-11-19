@@ -26,17 +26,18 @@ version when the page itself changes.
 Run these in Terminal.
 
 ```bash
-git clone https://github.com/njpboatworks-hub/tide.git
+git clone https://github.com/njpboatworks-hub/TIde.git
 cd tide/ios-app
 npm install
 cd ..
-python3 -m scripts.build_app --data https://YOUR-SITE.netlify.app/
+python3 -m scripts.build_app
 cd ios-app
 npx cap sync ios
 npx cap open ios
 ```
 
-The `--data` address is saved in `ios-app/data-host.txt`, so later builds can just run `python3 -m scripts.build_app`.
+The app loads its data from `https://nockd.netlify.app/` (saved in `ios-app/data-host.txt`). To change it, run
+`python3 -m scripts.build_app --data https://NEW-ADDRESS/` once.
 
 ## In Xcode
 
@@ -66,8 +67,7 @@ Then archive and upload again. In Xcode, raise the **Build** number on the Gener
 
 ## Things App Store Connect will ask for
 
-- **Privacy policy URL:** `https://YOUR-SITE/privacy.html`. A draft is in `site/privacy.html`; add a contact email
-  before you publish it.
+- **Privacy policy URL:** `https://nockd.netlify.app/privacy.html`.
 - **App Privacy questions:**
   - Nockd has no accounts, analytics or ads.
   - Location is used only on the phone, when you tap "Use my location".
