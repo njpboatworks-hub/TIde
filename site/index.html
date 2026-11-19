@@ -994,17 +994,17 @@ main.wide .panel { border-right: 0; }
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --page: #040C18; --surface: #071426; --ink: #F2F2EE; --ink-2: #BAC3CE; --muted: #8592A3;
-    --grid: #15253B; --axis: #2A3C56; --border: #1E3049; --rule: #F2F2EE;
-    --accent: #F2F2EE; --accent-ink: #071426; --hdr-line: #1A2B44;
-    --warn-bg: #2B160A; --warn-ink: #FFC6A8;
+    --page: #0A1A30; --surface: #0F2340; --ink: #F4F4F0; --ink-2: #C3CCD8; --muted: #8C9BB0;
+    --grid: #182E4D; --axis: #2B4468; --border: #1F3758; --rule: #2B4468;
+    --accent: #4A96E8; --accent-ink: #071426; --hdr: #050F1E; --hdr-line: #1A2E4B;
+    --warn-bg: #3A1C0C; --warn-ink: #FFC6A8;
   }
 }
 :root[data-theme="dark"] {
-  --page: #040C18; --surface: #071426; --ink: #F2F2EE; --ink-2: #BAC3CE; --muted: #8592A3;
-  --grid: #15253B; --axis: #2A3C56; --border: #1E3049; --rule: #F2F2EE;
-  --accent: #F2F2EE; --accent-ink: #071426; --hdr-line: #1A2B44;
-  --warn-bg: #2B160A; --warn-ink: #FFC6A8;
+  --page: #0A1A30; --surface: #0F2340; --ink: #F4F4F0; --ink-2: #C3CCD8; --muted: #8C9BB0;
+    --grid: #182E4D; --axis: #2B4468; --border: #1F3758; --rule: #2B4468;
+    --accent: #4A96E8; --accent-ink: #071426; --hdr: #050F1E; --hdr-line: #1A2E4B;
+    --warn-bg: #3A1C0C; --warn-ink: #FFC6A8;
 }
 body { font: 15px/1.55 var(--f-body); -webkit-font-smoothing: antialiased; }
 body::before { background: var(--hdr); }
@@ -1262,6 +1262,49 @@ input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; backgroun
 input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--signal); }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); box-shadow: 0 1px 3px rgba(7,20,38,.25); cursor: pointer; }
 input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); cursor: pointer; }
+
+/* ===== Navy identity: the whole app sits on deep navy like a chart table at night. Crisp 1px edges, 4px corners,
+   no soft drop shadows; orange marks what is active. ===== */
+:root { --r: 4px; --r-lg: 5px; --lift-shadow: none; }
+.tile, .form, .chart, .table-wrap, .legend, .probe, .gx-probe, .gx-time, .gx-nodata, #panel-toggle, .search-results, .seg,
+.maptools button, .maptools .seg, .leaflet-bar, .kit-grid, .store-grid, .kit-feature { box-shadow: none !important; }
+:root[data-theme="dark"] .panel { background: var(--page); border-right: 1px solid var(--hdr-line); }
+:root[data-theme="dark"] h1 { color: #FFFFFF; }
+:root[data-theme="dark"] h2 { border-top-color: var(--border); }
+:root[data-theme="dark"] .form, :root[data-theme="dark"] .tile, :root[data-theme="dark"] .chart, :root[data-theme="dark"] .table-wrap { background: var(--surface); border-color: var(--border); }
+:root[data-theme="dark"] input, :root[data-theme="dark"] select { background: #081930; border-color: var(--axis); color: var(--ink); }
+:root[data-theme="dark"] button { background: transparent; border-color: var(--axis); color: var(--ink); }
+:root[data-theme="dark"] button:hover { border-color: var(--ink-2); background: rgba(255,255,255,.03); }
+:root[data-theme="dark"] button.primary { background: var(--signal); border-color: var(--signal); color: #071426; }
+:root[data-theme="dark"] button.primary:hover { background: #FF7A45; border-color: #FF7A45; color: #071426; }
+:root[data-theme="dark"] .seg { background: #081930; border-color: var(--axis); }
+:root[data-theme="dark"] .seg button { border-left-color: var(--border); color: var(--ink-2); }
+:root[data-theme="dark"] .seg button.active { background: var(--signal); color: #071426; }
+:root[data-theme="dark"] .chips label:has(input:checked) { color: #071426; }
+:root[data-theme="dark"] .legend, :root[data-theme="dark"] .probe, :root[data-theme="dark"] .gx-probe, :root[data-theme="dark"] .gx-time,
+:root[data-theme="dark"] .gx-nodata, :root[data-theme="dark"] #panel-toggle, :root[data-theme="dark"] .search-results { background: rgba(7,20,38,.94); border: 1px solid #2B4468; color: var(--ink); }
+:root[data-theme="dark"] .maptools .seg, :root[data-theme="dark"] .maptools button { border-color: #2B4468; background: #071426; }
+:root[data-theme="dark"] .leaflet-bar { border-color: #2B4468 !important; }
+:root[data-theme="dark"] .leaflet-bar a { background: #071426; color: #F4F4F0; border-bottom-color: #2B4468; }
+:root[data-theme="dark"] .leaflet-bar a:hover { background: #0F2340; }
+:root[data-theme="dark"] .station-icon .lab { background: #071426; color: #F4F4F0; border-color: #2B4468; }
+:root[data-theme="dark"] input[type=range] { background: transparent; border: 0; }
+:root[data-theme="dark"] input[type=range]::-webkit-slider-thumb { background: var(--signal); border-color: #071426; }
+:root[data-theme="dark"] input[type=range]::-moz-range-thumb { background: var(--signal); border-color: #071426; }
+:root[data-theme="dark"] .tile.hero { box-shadow: inset 3px 0 0 var(--signal) !important; }
+:root[data-theme="dark"] .legend .legend-more, :root[data-theme="dark"] .rules a, :root[data-theme="dark"] .store-go, :root[data-theme="dark"] .kit-store { color: var(--signal); }
+:root[data-theme="dark"] .kits-hero, :root[data-theme="dark"] .rules { border-color: var(--border); }
+:root[data-theme="dark"] .store, :root[data-theme="dark"] .kit-feature { background: var(--surface); }
+:root[data-theme="dark"] .store + .store { background: #0C1F3A; }
+:root[data-theme="dark"] .kit-btn { background: var(--signal); color: #071426; }
+:root[data-theme="dark"] .kit-btn + .kit-btn { background: transparent; color: var(--ink); outline-color: var(--axis); }
+:root[data-theme="dark"] .kit-btn:hover { background: #FF7A45; color: #071426; }
+:root[data-theme="dark"] .kits-hero img { outline: 1px solid var(--border); }
+:root[data-theme="dark"] #settings { background: var(--page); }
+:root[data-theme="dark"] .chips label:has(input:checked) { background: var(--signal); border-color: var(--signal); }
+:root[data-theme="dark"] .item.sel, :root[data-theme="dark"] .item:hover { border-color: var(--signal); }
+:root[data-theme="dark"] .chat .msg.user { background: var(--signal); color: #071426; }
+:root[data-theme="dark"] .tabs a:focus-visible, :root[data-theme="dark"] button:focus-visible, :root[data-theme="dark"] input:focus-visible, :root[data-theme="dark"] select:focus-visible { outline-color: var(--signal); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -4873,7 +4916,7 @@ function fmtRain(mm, rate) { if (mm == null) return "–"; return SET.rain === "
 function rainNum(mm) { return SET.rain === "in" ? mm / 25.4 : mm; }
 function applySettings() {
   const root = document.documentElement;
-  if (SET.theme === "auto") delete root.dataset.theme; else root.dataset.theme = SET.theme;
+  root.dataset.theme = SET.theme === "light" ? "light" : "dark"; // navy is Nockd's look; Light is optional
   root.style.setProperty("--lift", SET.lift || ""); root.style.setProperty("--header", SET.header || "");
   if (!SET.lift) root.style.removeProperty("--lift"); if (!SET.header) root.style.removeProperty("--header");
   CUR_STOPS.splice(0, CUR_STOPS.length, ...curStops()); _curCol.clear();
@@ -4907,7 +4950,7 @@ function renderSettings() {
     <div class="set-grid"><label>Lifted <input type="color" id="set-lift" value="${SET.lift || "#2a78d6"}"></label><label>Headed <input type="color" id="set-header" value="${SET.header || "#e34948"}"></label></div>
     <h3>Look</h3>
     <div class="set-grid">
-      <label>Theme ${sel("set-theme", { auto: "Match my device", light: "Light", dark: "Dark" }, SET.theme)}</label>
+      <label>Theme ${sel("set-theme", { auto: "Navy (default)", light: "Light" }, SET.theme)}</label>
       <label>Colour strength <input type="range" id="set-opacity" min="0.3" max="1" step="0.05" value="${SET.opacity}"></label>
       <label class="chk"><input type="checkbox" id="set-particles" ${SET.particles ? "checked" : ""}> Moving wind lines on the Wind Map</label>
       <label>How many lines <input type="range" id="set-density" min="0.3" max="2" step="0.1" value="${SET.density}"></label>
