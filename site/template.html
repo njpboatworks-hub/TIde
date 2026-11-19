@@ -644,6 +644,10 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
 :root[data-theme="dark"] .item.sel, :root[data-theme="dark"] .item:hover { border-color: var(--signal); }
 :root[data-theme="dark"] .chat .msg.user { background: var(--signal); color: #071426; }
 :root[data-theme="dark"] .tabs a:focus-visible, :root[data-theme="dark"] button:focus-visible, :root[data-theme="dark"] input:focus-visible, :root[data-theme="dark"] select:focus-visible { outline-color: var(--signal); }
+.probe { width: auto; min-width: 170px; max-width: 230px; padding: 7px 10px; font-size: 12.5px; line-height: 1.5; }
+.probe .pt { font: 600 10.5px/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 3px; }
+.probe .pk { width: 56px; }
+.probe .pe { color: var(--muted); font-size: 11px; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -904,9 +908,9 @@ input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 
         </select>
       </label>
       <div class="seg" id="coast-mode" role="group" aria-label="What the map shows">
-        <button type="button" data-mode="typical" class="active">Typical wind</button>
+        <button type="button" data-mode="live" class="active">Live &amp; forecast</button>
+        <button type="button" data-mode="typical">Typical wind</button>
         <button type="button" data-mode="custom">Set the wind direction</button>
-        <button type="button" data-mode="live">Live &amp; forecast</button>
       </div>
       <div class="form" id="typical-controls" style="margin-top:10px">
         <label for="coast-month">Month<select id="coast-month"></select></label>
@@ -2119,6 +2123,8 @@ function initCoast() {
 async function enterCoast() {
   try { await loadCoast(); } catch (e) { showMsg($("#coast-msg"), e.message); return; }
   if (activeTab !== "coast") return;
+  // open on the real wind (live readings + forecast) the first time; Typical and Set stay one click away
+  if (!enterCoast.started) { enterCoast.started = true; if (coastMode === "typical") setCoastMode("live"); }
   currentIsLand = isCoastLand; currentLandFrac = coastLandFrac;
   if (layers.land) map.removeLayer(layers.land);
   layers.coastLand.addTo(map); layers.coastStations.addTo(map);
@@ -2625,12 +2631,6 @@ function surgeNear(lat, lon) {
   let best = null, bd = 50; const cl = Math.cos(rad(lat));
   for (const g of SURGE.st) { const km = Math.hypot((g[2] - lat) * 111.32, (g[3] - lon) * 111.32 * cl); if (km < bd) { bd = km; best = g; } }
   return best && Math.abs(best[4]) >= 0.3 ? { name: best[1], ft: best[4], km: bd, ageH } : null;
-}
-function surgeTxt(lat, lon, whenMs) {
-  const g = surgeNear(lat, lon); if (!g) return "";
-  const away = Math.abs((whenMs ?? Date.now()) - Date.parse(SURGE.time)) / 3600e3; if (away > 30) return "";
-  const v = tideUnits() === "m" ? `${(g.ft * 0.3048).toFixed(1)} m` : `${Math.abs(g.ft).toFixed(1)} ft`;
-  return ` <span class="surge">· gauge at ${esc(g.name)} reads ${v} ${g.ft > 0 ? "above" : "below"} the prediction (wind or river water), so expect ${g.ft > 0 ? "higher" : "lower"} water${away > 6 ? " if the weather holds" : ""}</span>`;
 }
 function tideAt(lat, lon, t) {
   const cl = Math.cos(rad(lat)), cand = [];
@@ -3296,35 +3296,36 @@ function initBasemap() {
 function nowNaiveMin() { if (TIDES.timebase === "utc") return (Date.now() - TIDES.t0) / 60000; const n = nyParts(Date.now()); return (Date.UTC(n.y, n.m - 1, n.d, n.h, n.mi) - TIDES.t0) / 60000; }
 function tideTimeMin() { return coastMode === "live" && LIVE ? liveNaiveMin() : nowNaiveMin(); }
 const liftWord = (x) => (Math.abs(x) < 1.5 ? `<span>about even</span>` : x > 0 ? `<span class="lift">lifted ${Math.round(x)}°</span>` : `<span class="head">headed ${Math.round(-x)}°</span>`);
-function probeHtml(cp, ll) {
+function probeHtml(cp, ll) { // compact hover card: numbers only (the map key explains the method)
   const lp = onLandPx(cp.x, cp.y);
   if (lp === true || (lp === null && isCoastLand(ll.lat, ll.lng))) return null;
-  const rows = [];
+  const rows = [], row = (k, v) => rows.push(`<div class="pr"><span class="pk">${k}</span><span>${v}</span></div>`);
   const w = heatSample(cp.x, cp.y);
   if (w) {
-    const d = arrowTack === "port" ? -w.lift : w.lift; // + = wind veered (more right) than the local average
-    rows.push(`<div class="pr"><span class="pk">Wind</span><span>from ${Math.round(w.dir)}° (${compass(w.dir)}) at ${wKt(w.spd, 1)}</span></div>`);
-    rows.push(`<div class="pr"><span class="pk">Starboard</span>${liftWord(d)}</div><div class="pr"><span class="pk">Port</span>${liftWord(-d)}</div>`);
-  } else if (arrowTack === "off") rows.push(`<div class="pr"><span class="pk">Wind</span><span>hidden (turn it on above the map)</span></div>`);
-  else rows.push(`<div class="pr"><span class="pk">Wind</span><span>no data here (too far from a station)</span></div>`);
-  let when = "";
+    const d = arrowTack === "port" ? -w.lift : w.lift;
+    row("Wind", `${wKt(w.spd, 1)} ${compass(w.dir)} (${Math.round(w.dir)}°)`);
+    rows.push(`<div class="pr"><span class="pk">${arrowTack === "port" ? "Port" : "Stbd"}</span>${liftWord(d)}</div>`);
+  }
   if (TIDES) {
     const t = tideTimeMin(), cl = Math.cos(rad(ll.lat)), pad = (CUR_RADIUS_KM + 1) / 111.32;
     const states = stationStates(t, L.latLngBounds([ll.lat - pad, ll.lng - pad / cl], [ll.lat + pad, ll.lng + pad / cl]));
     const sz = map.getSize(), mpp = map.distance(map.containerPointToLatLng([0, sz.y / 2]), map.containerPointToLatLng([100, sz.y / 2])) / 100;
     const fw = flowAt(ll.lat, ll.lng, states, true, false, windHere(cp.x, cp.y, ll.lat, ll.lng), cp.x, cp.y, mpp), c = fw && fw.tidal;
-    if (!fw) rows.push(`<div class="pr"><span class="pk">Tide</span><span>${!TIDES.currents.length ? (REGION.id === "lakes" ? "no tide in the Great Lakes" : "no tidal-current data for this region") : `no NOAA current station within ${CUR_RADIUS_KM} km by water`}</span></div>`);
-    else if (fw.ocean) rows.push(`<div class="pr"><span class="pk">Ocean current</span><span>${cKt(fw.sp)}</span><span>toward ${Math.round(fw.dir)}°</span><span style="color:var(--muted)">(NOAA global ocean model offshore: Gulf Stream, eddies, wind drift; tidal streams out here are not included)</span></div>`);
-    else rows.push(`<div class="pr"><span class="pk">Tidal current</span><span class="${fw.kind}">${fw.sp < 0.1 ? "slack (almost still)" : `${fw.kind} ${cKt(fw.sp)}`}</span>${fw.sp < 0.1 ? "" : `<span>toward ${Math.round(fw.dir)}°</span>`}${c && c.estimated ? `<span style="color:var(--muted)">(estimated from the rise and fall of the tide; no current station nearby)</span>` : ""}</div>`);
-    if (fw && fw.dsp >= 0.05) rows.push(`<div class="pr"><span class="pk">Wind drift</span><span style="color:var(--muted)">about ${cKt(fw.dsp)} on top of the tide (about 3% of the wind; not drawn)</span></div>`);
+    if (fw && fw.ocean) row("Current", `${cKt(fw.sp)} → ${Math.round(fw.dir)}°`);
+    else if (fw) row("Current", fw.sp < 0.1 ? "slack" : `<span class="${fw.kind}">${fw.kind}</span> ${cKt(fw.sp)} → ${Math.round(fw.dir)}°${c && c.estimated ? ` <span class="pe">est.</span>` : ""}`);
+    const tide = tideAt(ll.lat, ll.lng, t);
+    if (tide) {
+      const g = surgeNear(ll.lat, ll.lng), whenMs = coastMode === "live" && LIVE ? liveTimeMs() : Date.now();
+      const sg = g && Math.abs(whenMs - Date.parse(SURGE.time)) / 3600e3 <= 30 && Math.abs(g.ft) >= 0.1
+        ? ` <span class="surge">${g.ft > 0 ? "+" : "−"}${tideUnits() === "m" ? (Math.abs(g.ft) * 0.3048).toFixed(1) : Math.abs(g.ft).toFixed(1)} now</span>` : "";
+      row("Tide", `${tide.h.toFixed(1)} ${tideUnits()} ${tide.rising ? "▲" : "▼"}${sg}`);
+    }
     const dp = depthAt(ll.lat, ll.lng);
-    if (dp && !dp.land) rows.push(`<div class="pr"><span class="pk">Depth</span><span>about ${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m${c && c.confined > 0.5 ? " (current here follows the channel: faster where deep and narrow)" : ""}</span></div>`);
-    const tide = tideAt(ll.lat, ll.lng, t), nearT = TIDES.timebase === "utc" ? nearest(TIDES.tides, ll.lat, ll.lng) : null;
-    rows.push(`<div class="pr"><span class="pk">Tide</span><span>${tide ? `${tide.h.toFixed(1)} ${tideUnits()}, ${tide.rising ? "rising" : "falling"}${TIDES.timebase === "utc" ? (nearT && nearT.s.quality === "weak" ? " (tiny tide; weather matters more)" : " (calculated)") : ""}${surgeTxt(ll.lat, ll.lng, coastMode === "live" && LIVE ? liveTimeMs() : Date.now())}` : REGION.id === "lakes" ? "almost none (Great Lakes)" : "no tide station within 20 km"}</span></div>`);
-    when = coastMode === "live" ? `${hourLabel(+$("#live-hour").value)} on the selected date` : "now";
+    if (dp && !dp.land) row("Depth", `${dp.h < 10 ? dp.h.toFixed(1) : Math.round(dp.h)} m`);
   }
-  const src = coastMode === "live" ? (useObs() ? "live readings" : "forecast") : coastMode === "custom" ? "the breeze you set" : "typical wind for the month and hour";
-  return `<div class="pt">${ll.lat.toFixed(3)}°, ${ll.lng.toFixed(3)}°</div>${rows.join("")}<div class="pf">Wind: ${src}${when ? `. Tide and current: ${when}` : ""}. Estimates.</div>`;
+  if (!rows.length) return null;
+  const src = coastMode === "live" ? (useObs() ? "Live" : "Forecast") : coastMode === "custom" ? "Your wind" : "Typical wind";
+  return `<div class="pt">${src}</div>${rows.join("")}`;
 }
 let probePinned = false, probeRaf = null;
 function showProbe(cp, ll) {
