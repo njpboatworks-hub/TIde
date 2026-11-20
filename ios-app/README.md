@@ -54,16 +54,14 @@ The app loads its data from `https://nockd.netlify.app/` (saved in `ios-app/data
 
 ## Updating the app later
 
-Run these from the `TIde` folder.
+Forecasts, tides and places load from the website, so they update without a new app build. When the page itself
+changes:
 
-```bash
-git pull
-python3 -m scripts.build_app
-cd ios-app
-npx cap sync ios
-```
-
-Then archive and upload again. In Xcode, raise the **Build** number on the General tab first.
+1. In GitHub Desktop, click **Fetch origin**, then **Pull origin**.
+2. In Finder, open `Documents/GitHub/TIde/ios-app` and double-click **update-app.command**. (The first time, macOS may
+   ask whether to open it: click **Open**.)
+3. In Xcode, press ▶ to put it on your phone. For TestFlight, raise the **Build** number on the General tab, then
+   **Product → Archive**.
 
 ## Things App Store Connect will ask for
 
