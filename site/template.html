@@ -864,7 +864,7 @@ body.cruise .legend { max-width: 250px; }
 .rt-hz span { color: var(--ink-2); font-size: 12px; }
 .rt-hz.ok { border-color: #5BE09A; } .rt-hz.opening { border-color: #F5B83D; } .rt-hz.blocked { border-color: #FF5A60; }
 /* radar: dim satellite land, wind lines faint so the rain stands out */
-body.gx-light .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
+body.gx-light .leaflet-tile-pane { opacity: .55; }
 body.gx-radar .leaflet-gx-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
 .cr-warn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 13px; }
 .cr-warn b { color: var(--c); font: 600 14px/1.2 var(--f-body); }
@@ -897,7 +897,8 @@ body.race-on .legend { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 }
 /* forecast zoomed in: satellite and names show through the weather colours */
 body.gx-zoomed .leaflet-gx-pane canvas.leaflet-zoom-animated { opacity: .5; }
-body.gx-zoomed:not(.gx-radar) .leaflet-tile-pane { filter: brightness(.8) saturate(.85); }
+body.gx-zoomed:not(.gx-light) .leaflet-tile-pane { opacity: .85; }
+body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacity .25s ease; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -4950,7 +4951,7 @@ async function gxOutlines(on) {
     } catch (_) { return; }
   }
   try { const r = await fetch("states.json"); if (r.ok) GXO.statesLab = (await r.json()).labels || []; } catch (_) {}
-  loadWorld().then(() => gxDrawLabels());
+  loadWorld().then(() => gxDrawLabels()); loadPlaces().then(() => gxDrawLabels());
   gxFineTiles();
 }
 async function gxFineTiles() { // 1:10m coast tiles when zoomed in, 1:50m when zoomed out
@@ -5010,6 +5011,31 @@ function gxDrawLabels() {
     ctx.font = `600 13px ${font}`; ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
     if (val) { ctx.font = `600 12.5px ${font}`; ctx.strokeText(val, pt.x, pt.y + 20); ctx.fillText(val, pt.x, pt.y + 20); }
     n++;
+  }
+  // zoomed in on the US coast: the coastal towns (with the value) and harbors, islands, points and bays (names only)
+  if (z >= 8 && PLACES) {
+    let m = 0; const maxP = Math.round((size.x * size.y) / 6500);
+    for (const pass of ["town", "place"]) {
+      if (pass === "place" && z < 10) break;
+      for (const p of PLACES) {
+        if (m >= maxP) break;
+        if (p.k !== pass || p.lat < b.getSouth() || p.lat > b.getNorth() || p.lon < b.getWest() || p.lon > b.getEast()) continue;
+        const pt = map.latLngToContainerPoint([p.lat, p.lon]);
+        if (pass === "town") {
+          const val = gxLabelValue(p.lat, p.lon); ctx.font = `600 12.5px ${font}`; const w = Math.max(ctx.measureText(p.n).width, val ? ctx.measureText(val).width : 0), h = val ? 30 : 15;
+          if (pt.x - w / 2 < 4 || pt.x + w / 2 > size.x - 4 || pt.y - 8 < 4 || pt.y + h > size.y - 4 || !fits(pt.x - w / 2, pt.y - 8, w, h)) continue;
+          ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.fillStyle = "#fff";
+          ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
+          if (val) { ctx.strokeText(val, pt.x, pt.y + 19); ctx.fillText(val, pt.x, pt.y + 19); }
+        } else {
+          ctx.font = `italic 500 11.5px ${font}`; const w = ctx.measureText(p.n).width;
+          if (pt.x - w / 2 < 4 || pt.x + w / 2 > size.x - 4 || pt.y - 8 < 4 || pt.y + 14 > size.y - 4 || !fits(pt.x - w / 2, pt.y - 7, w, 14)) continue;
+          ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.fillStyle = "#D4E7F7";
+          ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
+        }
+        m++;
+      }
+    }
   }
 }
 async function enterGlobal(kind) {
@@ -5100,7 +5126,7 @@ const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
   const zoomed = gxZoomed(); document.body.classList.toggle("gx-zoomed", zoomed);
   if (zoomed) on = true;
-  if (GX.on && map.getPane("namesPane")) { const nl = namesLayer("bright"); if (zoomed && !map.hasLayer(nl)) nl.addTo(map); if (!zoomed && map.hasLayer(nl)) map.removeLayer(nl); }
+  if (GX.on && map.getPane("namesPane")) { const nl = namesLayer("bright"); if (map.hasLayer(nl)) map.removeLayer(nl); } // our own labels name the coast here (with the values)
   document.body.classList.toggle("gx-light", on);
   document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
   if (baseLayer) {
