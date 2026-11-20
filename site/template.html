@@ -863,6 +863,9 @@ body.cruise .legend { max-width: 250px; }
 .rt-hz { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border-left: 3px solid #C9D3DF; background: var(--surface); border-radius: 0 8px 8px 0; font-size: 13px; }
 .rt-hz span { color: var(--ink-2); font-size: 12px; }
 .rt-hz.ok { border-color: #5BE09A; } .rt-hz.opening { border-color: #F5B83D; } .rt-hz.blocked { border-color: #FF5A60; }
+/* radar: dim satellite land, wind lines faint so the rain stands out */
+body.gx-radar .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
+body.gx-radar .leaflet-pane.leaflet-gxPane-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -4821,7 +4824,7 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
+const stateStyle = () => (GX.on && GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
@@ -4834,8 +4837,9 @@ function setNames(on) {
 // world-atlas package; 1:50m everywhere, 1:10m tiles once zoomed in), US state borders and names (US Census), and
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
-const gxCoastStyle = () => ({ color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
-const gxBorderStyle = () => ({ color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+// on the radar there are no weather colours under the lines, so they turn light to show the land
+const gxCoastStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
   GXO.on = on;
@@ -4990,7 +4994,7 @@ function radarShow(k) {
   RADAR.frame = k;
   for (const [j, l] of RADAR.layers) l.setOpacity(j === k ? 0.8 : 0);
   if (!map.hasLayer(radarLayer(k))) radarLayer(k).addTo(map);
-  radarLayer(k).setOpacity(0.8);
+  radarLayer(k).setOpacity(0.9);
   const w = $("#radar-when"); if (w) w.textContent = k ? `${k * 5} min ago` : "latest";
 }
 function radarStop() { clearInterval(RADAR.timer); RADAR.timer = null; const b = $("#radar-play"); if (b) b.textContent = "Play the last hour"; }
@@ -5000,7 +5004,19 @@ function radarPlay() {
   let k = 11; $("#radar-play").textContent = "Stop";
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
+function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
+  document.body.classList.toggle("gx-radar", on);
+  if (baseLayer) {
+    if (on && GX.on && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
+    if (!on && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
+  }
+  const restyle = (g) => g && g.eachLayer((l) => (l.eachLayer ? restyle(l) : l.setStyle && l.setStyle(l.options.weight < 1 ? gxBorderStyle() : gxCoastStyle())));
+  restyle(GXO.group); if (GXO.coarse && !GXO.group?.hasLayer(GXO.coarse)) restyle(GXO.coarse);
+  for (const l of GXO.fine.values()) if (l) restyle(l);
+  if (stateLines) stateLines.setStyle(stateStyle());
+}
 function gxRadar(on) {
+  gxRadarBase(on && GX.on);
   if (!on) { radarStop(); for (const l of RADAR.layers.values()) if (map.hasLayer(l)) map.removeLayer(l); RADAR.layers.clear(); return; }
   radarShow(0);
 }
