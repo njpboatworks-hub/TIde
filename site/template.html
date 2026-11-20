@@ -865,7 +865,7 @@ body.cruise .legend { max-width: 250px; }
 .rt-hz.ok { border-color: #5BE09A; } .rt-hz.opening { border-color: #F5B83D; } .rt-hz.blocked { border-color: #FF5A60; }
 /* radar: dim satellite land, wind lines faint so the rain stands out */
 body.gx-light .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
-body.gx-radar .leaflet-pane.leaflet-gxPane-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
+body.gx-radar .leaflet-gx-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
 .cr-warn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 13px; }
 .cr-warn b { color: var(--c); font: 600 14px/1.2 var(--f-body); }
 .cr-warn span { color: var(--ink-2); font-size: 12.5px; }
@@ -895,6 +895,9 @@ body.race-on .legend { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   body.race-on .legend { top: 8px; bottom: auto !important; left: 52px; }
   .leaflet-bottom .leaflet-control-attribution { position: relative; z-index: 600; }
 }
+/* forecast zoomed in: satellite and names show through the weather colours */
+body.gx-zoomed .leaflet-gx-pane canvas.leaflet-zoom-animated { opacity: .5; }
+body.gx-zoomed:not(.gx-radar) .leaflet-tile-pane { filter: brightness(.8) saturate(.85); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -3500,8 +3503,8 @@ function setBasemap(kind) {
         return c;
       },
     });
-    const us = new USGS("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", {
-      minZoom: 11, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
+    const us = new USGS("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", {
+      minZoom: 9, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
       attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a>',
     });
     baseLayer = L.layerGroup([world, us]).addTo(map);
@@ -4910,7 +4913,7 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (GX.on && gxLightBase() ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
+const stateStyle = () => (GX.on && (gxLightBase() || gxZoomed()) ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
@@ -4924,8 +4927,8 @@ function setNames(on) {
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
 // on the radar there are no weather colours under the lines, so they turn light to show the land
-const gxCoastStyle = () => (gxLightBase() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
-const gxBorderStyle = () => (gxLightBase() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+const gxCoastStyle = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => (gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
   GXO.on = on;
@@ -4936,6 +4939,7 @@ async function gxOutlines(on) {
     GXO.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("gxLabelPane"));
     map.on("zoomanim", (e) => GXO.on && zoomCanvas(GXO.cv, e.center, e.zoom));
     map.on("moveend", () => { if (GXO.on) { gxFineTiles(); gxDrawLabels(); } });
+    map.on("zoomend", () => { if (GX.on) gxRadarBase(gxLightBase()); }); // satellite and names come in when zoomed in
   }
   if (!on) { map.removeLayer(GXO.group); GXO.cv.style.display = "none"; return; }
   GXO.cv.style.display = ""; GXO.group.addTo(map);
@@ -5091,8 +5095,12 @@ function radarPlay() {
   let k = 11; $("#radar-play").textContent = "Stop";
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
+const gxZoomed = () => GX.on && !!baseLayer && map.getZoom() >= 8; // zoomed in: satellite under the colours, with place names
 const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].includes(GX.layer); // layers that leave land uncoloured
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
+  const zoomed = gxZoomed(); document.body.classList.toggle("gx-zoomed", zoomed);
+  if (zoomed) on = true;
+  if (GX.on && map.getPane("namesPane")) { const nl = namesLayer("bright"); if (zoomed && !map.hasLayer(nl)) nl.addTo(map); if (!zoomed && map.hasLayer(nl)) map.removeLayer(nl); }
   document.body.classList.toggle("gx-light", on);
   document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
   if (baseLayer) {
