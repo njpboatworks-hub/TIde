@@ -36,7 +36,7 @@ TYPES = {
     "anchorage": "Anchorage", "mooring_field": "Mooring field", "mooring": "Mooring buoy", "marina": "Marina",
     "pumpout": "Pump-out", "fuel": "Fuel", "ramp": "Launch ramp", "boatyard": "Boatyard", "water": "Water",
     "showers": "Showers", "laundry": "Laundry", "toilets": "Toilets", "provisions": "Provisions",
-    "chandler": "Chandlery", "club": "Yacht club", "dinghy": "Dinghy landing", "other": "Other service",
+    "chandler": "Chandlery", "club": "Yacht club", "eat": "Restaurant", "dinghy": "Dinghy landing", "other": "Other service",
     "reef": "Artificial reef", "wreck": "Wreck", "fishing": "Fishing spot",
 }
 # S-57 CATSCF (category of small craft facility) -> our type
@@ -185,7 +185,14 @@ def from_enc():
     return P
 
 
+OSM_V = 2  # bump when the query changes: every cached square is then fetched again (oldest first)
 OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
+(
+  nwr["leisure"="marina"];
+  nwr["leisure"="slipway"];
+  nwr["man_made"="pier"];
+  nwr["seamark:type"~"^(mooring|anchorage|harbour)$"];
+)->.water;
 (
   nwr["leisure"="marina"];
   nwr["seamark:type"="anchorage"];
@@ -203,6 +210,8 @@ OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
   nwr["shop"="boat"];
   nwr["leisure"="fishing"];
   nwr["man_made"="pier"]["fishing"="yes"];
+  nwr["name"~"(yacht|sailing|boat|corinthian|rowing|canoe|power squadron) club|yacht squadron|sailing (association|center|centre|school|foundation)|community sailing|boating club",i];
+  nwr["amenity"~"^(restaurant|bar|pub|cafe|fast_food|ice_cream)$"]["name"](around.water:250);
 );
 out tags center;"""
 
@@ -224,8 +233,16 @@ def osm_boxes():
     return sorted(B)
 
 
+CLUB_RE = re.compile(r"\b(yacht|sailing|boat|corinthian|rowing|canoe|boating)\s+club\b|\byacht\s+squadron\b|\bpower\s+squadron\b|\bsailing\s+(association|center|centre|school|foundation)\b|\bcommunity\s+sailing\b", re.I)
+EAT = {"restaurant", "bar", "pub", "cafe", "fast_food", "ice_cream"}
+
+
 def osm_type(t):
     sm = t.get("seamark:type", ""); scf = t.get("seamark:small_craft_facility:category", "")
+    if t.get("amenity") in EAT:
+        return "eat" if t.get("name") else None
+    if CLUB_RE.search(t.get("name", "")) and not t.get("highway") and t.get("amenity") not in ("parking", "toilets"):
+        return "club"
     if t.get("amenity") == "sanitary_dump_station" or t.get("waterway") == "sanitary_dump_station" or "pump" in scf:
         if t.get("boat") in ("yes", "designated") or "seamark:type" in t or t.get("waterway") or t.get("leisure") == "marina":
             return "pumpout"
@@ -272,6 +289,8 @@ def square_age(box, cache=None):
         return float("inf")
     try:
         d = json.loads(gzip.decompress(f.read_bytes()))
+        if d.get("v", 1) != OSM_V:
+            return 1e12 - 1  # made by an older query: refetch, but after squares that were never fetched
         return time.time() - datetime.strptime(d["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc).timestamp()
     except Exception:
         return float("inf")
@@ -302,7 +321,7 @@ def osm_fetch(part=0, parts=1, budget_s=2400, out_dir=None):
             els = {f"{el.get('type')}{el.get('id')}": el for el in d.get("elements", [])}
             elements.update(els)
             square_file((s_, w, n, e), out_dir).write_bytes(gzip.compress(json.dumps(
-                {"fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "box": [s_, w, n, e], "elements": els}, separators=(",", ":")).encode(), 9, mtime=0))
+                {"fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "v": OSM_V, "box": [s_, w, n, e], "elements": els}, separators=(",", ":")).encode(), 9, mtime=0))
         time.sleep(1)
     print(f"  OpenStreetMap part {part + 1}/{parts}: {ok} of {len(boxes)} squares answered, {len(elements)} objects ({time.time() - t0:.0f}s)", flush=True)
     return elements
@@ -323,7 +342,8 @@ def from_osm(elements=None):
         fee = t.get("fee", "").lower()
         cost = "free" if fee == "no" else "paid" if fee in ("yes",) or t.get("charge") else ""
         extra = {k: t[k] for k in ("phone", "contact:phone", "website", "contact:website", "charge", "opening_hours", "capacity",
-                                   "mooring", "access", "operator", "depth", "seamark:anchorage:category", "vhf", "seamark:radio_station:channel") if t.get(k)}
+                                   "mooring", "access", "operator", "depth", "seamark:anchorage:category", "vhf", "seamark:radio_station:channel",
+                                   "amenity", "cuisine", "outdoor_seating") if t.get(k)}
         P.append([ty, round(c["lat"], 5), round(c["lon"], 5), t.get("name", "") or t.get("seamark:name", ""), t.get("description", "")[:300], cost, "OpenStreetMap", extra])
     print(f"  OpenStreetMap: {len(P)} places", flush=True)
     return P
@@ -373,7 +393,8 @@ def dedupe(P):
         for dy in (-1, 0, 1):
             for dx in (-1, 0, 1):
                 for q in grid.get((p[0], key[1] + dy, key[2] + dx), []):
-                    if math.hypot((q[1] - p[1]) * 111, (q[2] - p[2]) * 111 * math.cos(math.radians(p[1]))) < 0.15:
+                    if math.hypot((q[1] - p[1]) * 111, (q[2] - p[2]) * 111 * math.cos(math.radians(p[1]))) < 0.15 \
+                            and (p[0] != "eat" or (p[3] or "").lower() == (q[3] or "").lower()):  # neighbouring restaurants are different places
                         hit = q
         if hit:
             if not hit[3] and p[3]:
@@ -395,7 +416,7 @@ def tidy(P):
     import re
     groups, out = {}, []
     for p in P:
-        if p[3]:
+        if p[3] and p[0] != "eat":  # restaurants: two branches of a chain are two places
             k = (p[0], p[3].lower())
             g = next((g for g in groups.get(k, []) if math.hypot((g[0][1] - p[1]) * 111, (g[0][2] - p[2]) * 111 * math.cos(math.radians(p[1]))) < 5), None)
             if g:
@@ -471,7 +492,7 @@ def main(osm_dir=None):
     P = keep
     # yacht, sailing and boat clubs are often mapped (or charted) as marinas: go by the name
     for p in P:
-        if p[0] in ("marina", "other") and re.search(r"\b(yacht|sailing|boat|corinthian|rowing)\s+club\b|\byacht\s+squadron\b", p[3] or "", re.I):
+        if p[0] in ("marina", "other") and CLUB_RE.search(p[3] or ""):
             p[0] = "club"
     P = tidy(dedupe(P))
     for p in P:

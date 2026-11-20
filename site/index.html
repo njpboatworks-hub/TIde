@@ -1527,6 +1527,13 @@ body.cruise .legend { max-width: 250px; }
 /* radar: dim satellite land, wind lines faint so the rain stands out */
 body.gx-radar .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
 body.gx-radar .leaflet-pane.leaflet-gxPane-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
+.cr-warn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 13px; }
+.cr-warn b { color: var(--c); font: 600 14px/1.2 var(--f-body); }
+.cr-warn span { color: var(--ink-2); font-size: 12.5px; }
+.cr-warn details { flex-basis: 100%; } .cr-warn summary { font-size: 12px; color: var(--ink-2); }
+.cr-warn p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.45; }
+.cr-mfc .cr-row div { font-size: 13px; line-height: 1.45; }
+.cr-here small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -5322,7 +5329,7 @@ function gxValue(F, lat, lon) { // value shown for the active layer, in base uni
     case "wind": case "current": return Math.hypot(gxSample(F, "A", lat, lon), gxSample(F, "B", lat, lon));
     case "gust": return gxSample(F, "C", lat, lon);
     case "temp": case "sst": return gxSample(F, "A", lat, lon);
-    case "radar": return NaN; // radar is drawn from map tiles, not from the forecast grid
+    case "radar": return GX.radarFcst ? gxSample(F, "B", lat, lon) : NaN; // live radar comes from map tiles; other hours use the model's rain
     case "waves": return gxSample(F, "A", lat, lon);
     case "rain": return gxSample(F, "B", lat, lon);
     case "cloud": return gxSample(F, "C", lat, lon);
@@ -5333,7 +5340,8 @@ function gxColorFn() {
   if (L === "wind" || L === "gust") { const lut = lutFrom(windStops(), 60); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 60 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
   if (L === "current") { const lut = lutFrom(curStops(), 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "temp") { const st = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]], lut = lutFrom(st, 95); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v + 40) / 95 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
-  if (L === "radar") return () => null;
+  if (L === "radar" && !GX.radarFcst) return () => null;
+  if (L === "radar") { const lut = lutFrom(RADAR_STOPS, 25); return (v) => (!(v >= 0.1) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(Math.sqrt(v / 25) * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 225]; })()); }
   if (L === "waves") { const lut = lutFrom(WAVE_STOPS, 9); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 9 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "sst") { const lut = lutFrom(SST_STOPS, 34); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v + 2) / 34 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (v < 0.1 ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.min(255, 120 + v * 60)]; })()); }
@@ -5361,10 +5369,17 @@ function gxLegend() {
     <div class="fine">Significant wave height (about the average of the highest third of waves) from NOAA's GFS-Wave model, 16 days ahead on a 25 km grid. Harbors, bays and lakes smaller than that are not modelled. Tap for height, period and direction.</div>`);
     return;
   }
+  if (L === "radar" && GX.radarFcst) {
+    setLegend(`<b>Radar: forecast rain</b><div class="bar" style="background:${RADAR_GRAD}"></div><div class="ends"><span>light</span><span>moderate</span><span>heavy</span><span>severe</span></div>
+    <div class="radar-ctl"><button type="button" id="radar-now">Back to live radar</button></div>
+    <div class="fine">Live radar only covers the last hour, so at this time you see the GFS model's rain and snow instead, on a 50 km grid. It shows where showers are likely, not exact storm cells.</div>`);
+    $("#radar-now").addEventListener("click", () => { gxStop(); gxSetTime(Math.max(0, Math.min(GX.hMax, (Date.now() - GX.run) / 3600e3))); });
+    return;
+  }
   if (L === "radar") {
     setLegend(`<b>Radar (live)</b><div class="bar" style="background:${RADAR_GRAD}"></div><div class="ends"><span>light</span><span>moderate</span><span>heavy</span><span>severe</span></div>
     <div class="radar-ctl"><button type="button" id="radar-play">Play the last hour</button><span id="radar-when">${RADAR.frame ? `${RADAR.frame * 5} min ago` : "latest"}</span></div>
-    <div class="fine">NOAA NEXRAD weather radar mosaic for the mainland US, via Iowa Environmental Mesonet, updated about every 5 minutes. Shows rain, snow and storms falling now; it is not a forecast (use Rain for the days ahead). Moving lines show the forecast wind.</div>`);
+    <div class="fine">NOAA NEXRAD weather radar mosaic for the mainland US, via Iowa Environmental Mesonet, updated about every 5 minutes. Shows rain, snow and storms falling now. Move the time bar ahead and it switches to the forecast rain. Moving lines show the forecast wind.</div>`);
     $("#radar-play").addEventListener("click", radarPlay);
     return;
   }
@@ -5642,6 +5657,7 @@ function gxBuildTimeline() {
 }
 /* Live radar: NOAA NEXRAD composite tiles from Iowa Environmental Mesonet (frames every 5 min for the last hour) */
 const RADAR = { layers: new Map(), frame: 0, timer: null };
+const RADAR_STOPS = [[0, [100, 200, 240]], [5.5, [40, 160, 70]], [11.25, [250, 230, 40]], [15.5, [240, 120, 30]], [19.5, [220, 20, 30]], [25, [200, 40, 200]]]; // same colours as the radar key, on a square-root scale of 0 to 25 mm/h
 const RADAR_GRAD = "linear-gradient(90deg, rgb(100,200,240), rgb(40,160,70) 22%, rgb(250,230,40) 45%, rgb(240,120,30) 62%, rgb(220,20,30) 78%, rgb(200,40,200))";
 function radarLayer(k) { // k = minutes ago in 5-min steps (0 = latest)
   if (RADAR.layers.has(k)) return RADAR.layers.get(k);
@@ -5682,12 +5698,20 @@ function gxRadar(on) {
   radarShow(0);
 }
 function gxSetLayer(l) {
-  GX.layer = l; document.querySelectorAll("#gx-layers button").forEach((b) => { b.classList.toggle("active", b.dataset.l === l); b.setAttribute("aria-checked", String(b.dataset.l === l)); });
-  gxRadar(l === "radar"); gxLegend(); gxRender();
+  GX.layer = l; radarSync(); document.querySelectorAll("#gx-layers button").forEach((b) => { b.classList.toggle("active", b.dataset.l === l); b.setAttribute("aria-checked", String(b.dataset.l === l)); });
+  gxRadar(l === "radar"); radarSync(); gxLegend(); gxRender();
 }
 let gxTimer = null;
+function radarSync() { // radar follows the time bar: live frames within the last hour, the model's rain at any other hour
+  if (GX.layer !== "radar") { GX.radarFcst = false; GX_LAYERS.radar.src = "w"; return; }
+  const minsAgo = (Date.now() - (GX.run + GX.t * 3600e3)) / 60e3, live = minsAgo > -40 && minsAgo < 65;
+  const was = GX.radarFcst; GX.radarFcst = !live; GX_LAYERS.radar.src = live ? "w" : "x";
+  if (live) { if (!RADAR.timer) radarShow(Math.max(0, Math.min(11, Math.round(minsAgo / 5)))); }
+  else { radarStop(); for (const l of RADAR.layers.values()) l.setOpacity(0); }
+  if (was !== GX.radarFcst) gxLegend();
+}
 function gxSetTime(t) {
-  GX.t = t; if (SP.cols.length) spMark(); $("#gx-slider").value = Math.round(t); $("#gx-label").textContent = gxTimeLabel(t);
+  GX.t = t; radarSync(); if (SP.cols.length) spMark(); $("#gx-slider").value = Math.round(t); $("#gx-label").textContent = gxTimeLabel(t);
   clearTimeout(gxTimer); gxTimer = setTimeout(gxRender, GX.play ? 0 : 60);
   // warm the cache for the next steps
   const pr = gxPair("w", t + 6); if (pr) { gxStep("w", pr[1]).catch(() => {}); if (GX_LAYERS[GX.layer].src !== "w") { const q = gxPair(GX_LAYERS[GX.layer].src, t + 6); if (q) gxStep(GX_LAYERS[GX.layer].src, q[1]).catch(() => {}); } }
@@ -6086,13 +6110,13 @@ const CR_ICON = {
 };
 // chips: what each one shows (place types)
 const CR_CATS = [
-  { id: "all", label: "Everything", icon: null, types: ["mooring", "mooring_field", "anchorage", "marina", "pumpout", "fuel", "club", "ramp", "fishing", "reef", "boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other", "food", "cg"] },
+  { id: "all", label: "Everything", icon: null, types: ["mooring", "mooring_field", "anchorage", "marina", "pumpout", "fuel", "club", "ramp", "fishing", "reef", "boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other", "food", "eat", "cg"] },
   { id: "moorings", label: "Moorings", icon: "mooring", types: ["mooring", "mooring_field"] },
   { id: "anchor", label: "Anchorages", icon: "anchorage", types: ["anchorage"] },
   { id: "marinas", label: "Marinas", icon: "marina", types: ["marina"] },
   { id: "pumpout", label: "Pump-outs", icon: "pumpout", types: ["pumpout"] },
   { id: "fuel", label: "Fuel", icon: "fuel", types: ["fuel"] },
-  { id: "food", label: "Restaurants", icon: "food", types: ["food"] },
+  { id: "food", label: "Restaurants", icon: "food", types: ["food", "eat"] },
   { id: "clubs", label: "Yacht clubs", icon: "club", types: ["club"] },
   { id: "ramps", label: "Ramps", icon: "ramp", types: ["ramp"] },
   { id: "fish", label: "Fishing", icon: "fishing", types: ["fishing", "reef", "wreck"] },
@@ -6100,12 +6124,31 @@ const CR_CATS = [
 ];
 const CR_STYLE = { // icon + colour per place type
   mooring: ["mooring", "#2BC4B4"], mooring_field: ["mooring", "#2BC4B4"], anchorage: ["anchorage", "#3BA4F5"], marina: ["marina", "#F0642D"],
-  pumpout: ["pumpout", "#B57BFF"], fuel: ["fuel", "#F5C242"], food: ["food", "#FF6B8B"], club: ["club", "#E9EEF5"], ramp: ["ramp", "#9BD15A"],
+  pumpout: ["pumpout", "#B57BFF"], fuel: ["fuel", "#F5C242"], food: ["food", "#FF6B8B"], eat: ["food", "#FF6B8B"], club: ["club", "#E9EEF5"], ramp: ["ramp", "#9BD15A"],
   fishing: ["fishing", "#4FD1E8"], reef: ["fishing", "#4FD1E8"], wreck: ["fishing", "#7F93AD"], boatyard: ["services", "#C9A27A"], chandler: ["services", "#D7B66B"],
   water: ["services", "#5BC0F8"], showers: ["services", "#9EC3E6"], laundry: ["services", "#9EC3E6"], toilets: ["services", "#9EC3E6"],
   provisions: ["services", "#E7A3C0"], dinghy: ["mooring", "#CFE8FF"], other: ["services", "#A7B3C2"], cg: ["cg", "#FF5A60"],
 };
-const CR_TYPE_NAMES = { cg: "Coast Guard station", food: "Restaurant", reef: "Artificial reef", wreck: "Wreck", fishing: "Fishing spot", mooring_field: "Mooring field", mooring: "Mooring", dinghy: "Dinghy landing" };
+const CR_TYPE_NAMES = { eat: "Restaurant", cg: "Coast Guard station", food: "Restaurant", reef: "Artificial reef", wreck: "Wreck", fishing: "Fishing spot", mooring_field: "Mooring field", mooring: "Mooring", dinghy: "Dinghy landing" };
+const REP_STAY = ["stayed", "I stayed here", "When did you stay here?", "Optional: ball condition, holding, price, who to call…", "Stayed"];
+const REP_GONE = ["gone", "It's gone", "When did you notice it was gone?", "Optional: what you saw", "Reported gone"];
+const REP_NOTE = (ph) => ["note", "Add note", "Add a note for other boaters", ph, "Note"];
+const CR_REP = { // what people can report depends on what the place is: a club or a restaurant does not disappear overnight
+  mooring: [REP_STAY, REP_GONE, REP_NOTE("Ball condition, pennant, who to call, cost…")], mooring_field: [REP_STAY, REP_GONE, REP_NOTE("Free balls, launch service, cost…")],
+  anchorage: [REP_STAY, REP_NOTE("Holding, depth, swell, dinghy landing…")],
+  dinghy: [["stayed", "Landed here", "When did you land here?", "Optional: tie-up time limit, fee…", "Landed"], REP_GONE, REP_NOTE("Tie-up limit, fee, lock…")],
+  marina: [["stayed", "I stayed here", "When did you stay here?", "Optional: transient price, staff, showers…", "Stayed"], REP_NOTE("Transient slips, price per ft, fuel, showers…")],
+  pumpout: [["stayed", "It works", "When did you use it?", "Optional: fee, hours, how to call the pump-out boat…", "Working"], ["gone", "Out of order", "When was it out of order?", "Optional: what was wrong", "Out of order"], REP_NOTE("Fee, hours, self-serve or attended…")],
+  fuel: [["stayed", "Got fuel here", "When did you fuel up?", "Optional: price per gallon, diesel or gas, depth at the dock…", "Fueled up"], REP_NOTE("Prices, diesel, ethanol-free, hours…")],
+  ramp: [["stayed", "I launched here", "When did you launch?", "Optional: parking, fee, depth at low tide…", "Launched"], REP_NOTE("Parking, fee, depth at low tide…")],
+  fishing: [["stayed", "Fished here", "When did you fish here?", "Optional: what was biting…", "Fished"], REP_NOTE("What's biting, best tide…")],
+  club: [REP_NOTE("Guest moorings, reciprocity, launch hours, VHF channel…")],
+  eat: [REP_NOTE("Dock and dine? Dinghy dock? Reservations?")],
+  cg: [],
+};
+CR_REP.reef = CR_REP.wreck = CR_REP.fishing;
+const crRep = (p) => CR_REP[p[0]] || [REP_NOTE("Hours, price, anything boaters should know…")];
+const crRepKind = (p, kind) => crRep(p).find((r) => r[0] === kind) || (kind === "stayed" ? REP_STAY : kind === "gone" ? REP_GONE : REP_NOTE(""));
 const CRUISE = { on: false, data: null, layer: null, cat: store("crCat") || "all", cost: "any", q: "", sel: null, comm: { summary: {}, spots: [] }, food: new Map(), adding: false };
 
 const crKey = (p) => p.key || `${p[0]}:${(+p[1]).toFixed(4)},${(+p[2]).toFixed(4)}`;
@@ -6114,8 +6157,9 @@ const crName = (p) => p[3] || (p.nearName ? `${crTypeName(p[0])} at ${p.nearName
 const crAgo = (iso) => { const d = Math.round((Date.now() - Date.parse(iso + "T12:00:00")) / 864e5); return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 60 ? `${d} days ago` : d < 730 ? `${Math.round(d / 30)} months ago` : `${Math.round(d / 365)} years ago`; };
 function crStatus(p) { // community state for a place: {cls, text} or null
   const s = CRUISE.comm.summary[crKey(p)]; if (!s) return null;
-  if (s.gone) return { cls: "gone", text: `Reported gone ${crAgo(s.goneOn || new Date().toISOString().slice(0, 10))}` };
-  if (s.last) return { cls: Date.now() - Date.parse(s.last) < 120 * 864e5 ? "ok" : "old", text: `Stayed ${crAgo(s.last)}` };
+  const goneNewer = s.gone && (!s.last || !s.goneOn || Date.parse(s.goneOn) >= Date.parse(s.last));
+  if (goneNewer && crRep(p).some((r) => r[0] === "gone")) return { cls: "gone", text: `${crRepKind(p, "gone")[4]} ${crAgo(s.goneOn || new Date().toISOString().slice(0, 10))}` };
+  if (s.last && crRep(p).some((r) => r[0] === "stayed")) return { cls: Date.now() - Date.parse(s.last) < 120 * 864e5 ? "ok" : "old", text: `${crRepKind(p, "stayed")[4]} ${crAgo(s.last)}` };
   return s.n ? { cls: "old", text: `${s.n} note${s.n > 1 ? "s" : ""}` } : null;
 }
 function crStars(r) { if (r == null) return ""; const f = Math.round(r * 2) / 2; let h = ""; for (let i = 1; i <= 5; i++) h += `<i class="${f >= i ? "f" : f >= i - 0.5 ? "h" : ""}"></i>`; return `<span class="cr-stars" aria-label="${r} stars">${h}</span>`; }
@@ -6142,7 +6186,10 @@ function crAll() {
   const base = CRUISE.data ? CRUISE.data.p : [], user = crUserPlaces();
   const seen = new Set(), food = []; for (const list of CRUISE.food.values()) for (const f of list) if (!seen.has(f.key)) { seen.add(f.key); food.push(f); }
   const cg = NAV.data ? (NAV.cgP || (NAV.cgP = NAV.data.cg.map((c) => [ "cg", c[0], c[1], c[2], c[3], "", "NOAA nautical chart", {} ]))) : [];
-  return base.concat(user, food, cg);
+  const norm = (t) => (t || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10);
+  const gk = new Set(food.map((f) => `${norm(f[3])}:${Math.round(f[1] * 200)}:${Math.round(f[2] * 200)}`));
+  const base2 = gk.size ? base.filter((q) => q[0] !== "eat" || ![-1, 0, 1].some((a) => [-1, 0, 1].some((b) => gk.has(`${norm(q[3])}:${Math.round(q[1] * 200) + a}:${Math.round(q[2] * 200) + b}`)))) : base;
+  return base2.concat(user, food, cg);
 }
 function crMatches(p, cat) {
   const types = (CR_CATS.find((c) => c.id === cat) || CR_CATS[0]).types;
@@ -6223,6 +6270,8 @@ async function crOpen(p) {
     try { const r = await fetch(`${FN}places?id=${encodeURIComponent(p.id)}`); const j = await r.json(); if (r.ok) p.detail = j.place; } catch (_) {}
     if (CRUISE.sel === p) crRenderDetail(p, null);
   }
+  if (!["food", "eat"].includes(p[0]) && p.mfc === undefined) { p.mfc = null; crMarineFcst(p).then((m) => { p.mfc = m; if (m && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
+  if (p[0] !== "food" && p.here === undefined) { p.here = null; crHereNow(p).then((h) => { p.here = h; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (CR_TONIGHT_TYPES.has(p[0]) && p.tonight === undefined) { crTonight(p).then(() => { if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (p[0] !== "food") {
     try { const r = await fetch(`${FN}reports?key=${encodeURIComponent(crKey(p))}`); const j = r.ok ? await r.json() : null; p.lastReports = j ? j.reports : []; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports); }
@@ -6245,7 +6294,8 @@ function crRenderDetail(p, reports, offline) {
     row("Hours", (d.hours || []).map(esc).join("<br>"));
   } else {
     if (p[4]) row("Notes", esc(p[4]));
-    row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
+    if (p[0] === "eat") row("Outdoor seating", x.outdoor_seating === "yes" ? "Yes" : "");
+    if (!["eat", "club", "cg"].includes(p[0])) row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
     const ph = x.phone || x["contact:phone"]; row("Phone", ph ? `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>` : "");
     const web = x.website || x["contact:website"]; row("Website", web && /^https?:\/\//.test(web) ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 34))}</a>` : "");
     row("VHF", esc(x.vhf || x["seamark:radio_station:channel"] || "")); row("Hours", esc(x.opening_hours || "")); row("Depth", x.depth ? `${esc(x.depth)} m` : "");
@@ -6254,30 +6304,30 @@ function crRenderDetail(p, reports, offline) {
   const d = p.detail || p;
   const head = p[0] === "food"
     ? `<div class="cr-rating">${d.rating != null ? `<b>${d.rating.toFixed(1)}</b>${crStars(d.rating)}<span>(${(d.count || 0).toLocaleString()})</span>` : "<span>No rating yet</span>"}${d.price ? `<span>${"$".repeat({ PRICE_LEVEL_INEXPENSIVE: 1, PRICE_LEVEL_MODERATE: 2, PRICE_LEVEL_EXPENSIVE: 3, PRICE_LEVEL_VERY_EXPENSIVE: 4 }[d.price] || 0)}</span>` : ""}${d.open != null ? `<span class="${d.open ? "open" : "closed"}">${d.open ? "Open now" : "Closed"}</span>` : ""}</div>`
-    : (st ? `<div class="cr-status ${st.cls}">${esc(st.text)}</div>` : `<div class="cr-status none">No reports yet. Been here? Let others know.</div>`);
+    : (st ? `<div class="cr-status ${st.cls}">${esc(st.text)}</div>` : crRep(p).some((r) => r[0] !== "note") ? `<div class="cr-status none">No reports yet. Been here? Let others know.</div>` : "");
   const actions = `<div class="cr-actions">
       <button type="button" class="cr-act pri" id="cr-dir">${SVG('<path d="M12 2l9 9-9 11-9-11z"/><path d="M12 8v6M9 11l3-3 3 3"/>')}<span>Directions</span></button>
       <button type="button" class="cr-act" id="cr-share">${SVG('<path d="M12 3v12M7 8l5-5 5 5M5 13v6h14v-6"/>')}<span>Share</span></button>
       <button type="button" class="cr-act" id="cr-wx">${SVG('<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7"/>')}<span>Weather</span></button>
       ${p[0] === "food" ? (d.url ? `<a class="cr-act" href="${esc(d.url)}" target="_blank" rel="noopener">${SVG('<path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/>')}<span>Google Maps</span></a>` : "")
-        : `<button type="button" class="cr-act" data-rep="stayed">${SVG('<path d="M20 6L9 17l-5-5"/>')}<span>I stayed here</span></button>
-           <button type="button" class="cr-act" data-rep="gone">${SVG('<circle cx="12" cy="12" r="9"/><path d="M8 8l8 8"/>')}<span>It's gone</span></button>
-           <button type="button" class="cr-act" data-rep="note">${SVG('<path d="M4 20h4L19 9l-4-4L4 16z"/>')}<span>Add note</span></button>`}
+        : (p[0] === "eat" ? `<a class="cr-act" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${p[3]} ${p[1]},${p[2]}`)}" target="_blank" rel="noopener">${SVG('<path d="M12 2l3 6.5 7 .8-5.2 4.8 1.4 7L12 17.6 5.8 21.1l1.4-7L2 9.3l7-.8z"/>')}<span>Reviews</span></a>` : "")
+          + crRep(p).map(([k, label]) => `<button type="button" class="cr-act" data-rep="${k}">${SVG(k === "stayed" ? '<path d="M20 6L9 17l-5-5"/>' : k === "gone" ? '<circle cx="12" cy="12" r="9"/><path d="M8 8l8 8"/>' : '<path d="M4 20h4L19 9l-4-4L4 16z"/>')}<span>${esc(label)}</span></button>`).join("")}
     </div>`;
   let comm = "";
   if (p[0] === "food") {
     const rv = (p.detail && p.detail.reviews) || [];
     comm = rv.length ? `<h3>Reviews</h3>${rv.map((r) => `<div class="cr-rev"><div class="cr-rev-h">${crStars(r.rating)}<span>${r.authorUrl ? `<a href="${esc(r.authorUrl)}" target="_blank" rel="noopener">${esc(r.author)}</a>` : esc(r.author)} · ${esc(r.when)}</span></div><p>${esc(r.text)}</p></div>`).join("")}` : (p.detail ? "" : `<div class="cr-hint">Loading reviews…</div>`);
     comm += `<div class="cr-google">Ratings and reviews from Google Maps</div>`;
+  } else if (!crRep(p).length) { comm = "";
   } else {
     comm = `<h3>From boaters</h3>${offline ? `<div class="cr-hint">Community reports are not available right now.</div>`
       : reports == null ? `<div class="cr-hint">Loading…</div>`
-      : reports.length ? reports.slice(0, 12).map((r) => `<div class="cr-rep ${r.kind}"><b>${r.kind === "stayed" ? "Stayed" : r.kind === "gone" ? "Reported gone" : "Note"}</b><span>${esc(new Date(r.date + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</span>${r.note ? `<p>${esc(r.note)}</p>` : ""}</div>`).join("")
+      : reports.length ? reports.slice(0, 12).map((r) => `<div class="cr-rep ${r.kind}"><b>${esc(crRepKind(p, r.kind)[4])}</b><span>${esc(new Date(r.date + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</span>${r.note ? `<p>${esc(r.note)}</p>` : ""}</div>`).join("")
       : `<div class="cr-hint">Nobody has reported on this spot yet.</div>`}`;
   }
   $("#cr-detail").innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
-    <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : crTypeName(p[0]))}</span></div></div>
-    ${head}${actions}<div id="cr-form"></div>${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
+    <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : p[0] === "eat" ? ({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[x.amenity] || "Restaurant") + (x.cuisine ? ` · ${x.cuisine.split(";")[0].replace(/_/g, " ")}` : "") : crTypeName(p[0]))}</span></div></div>
+    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length ? `<div class="cr-rows cr-here">${p.here.map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#cr-dir").addEventListener("click", () => routeStart([p[1], p[2]], crName(p)));
   $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Nockd`, e.currentTarget));
@@ -6319,9 +6369,9 @@ function crTonightHtml(T) {
 function crReportForm(p, kind) {
   const today = new Date().toISOString().slice(0, 10);
   $("#cr-form").innerHTML = `<form class="cr-form" id="cr-rf">
-    <div class="cr-form-t">${kind === "stayed" ? "When did you stay here?" : kind === "gone" ? "When did you notice it was gone?" : "Add a note for other boaters"}</div>
+    <div class="cr-form-t">${esc(crRepKind(p, kind)[2])}</div>
     ${kind !== "note" ? `<input type="date" id="cr-rd" value="${today}" max="${today}" required>` : ""}
-    <textarea id="cr-rn" maxlength="280" rows="2" placeholder="${kind === "stayed" ? "Optional: ball condition, holding, price, who to call…" : kind === "gone" ? "Optional: what you saw" : "Depth, holding, dinghy dock, fees…"}"${kind === "note" ? " required" : ""}></textarea>
+    <textarea id="cr-rn" maxlength="280" rows="2" placeholder="${esc(crRepKind(p, kind)[3])}"${kind === "note" ? " required" : ""}></textarea>
     <div class="cr-form-b"><button type="button" id="cr-rc">Cancel</button><button type="submit" class="primary">Post</button></div><div class="cr-form-m" id="cr-rm"></div></form>`;
   $("#cr-rc").addEventListener("click", () => ($("#cr-form").innerHTML = ""));
   $("#cr-rf").addEventListener("submit", async (e) => {
@@ -6659,6 +6709,9 @@ function routePanel(msg) {
       <div><b>${Number.isFinite(hrs) ? routeFmtTime(hrs) : "–"}</b><span>${BOAT.speed ? `at ${BOAT.speed} kt` : "set your speed"}</span></div>
       <div><b>${Number.isFinite(fuel) ? `${fuel < 10 ? fuel.toFixed(1) : Math.round(fuel)} ${fuelUnit()}` : "–"}</b><span>fuel</span></div></div>
       ${!boatSet() ? `<button type="button" class="rt-boat" id="rt-boat">Add your boat for travel time, fuel and bridge checks</button>` : ""}
+      ${(() => { const seen = new Map(); for (let q = 0; q < r.pts.length; q += Math.max(1, Math.floor(r.pts.length / 40))) for (const a of warnAt(r.pts[q][0], r.pts[q][1])) seen.set(a.head, a);
+        for (const a of warnAt(r.pts[r.pts.length - 1][0], r.pts[r.pts.length - 1][1])) seen.set(a.head, a);
+        const l = [...seen.values()].sort((x, y) => y.rank - x.rank); return l.length ? `<h3>Warnings on the way</h3>${l.slice(0, 3).map((a) => warnBanner([a])).join("")}` : ""; })()}
       ${r.under.length ? `<h3>Under the way</h3>${items}` : `<div class="cr-hint">No charted bridges or overhead cables on this route.</div>`}
       ${r.moved[0] || r.moved[1] ? `<div class="cr-hint">The ${r.moved[0] && r.moved[1] ? "start and destination are" : r.moved[0] ? "start is" : "destination is"} off the open water on our shoreline map (on land, in a pond or up a creek), so the dotted stretch is only a guide.</div>` : ""}
       <p class="cr-fine">Water route on a ${r.fine < r.cell ? `${Math.round(r.fine)} m grid near each end and ${Math.round(r.cell)} m offshore` : `${Math.round(r.cell)} m grid`} that avoids land${BOAT.air ? " and fixed bridges too low for your boat" : ""}. It does not know depths, channels, markers or traffic rules: plan the trip on a nautical chart. Not for navigation.</p>`;
@@ -6706,11 +6759,102 @@ function routePick(ll, name) { // a map or place tap while choosing the start or
   routeNext();
 }
 
+
+/* Live NWS marine warnings (api.weather.gov) drawn on the NWS marine zone outlines (site/marinezones.json) */
+const WARN = { on: store("crWarn") ?? true, zones: null, byZone: new Map(), at: 0, layer: null, busy: null };
+const WARN_RANK = (e) => /hurricane|typhoon/i.test(e) ? 5 : /storm warning|special marine/i.test(e) ? 4 : /gale|freezing spray warning/i.test(e) ? 3 : /small craft|hazardous seas|brisk/i.test(e) ? 2 : 1;
+const WARN_COL = { 5: "#C03AE0", 4: "#FF3B5C", 3: "#F0642D", 2: "#F5B83D", 1: "#8FB3D9" };
+async function warnLoad(force) {
+  if (WARN.busy) return WARN.busy;
+  if (!force && Date.now() - WARN.at < 10 * 60e3 && WARN.zones) return;
+  WARN.busy = (async () => {
+    try {
+      if (!WARN.zones) { const r = await fetch("marinezones.json"); WARN.zones = r.ok ? (await r.json()).z : {}; }
+      const r = await fetch("https://api.weather.gov/alerts/active?region_type=marine", { headers: { Accept: "application/geo+json" } });
+      if (!r.ok) throw 0;
+      const j = await r.json(), by = new Map();
+      for (const f of j.features || []) {
+        const a = f.properties; if (!a || a.status !== "Actual") continue;
+        const al = { event: a.event, head: a.headline || a.event, until: a.ends || a.expires, desc: (a.description || "").replace(/\s+/g, " ").trim().slice(0, 600), rank: WARN_RANK(a.event) };
+        for (const u of a.affectedZones || []) { const z = u.split("/").pop(); if (!by.has(z)) by.set(z, []); by.get(z).push(al); }
+      }
+      for (const l of by.values()) l.sort((x, y) => y.rank - x.rank);
+      WARN.byZone = by; WARN.at = Date.now(); WARN.ok = true;
+    } catch (_) { WARN.ok = false; }
+    if (WARN.layer) { map.removeLayer(WARN.layer); WARN.layer = null; }
+    WARN.busy = null;
+  })();
+  return WARN.busy;
+}
+function warnIn(rings, lat, lon) { let inside = false; for (const r of rings) for (let i = 0, j = r.length - 1; i < r.length; j = i++) { const [xi, yi] = r[i], [xj, yj] = r[j]; if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside; } return inside; }
+function warnAt(lat, lon) { // active warnings for the marine zone at a point (the nearest zone within ~3 km for harbor spots on its edge)
+  if (!WARN.zones) return [];
+  const out = new Map();
+  for (const [id, al] of WARN.byZone) { const z = WARN.zones[id]; if (!z) continue;
+    if (warnIn(z[1], lat, lon) || [[0.02, 0], [-0.02, 0], [0, 0.027], [0, -0.027]].some(([a, b]) => warnIn(z[1], lat + a, lon + b))) for (const a of al) out.set(a.head, a); }
+  return [...out.values()].sort((x, y) => y.rank - x.rank);
+}
+const warnUntil = (iso) => iso ? new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
+function warnBanner(list) {
+  if (!list.length) return "";
+  const a = list[0];
+  return `<div class="cr-warn" style="--c:${WARN_COL[a.rank]}"><b>${esc(a.event)}</b>${a.until ? `<span>until ${esc(warnUntil(a.until))}</span>` : ""}${list.length > 1 ? `<span>+${list.length - 1} more</span>` : ""}<details><summary>Details</summary><p>${esc(a.desc)}</p><p class="cr-fine">National Weather Service. Check VHF weather or weather.gov before you go.</p></details></div>`;
+}
+async function warnDraw() {
+  if (!CRUISE.on) return;
+  if (!WARN.on) { if (WARN.layer && map.hasLayer(WARN.layer)) map.removeLayer(WARN.layer); return; }
+  await warnLoad(); if (!CRUISE.on || !WARN.on) return;
+  if (!WARN.layer) {
+    if (!map.getPane("warnPane")) map.createPane("warnPane").style.zIndex = 385;
+    const rend = L.canvas({ pane: "warnPane", padding: 0.3 }); WARN.layer = L.layerGroup();
+    for (const [id, al] of WARN.byZone) {
+      const z = WARN.zones && WARN.zones[id]; if (!z) continue; const c = WARN_COL[al[0].rank];
+      const pg = L.polygon(z[1].map((r) => r.map(([x, y]) => [y, x])), { renderer: rend, color: c, weight: 1.2, fillColor: c, fillOpacity: 0.13, interactive: true, bubblingMouseEvents: true });
+      pg.bindTooltip(`${esc(al[0].event)}${al[0].until ? ` until ${esc(warnUntil(al[0].until))}` : ""} · ${esc(z[0])}`, { sticky: true, className: "cr-tip" });
+      WARN.layer.addLayer(pg);
+    }
+  }
+  if (!map.hasLayer(WARN.layer)) WARN.layer.addTo(map);
+  const n = WARN.byZone.size, chip = $("#cr-warn"); if (chip) chip.querySelector("span").textContent = WARN.ok === false ? "Warnings (offline)" : `Marine warnings${n ? ` · ${n}` : ""}`;
+}
+/* The National Weather Service marine forecast for the zone a place is in (text, next three periods) */
+const MFC = new Map();
+async function crMarineFcst(p) {
+  await warnLoad(); if (!WARN.zones) return null;
+  let zid = null; const pts = [[0, 0], [0.02, 0], [-0.02, 0], [0, 0.027], [0, -0.027]];
+  for (const [a, b] of pts) { for (const [id, z] of Object.entries(WARN.zones)) if (warnIn(z[1], p[1] + a, p[2] + b)) { zid = id; break; } if (zid) break; }
+  if (!zid) return null;
+  if (!MFC.has(zid)) MFC.set(zid, fetch(`https://api.weather.gov/zones/forecast/${zid}/forecast`, { headers: { Accept: "application/geo+json" } })
+    .then((r) => (r.ok ? r.json() : null)).then((j) => j && j.properties && j.properties.periods ? { zone: WARN.zones[zid][0], updated: j.properties.updated, periods: j.properties.periods.slice(0, 3).map((x) => [x.name, x.detailedForecast]) } : null).catch(() => null));
+  return MFC.get(zid);
+}
+function crMarineHtml(m) {
+  if (!m) return "";
+  return `<div class="cr-mfc"><h3>Marine forecast</h3>${m.periods.map(([n, t]) => `<div class="cr-row"><span>${esc(n)}</span><div>${esc(t)}</div></div>`).join("")}<p class="cr-fine">National Weather Service, ${esc(m.zone)}${m.updated ? `, issued ${esc(new Date(m.updated).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }))}` : ""}.</p></div>`;
+}
+/* What's happening at a place right now: tide, sunrise and sunset */
+async function crHereNow(p) {
+  const out = [];
+  const T = await spTideFor(p[1], p[2]).catch(() => null);
+  if (T) {
+    const now = Date.now(), m0 = T.minAt(now), next = [];
+    for (let i = 1; i < T.ev.length - 1 && next.length < 2; i++) { const [t, h] = T.ev[i]; if (t <= m0) continue;
+      const hi = h > T.ev[i - 1][1] && h >= T.ev[i + 1][1], lo = h < T.ev[i - 1][1] && h <= T.ev[i + 1][1]; if (!hi && !lo) continue;
+      next.push(`${hi ? "High" : "Low"} ${new Date(now + (t - m0) * 60000).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })} · ${(h / 100).toFixed(1)} ${T.unit}`); }
+    const cur = T.at(now);
+    if (next.length) out.push(["Tide", `${cur ? `${cur.h.toFixed(1)} ${T.unit} ${cur.up ? "rising" : "falling"}<br>` : ""}${next.join("<br>")}<small>${esc(T.name)}${T.km > 2 ? `, ${T.km.toFixed(0)} km away` : ""}</small>`]);
+  }
+  const st = sunTimes(new Date(), p[1], p[2]);
+  if (st) { const f = (ms) => new Date(ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); out.push(["Sun", `Rise ${f(st.rise)} · Set ${f(st.set)}`]); }
+  return out;
+}
+
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
   $("#cr-chips").innerHTML = `<button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
     + `<button type="button" class="cr-chip act${boatSet() ? " set" : ""}" id="cr-boat">${CR_ICON.boat}<span>${boatSet() ? esc(BOAT.name || "My boat") : "Add my boat"}</span></button>`
     + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("")
+    + `<button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
     + `<button type="button" class="cr-chip tog${NAV.on ? " on" : ""}" id="cr-nav" aria-pressed="${NAV.on}">${CR_ICON.bridge}<span>Bridges & areas</span></button>`
     + `<button type="button" class="cr-chip tog${DZ.on ? " on" : ""}" id="cr-dz" aria-pressed="${DZ.on}">${CR_ICON.discharge}<span>Discharge zones</span></button>`
     + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button>`;
@@ -6718,6 +6862,7 @@ function crChips() {
   $("#cr-dz").addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); crChips(); dzDraw(); });
   $("#cr-nav").addEventListener("click", () => { NAV.on = !NAV.on; store("crNav", NAV.on); crChips(); navDraw(); if (NAV.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in to see bridges and restricted areas."); });
   $("#cr-route").addEventListener("click", () => routeStart(null));
+  $("#cr-warn").addEventListener("click", () => { WARN.on = !WARN.on; store("crWarn", WARN.on); crChips(); warnDraw(); });
   $("#cr-boat").addEventListener("click", () => boatForm(false));
   $("#cr-addbtn").addEventListener("click", () => crAddMode(!CRUISE.adding));
 }
@@ -6734,6 +6879,7 @@ async function enterCruise() {
   }
   crDraw(); dzDraw(); crFood();
   navLoad().then(() => { if (CRUISE.on) { crDraw(); navDraw(); } });
+  warnLoad().then(() => { if (!CRUISE.on) return; warnDraw(); if (CRUISE.sel && CRUISE.sel[1] != null && !CRUISE.sel.route) crRenderDetail(CRUISE.sel, CRUISE.sel.lastReports ?? null); });
   if (PENDING_LINK && PENDING_LINK.tab === "cruise") {
     const key = PENDING_LINK.arg; PENDING_LINK = null;
     if (key.startsWith("u:")) await loadComm();
@@ -6787,6 +6933,7 @@ function leaveCruise() {
   if (CRUISE.layer && map.hasLayer(CRUISE.layer)) map.removeLayer(CRUISE.layer);
   if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
   if (NAV.layer && map.hasLayer(NAV.layer)) map.removeLayer(NAV.layer);
+  if (WARN.layer && map.hasLayer(WARN.layer)) map.removeLayer(WARN.layer);
   if (CRUISE.sel && CRUISE.sel.route) crClose();
   if (CRUISE.selPin) { map.removeLayer(CRUISE.selPin); CRUISE.selPin = null; }
 }
