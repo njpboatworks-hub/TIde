@@ -1525,8 +1525,8 @@ body.cruise .legend { max-width: 250px; }
 .rt-hz span { color: var(--ink-2); font-size: 12px; }
 .rt-hz.ok { border-color: #5BE09A; } .rt-hz.opening { border-color: #F5B83D; } .rt-hz.blocked { border-color: #FF5A60; }
 /* radar: dim satellite land, wind lines faint so the rain stands out */
-body.gx-radar .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
-body.gx-radar .leaflet-pane.leaflet-gxPane-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
+body.gx-light .leaflet-tile-pane { opacity: .55; }
+body.gx-radar .leaflet-gx-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
 .cr-warn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 13px; }
 .cr-warn b { color: var(--c); font: 600 14px/1.2 var(--f-body); }
 .cr-warn span { color: var(--ink-2); font-size: 12.5px; }
@@ -1556,6 +1556,10 @@ body.race-on .legend { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   body.race-on .legend { top: 8px; bottom: auto !important; left: 52px; }
   .leaflet-bottom .leaflet-control-attribution { position: relative; z-index: 600; }
 }
+/* forecast zoomed in: satellite and names show through the weather colours */
+body.gx-zoomed .leaflet-gx-pane canvas.leaflet-zoom-animated { opacity: .5; }
+body.gx-zoomed:not(.gx-light) .leaflet-tile-pane { opacity: .85; }
+body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacity .25s ease; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -4161,8 +4165,8 @@ function setBasemap(kind) {
         return c;
       },
     });
-    const us = new USGS("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}", {
-      minZoom: 11, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
+    const us = new USGS("https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}", {
+      minZoom: 9, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
       attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a>',
     });
     baseLayer = L.layerGroup([world, us]).addTo(map);
@@ -4397,6 +4401,7 @@ function buildCourse() {
   if (RACE.finish === "up") { M.fin = { kind: "fin", ...dest(m1, up + 180, Math.min(120, L * 0.1)) }; seq.push("fin"); }
   else seq.push("finish");
   RACE.marks = M; RACE.seq = seq;
+  if (RACE._dry) return; // trying positions: no drawing
   raceSave(); drawCourse(); renderRacePanel();
 }
 // Waypoint positions in order: start line centre, then each mark (a gate is its midpoint), then the finish.
@@ -4466,7 +4471,32 @@ function fitCourse() {
   const pts = Object.values(RACE.marks).map((m) => [m.lat, m.lon]);
   map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [document.body.classList.contains("board") ? 40 : 30, 60], paddingBottomRight: [30, 40], maxZoom: 16 });
 }
-function placeCourse(lat, lon) { RACE.center = { lat, lon }; if (RACE.type !== "custom") RACE.marks = null; buildCourse(); fitCourse(); }
+function courseLandHere(la, lo) { const cp = map.latLngToContainerPoint([la, lo]), lp = onLandPx(cp.x, cp.y); return lp === null ? isCoastLand(la, lo) : lp; }
+function courseOnWater() { // every mark, both ends of the line, and points along each leg are on the water
+  const M = RACE.marks; if (!M) return false;
+  for (const m of Object.values(M)) if (m && m.lat != null && courseLandHere(m.lat, m.lon)) return false;
+  const pts = legPoints();
+  for (let i = 1; i < pts.length; i++) for (let k = 1; k < 8; k++) { const f = k / 8; if (courseLandHere(pts[i - 1].lat + (pts[i].lat - pts[i - 1].lat) * f, pts[i - 1].lon + (pts[i].lon - pts[i - 1].lon) * f)) return false; }
+  return true;
+}
+function placeCourse(lat, lon) {
+  if (RACE.type === "custom") { RACE.center = { lat, lon }; buildCourse(); fitCourse(); return; }
+  // try the spot asked for, then rings around it, until the whole course is on open water
+  const step = Math.max(150, RACE.lenNm * 1852 / 8), cl = Math.cos(rad(lat)); let found = null;
+  RACE._dry = true;
+  try {
+    outer: for (let r = 0; r <= 24; r++) for (let a = 0; a < (r ? 12 : 1); a++) {
+      const th = (a / 12) * 2 * Math.PI, la = lat + (r * step * Math.cos(th)) / 111320, lo = lon + (r * step * Math.sin(th)) / (111320 * cl);
+      RACE.center = { lat: la, lon: lo }; RACE.marks = null; buildCourse();
+      if (courseOnWater()) { found = { lat: la, lon: lo, r }; break outer; }
+    }
+  } finally { RACE._dry = false; }
+  RACE.center = found ? { lat: found.lat, lon: found.lon } : { lat, lon }; RACE.marks = null; buildCourse(); fitCourse();
+  const msg = $("#race-sim-msg");
+  if (!found) showMsg(msg, "There is no open water big enough for this course near here. Move the map over open water, or shorten the beat.");
+  else if (found.r) showMsg(msg, "Moved the course onto open water.");
+  else showMsg(msg, "");
+}
 
 /* ----- simulation ----- */
 function simGrids(pts) {
@@ -5545,7 +5575,7 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (GX.on && GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
+const stateStyle = () => (GX.on && (gxLightBase() || gxZoomed()) ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
@@ -5559,8 +5589,8 @@ function setNames(on) {
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
 // on the radar there are no weather colours under the lines, so they turn light to show the land
-const gxCoastStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
-const gxBorderStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+const gxCoastStyle = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => (gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
   GXO.on = on;
@@ -5571,6 +5601,7 @@ async function gxOutlines(on) {
     GXO.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("gxLabelPane"));
     map.on("zoomanim", (e) => GXO.on && zoomCanvas(GXO.cv, e.center, e.zoom));
     map.on("moveend", () => { if (GXO.on) { gxFineTiles(); gxDrawLabels(); } });
+    map.on("zoomend", () => { if (GX.on) gxRadarBase(gxLightBase()); }); // satellite and names come in when zoomed in
   }
   if (!on) { map.removeLayer(GXO.group); GXO.cv.style.display = "none"; return; }
   GXO.cv.style.display = ""; GXO.group.addTo(map);
@@ -5581,7 +5612,7 @@ async function gxOutlines(on) {
     } catch (_) { return; }
   }
   try { const r = await fetch("states.json"); if (r.ok) GXO.statesLab = (await r.json()).labels || []; } catch (_) {}
-  loadWorld().then(() => gxDrawLabels());
+  loadWorld().then(() => gxDrawLabels()); loadPlaces().then(() => gxDrawLabels());
   gxFineTiles();
 }
 async function gxFineTiles() { // 1:10m coast tiles when zoomed in, 1:50m when zoomed out
@@ -5642,6 +5673,31 @@ function gxDrawLabels() {
     if (val) { ctx.font = `600 12.5px ${font}`; ctx.strokeText(val, pt.x, pt.y + 20); ctx.fillText(val, pt.x, pt.y + 20); }
     n++;
   }
+  // zoomed in on the US coast: the coastal towns (with the value) and harbors, islands, points and bays (names only)
+  if (z >= 8 && PLACES) {
+    let m = 0; const maxP = Math.round((size.x * size.y) / 6500);
+    for (const pass of ["town", "place"]) {
+      if (pass === "place" && z < 10) break;
+      for (const p of PLACES) {
+        if (m >= maxP) break;
+        if (p.k !== pass || p.lat < b.getSouth() || p.lat > b.getNorth() || p.lon < b.getWest() || p.lon > b.getEast()) continue;
+        const pt = map.latLngToContainerPoint([p.lat, p.lon]);
+        if (pass === "town") {
+          const val = gxLabelValue(p.lat, p.lon); ctx.font = `600 12.5px ${font}`; const w = Math.max(ctx.measureText(p.n).width, val ? ctx.measureText(val).width : 0), h = val ? 30 : 15;
+          if (pt.x - w / 2 < 4 || pt.x + w / 2 > size.x - 4 || pt.y - 8 < 4 || pt.y + h > size.y - 4 || !fits(pt.x - w / 2, pt.y - 8, w, h)) continue;
+          ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.fillStyle = "#fff";
+          ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
+          if (val) { ctx.strokeText(val, pt.x, pt.y + 19); ctx.fillText(val, pt.x, pt.y + 19); }
+        } else {
+          ctx.font = `italic 500 11.5px ${font}`; const w = ctx.measureText(p.n).width;
+          if (pt.x - w / 2 < 4 || pt.x + w / 2 > size.x - 4 || pt.y - 8 < 4 || pt.y + 14 > size.y - 4 || !fits(pt.x - w / 2, pt.y - 7, w, 14)) continue;
+          ctx.lineWidth = 3; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.fillStyle = "#D4E7F7";
+          ctx.strokeText(p.n, pt.x, pt.y + 4); ctx.fillText(p.n, pt.x, pt.y + 4);
+        }
+        m++;
+      }
+    }
+  }
 }
 async function enterGlobal(kind) {
   if (!gxLayerObj) {
@@ -5666,7 +5722,7 @@ async function enterGlobal(kind) {
   const ageH = (Date.now() - GX.run) / 3600e3;
   $("#gx-run").textContent = `Weather model run ${new Date(GX.run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${GX.crun ? `; ocean model ${new Date(GX.crun).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}. Forecast runs to ${gxTimeLabel(GX.hMax)}.`;
   const stale = $("#gx-stale"); stale.hidden = ageH < 36; stale.textContent = `This forecast is ${Math.round(ageH / 24)} days old. It refreshes when the site's daily update runs; until then the early hours are already in the past.`;
-  gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); if (GX.layer === "radar") gxRadar(true);
+  gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); gxRadar(GX.layer === "radar");
   if (kind === "wind" && PENDING_LINK && PENDING_LINK.tab === "wind") {
     const [la, lo] = PENDING_LINK.arg.split(",").map(Number); PENDING_LINK = null;
     if (Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) <= 90) { map.setView([la, lo], Math.max(map.getZoom(), 8), { animate: false }); SP.series = null; spPick(la, lo, null); }
@@ -5726,8 +5782,14 @@ function radarPlay() {
   let k = 11; $("#radar-play").textContent = "Stop";
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
+const gxZoomed = () => GX.on && !!baseLayer && map.getZoom() >= 8; // zoomed in: satellite under the colours, with place names
+const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].includes(GX.layer); // layers that leave land uncoloured
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
-  document.body.classList.toggle("gx-radar", on);
+  const zoomed = gxZoomed(); document.body.classList.toggle("gx-zoomed", zoomed);
+  if (zoomed) on = true;
+  if (GX.on && map.getPane("namesPane")) { const nl = namesLayer("bright"); if (map.hasLayer(nl)) map.removeLayer(nl); } // our own labels name the coast here (with the values)
+  document.body.classList.toggle("gx-light", on);
+  document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
   if (baseLayer) {
     if (on && GX.on && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
     if (!on && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
@@ -5738,7 +5800,7 @@ function gxRadarBase(on) { // radar mode: dim satellite land underneath, light o
   if (stateLines) stateLines.setStyle(stateStyle());
 }
 function gxRadar(on) {
-  gxRadarBase(on && GX.on);
+  gxRadarBase(GX.on && gxLightBase());
   if (!on) { radarStop(); for (const l of RADAR.layers.values()) if (map.hasLayer(l)) map.removeLayer(l); RADAR.layers.clear(); return; }
   radarShow(0);
 }
@@ -6244,6 +6306,25 @@ function crMatches(p, cat) {
   if (CRUISE.q) { const q = CRUISE.q.toLowerCase(); if (!(`${crName(p)} ${p[4] || ""} ${crTypeName(p[0])}`.toLowerCase().includes(q))) return false; }
   return true;
 }
+/* How far a restaurant is from where a boater lands: the nearest marina, dinghy dock, club, fuel dock or ramp */
+const LANDING = new Set(["marina", "dinghy", "club", "fuel", "ramp"]);
+function crLandGrid() {
+  if (CRUISE.landGrid) return CRUISE.landGrid;
+  const g = new Map(); for (const q of (CRUISE.data ? CRUISE.data.p : []).concat(crUserPlaces())) if (LANDING.has(q[0])) { const k = `${Math.round(q[1] * 100)},${Math.round(q[2] * 100)}`; if (!g.has(k)) g.set(k, []); g.get(k).push(q); }
+  return (CRUISE.landGrid = g);
+}
+function crWalk(p) { // {m, q}: the nearest landing within 1.2 km (about a 20 minute walk), straight line
+  if (p.walk !== undefined) return p.walk;
+  const g = crLandGrid(), la = Math.round(p[1] * 100), lo = Math.round(p[2] * 100), cl = Math.cos(rad(p[1])); let best = null;
+  for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) for (const q of g.get(`${la + a},${lo + b}`) || []) {
+    const m = Math.hypot((q[1] - p[1]) * 111320, (q[2] - p[2]) * 111320 * cl); if (m <= 1200 && (!best || m < best.m)) best = { m, q }; }
+  return (p.walk = best);
+}
+function crWalkText(w, long) { // streets are not straight lines: about 1.3 times the straight distance, at 80 m a minute
+  if (!w) return "";
+  const min = Math.max(1, Math.round((w.m * 1.3) / 80)), dist = imperial() ? `${Math.round(w.m * 3.28084 / 10) * 10} ft` : `${Math.round(w.m / 10) * 10} m`;
+  return long ? `About ${min} min on foot from ${crName(w.q)} (${dist} as the crow flies)` : `${min} min walk from the water`;
+}
 function crIconHtml(p, st) {
   const [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other;
   return `<div class="crp${p.user ? " usr" : ""}" style="--c:${col}">${CR_ICON[ic]}${st ? `<b class="${st.cls}"></b>` : ""}</div>`;
@@ -6290,13 +6371,16 @@ function crList(items) {
   const cat = CR_CATS.find((x) => x.id === CRUISE.cat);
   let note = "";
   if (CRUISE.cat === "food" || (CRUISE.cat === "all" && map.getZoom() >= 13)) {
-    if (map.getZoom() < 13) note = `<div class="cr-hint">Zoom in on a harbor to see restaurants.</div>`;
-    else if (CRUISE.foodErr) note = `<div class="cr-hint">${esc(CRUISE.foodErr)}</div>`;
+    const anyFood = items.some((q) => q[0] === "eat" || q[0] === "food");
+    if (!anyFood && map.getZoom() < 13) note = `<div class="cr-hint">Zoom in on a harbor to see restaurants.</div>`;
+    else if (!anyFood && CRUISE.foodErr) note = `<div class="cr-hint">No waterfront restaurants listed here yet.</div>`;
   }
   $("#cr-count").textContent = items.length ? `${items.length.toLocaleString()} ${CRUISE.cat === "all" ? "places" : cat.label.toLowerCase()} in view` : "";
   $("#cr-list").innerHTML = note + (near.length ? near.map(([p, d]) => {
     const st = crStatus(p), [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other;
-    const sub = p[0] === "food" ? `${p.rating != null ? `${p.rating.toFixed(1)} ${crStars(p.rating)} (${p.count.toLocaleString()})` : "No rating"}${p.kind ? ` · ${esc(p.kind)}` : ""}` : esc(crTypeName(p[0]));
+    const walk = p[0] === "food" || p[0] === "eat" ? crWalkText(crWalk(p)) : "";
+    const sub = p[0] === "food" ? `${p.rating != null ? `${p.rating.toFixed(1)} ${crStars(p.rating)} (${p.count.toLocaleString()})` : "No rating"}${walk ? ` · ${walk}` : p.kind ? ` · ${esc(p.kind)}` : ""}`
+      : p[0] === "eat" ? `${esc(({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[(p[7] || {}).amenity]) || "Restaurant")}${walk ? ` · ${walk}` : ""}` : esc(crTypeName(p[0]));
     return `<button type="button" class="cr-card" data-k="${esc(crKey(p))}"><span class="cr-ic" style="--c:${col}">${CR_ICON[ic]}</span>
       <span class="cr-body"><b>${esc(crName(p))}</b><small>${sub}</small>${st ? `<em class="${st.cls}">${esc(st.text)}</em>` : ""}</span>
       <span class="cr-dist">${d < 10 ? d.toFixed(1) : Math.round(d)}<small>nm</small></span></button>`;
@@ -6335,12 +6419,12 @@ function crRenderDetail(p, reports, offline) {
   const rows = []; const row = (k, v) => { if (v) rows.push(`<div class="cr-row"><span>${k}</span><div>${v}</div></div>`); };
   if (p[0] === "food") {
     const d = p.detail || p;
-    row("Address", esc(d.address || "")); row("Phone", d.phone ? `<a href="tel:${esc(d.phone.replace(/[^+\d]/g, ""))}">${esc(d.phone)}</a>` : "");
+    row("Walk", esc(crWalkText(crWalk(p), true))); row("Address", esc(d.address || "")); row("Phone", d.phone ? `<a href="tel:${esc(d.phone.replace(/[^+\d]/g, ""))}">${esc(d.phone)}</a>` : "");
     row("Website", d.web ? `<a href="${esc(d.web)}" target="_blank" rel="noopener">${esc(d.web.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "").slice(0, 34))}</a>` : "");
     row("Hours", (d.hours || []).map(esc).join("<br>"));
   } else {
     if (p[4]) row("Notes", esc(p[4]));
-    if (p[0] === "eat") row("Outdoor seating", x.outdoor_seating === "yes" ? "Yes" : "");
+    if (p[0] === "eat") { row("Walk", esc(crWalkText(crWalk(p), true))); row("Outdoor seating", x.outdoor_seating === "yes" ? "Yes" : ""); }
     if (!["eat", "club", "cg"].includes(p[0])) row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
     const ph = x.phone || x["contact:phone"]; row("Phone", ph ? `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>` : "");
     const web = x.website || x["contact:website"]; row("Website", web && /^https?:\/\//.test(web) ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 34))}</a>` : "");
@@ -6964,8 +7048,17 @@ async function dzDraw() {
 function greatLakes(lat, lon) { // rough box around the five lakes and their connecting waters
   return lat > 41.3 && lat < 49.1 && lon > -92.3 && lon < -75.9 && !(lat < 43.4 && lon > -79.0) && !(lat > 45.3 && lon > -80.5);
 }
+function foreignWaters(lat, lon) { // rough boxes for the cruising grounds outside US rules
+  if (lat > 32 && lat < 33 && lon > -65.2 && lon < -64.4) return "Bermuda";
+  if (lat > 20.5 && lat < 27.6 && lon > -79.4 && lon < -71) return lat < 22.2 && lon > -72.8 ? "Turks and Caicos" : "the Bahamas";
+  const usvi = lat > 17.6 && lat < 18.45 && lon > -65.1 && lon < -64.55, pr = lat > 17.8 && lat < 18.6 && lon > -67.4 && lon < -65.2;
+  if (lat > 11 && lat < 18.9 && lon > -65.5 && lon < -59 && !usvi && !pr) return "the Caribbean islands";
+  return null;
+}
 function dzCheck(ll) { // tap on the water with Discharge zones on: what the federal rules say here
   if (!DZ.data) return;
+  const fw = foreignWaters(ll.lat, ll.lng);
+  if (fw) { L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng(ll).setContent(`<div class="cr-pop"><b>Outside US waters: ${esc(fw)}</b><p>US discharge rules and the 3 nm line do not apply here. Local rules do, and many harbors and parks ban any discharge. Keep the holding tank closed near shore and check with the harbormaster or park office.</p></div>`).openOn(map); return; }
   const z = dzInside(ll.lat, ll.lng);
   const html = z ? `<div class="cr-pop"><b class="no">No Discharge Zone</b><p>${esc(z.name)}${z.state ? `, ${esc(z.state)}` : ""}. Nothing overboard, treated or untreated. Use a pump-out.</p>${/^https?:\/\//.test(z.fr) ? `<a href="${esc(z.fr)}" target="_blank" rel="noopener">Federal Register notice</a>` : ""}</div>`
     : greatLakes(ll.lat, ll.lng)

@@ -185,13 +185,16 @@ def from_enc():
     return P
 
 
-OSM_V = 2  # bump when the query changes: every cached square is then fetched again (oldest first)
+OSM_V = 3  # bump when the query changes: every cached square is then fetched again (oldest first)
 OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
 (
   nwr["leisure"="marina"];
   nwr["leisure"="slipway"];
   nwr["man_made"="pier"];
   nwr["seamark:type"~"^(mooring|anchorage|harbour)$"];
+  nwr["natural"="beach"];
+  nwr["waterway"="dock"];
+  nwr["man_made"="quay"];
 )->.water;
 (
   nwr["leisure"="marina"];
@@ -211,7 +214,7 @@ OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
   nwr["leisure"="fishing"];
   nwr["man_made"="pier"]["fishing"="yes"];
   nwr["name"~"(yacht|sailing|boat|corinthian|rowing|canoe|power squadron) club|yacht squadron|sailing (association|center|centre|school|foundation)|community sailing|boating club",i](around.water:1500);
-  nwr["amenity"~"^(restaurant|bar|pub|cafe|fast_food|ice_cream)$"]["name"](around.water:250);
+  nwr["amenity"~"^(restaurant|bar|pub|cafe|fast_food|ice_cream)$"]["name"](around.water:400);
 );
 out tags center;"""
 
@@ -230,6 +233,10 @@ def osm_boxes():
     if not B:
         B = {(la, lo, min(la + 4, 50), lo + 5) for la in range(24, 50, 4) for lo in range(-125, -66, 5)}
     B |= {(18.5, -161.0, 22.5, -154.0), (17.5, -68.0, 18.7, -64.4)}
+    # cruising grounds outside US charts: the Bahamas and Turks and Caicos, the Virgin Islands down the Lesser Antilles, Bermuda
+    B |= {(la, lo, la + 2, lo + 2.5) for la in (20, 22, 24, 26) for lo in (-80.0, -77.5, -75.0, -72.5)}
+    B |= {(la, lo, la + 2, lo + 2.5) for la in (12, 14, 16, 18) for lo in (-65.0, -62.5, -60.0)}
+    B.add((32, -65.0, 34, -62.5))
     return sorted(B)
 
 

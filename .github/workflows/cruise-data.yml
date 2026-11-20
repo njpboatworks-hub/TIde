@@ -7,7 +7,7 @@ name: Build cruising data
 
 on:
   schedule:
-    - cron: "37 6 * * *"   # every day 06:37 UTC: missing squares first, then the oldest ones
+    - cron: "37 */6 * * *"   # every 6 hours (the repository is public, so the minutes are free): missing squares first, then the oldest
   workflow_dispatch:
 
 permissions:
