@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Netlify Function for the Nockd AI coach (the site itself is static files in deploy/sailiq-wind-site)",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.8.0"
+    "@anthropic-ai/sdk": "^1.8.0",
+    "@netlify/blobs": "11.1.6"
   }
 }

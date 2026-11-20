@@ -26,7 +26,11 @@ from scripts.boating_places import get_json
 NDZ = "https://services.arcgis.com/cJ9YHowT8TU7DUyn/arcgis/rest/services/Sewage_No_Discharge_Zone_NDZ_locations_EPA_HQ_OWOW/FeatureServer/0"
 SLA = {"Atlantic": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/ATL_Layers/MapServer/2",
        "Pacific": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/POC_Layers/MapServer/4",
-       "Alaska": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/AK_Layers/MapServer/3"}
+       "Alaska": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/AK_Layers/MapServer/3",
+       "Gulf (Louisiana, Mississippi, Alabama)": "https://gis.boem.gov/arcgis/rest/services/BOEM_BSEE/GOA_Layers/MapServer/4"}
+# In the Gulf the Submerged Lands Act boundary is 3 nautical miles only off Louisiana, Mississippi and Alabama; off Texas
+# and the Gulf coast of Florida it is 9, so only the part between Sabine Pass and Perdido Pass is used.
+GULF_3NM_LON = (-93.84, -87.52)
 
 
 def simplify(rings, tol=0.0015, min_area=2e-6):
@@ -86,6 +90,8 @@ def main():
         n = 0
         for f in fs:
             for p in (f.get("geometry") or {}).get("paths", []):
+                if region.startswith("Gulf"):
+                    p = [q for q in p if GULF_3NM_LON[0] <= q[0] <= GULF_3NM_LON[1]]
                 if len(p) >= 2:
                     out["line3"].append([[round(x, 4), round(y, 4)] for x, y in p]); n += 1
         out["regions"].append(region)

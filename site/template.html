@@ -677,34 +677,6 @@ body.gx .maptools { right: calc(92px + env(safe-area-inset-right, 0px)); }
 .subnav a { padding: 10px 0 11px; color: var(--ink-2); text-decoration: none; font: 500 14px/1 var(--f-body); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .subnav a:hover { color: var(--ink); }
 .subnav a.active { color: var(--ink); border-bottom-color: var(--signal); }
-/* Cruising tab */
-.cr-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
-.cr-chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; min-height: 0; border-radius: 999px !important; font-size: 13px; border: 1px solid var(--axis); background: transparent; color: var(--ink-2); }
-.cr-chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; opacity: .45; }
-.cr-chip small { color: var(--muted); font: 500 11px/1 var(--f-mono); }
-.cr-chip.on { color: var(--ink); border-color: var(--ink-2); background: rgba(255,255,255,.04); }
-.cr-chip.on i { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,.15); }
-.cr-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
-.cr-row .seg { margin-top: 0; }
-.cr-row .hint { margin: 0; }
-.cr-list { display: grid; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-height: 460px; overflow-y: auto; }
-.cr-list:empty { display: none; }
-.cr-list > .hint { padding: 12px; margin: 0; }
-.cr-item { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 10px 12px; min-height: 0; border: 0 !important; border-bottom: 1px solid var(--border) !important;
-  border-radius: 0 !important; background: transparent !important; text-align: left; color: var(--ink) !important; font: 500 13.5px/1.3 var(--f-body); }
-.cr-item:hover { background: rgba(255,255,255,.04) !important; }
-.cr-item i { width: 10px; height: 10px; border-radius: 50%; }
-.cr-n { min-width: 0; } .cr-n small { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cr-d { color: var(--ink-2); font: 500 12px/1 var(--f-mono); white-space: nowrap; }
-.cr-cost { font: 600 10.5px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .04em; padding: 4px 6px; border-radius: 4px; }
-.cr-cost.free { background: rgba(43,196,120,.18); color: #6BE3A3; } .cr-cost.paid { background: rgba(240,100,45,.18); color: #FF9B70; }
-.cr-popup .leaflet-popup-content-wrapper { background: #071426; color: #F4F4F0; border: 1px solid #2B4468; border-radius: 8px; box-shadow: none; }
-.cr-popup .leaflet-popup-tip { background: #071426; border: 1px solid #2B4468; }
-.cr-popup .leaflet-popup-content { margin: 12px 14px; font: 13px/1.5 var(--f-body); }
-.cr-pop b { display: block; font: 600 15px/1.25 var(--f-display); margin-bottom: 6px; }
-.cr-pop .pr { display: flex; gap: 10px; } .cr-pop .pk { color: #8C9BB0; width: 64px; flex: none; }
-.cr-pop a { color: #FF9B70; }
-.cr-links { display: flex; gap: 14px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #22344F; }
 body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { display: none !important; }
 .dz-key { display: grid; gap: 4px; margin: 6px 0 2px; }
 .dz-key span { display: flex; align-items: center; gap: 8px; }
@@ -738,6 +710,107 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 .sp-hours td.cur { color: var(--signal); font-weight: 700; }
 .sp-model { color: var(--muted); font-size: 11.5px; margin: 10px 0 0; }
 .sp-pin i { display: block; width: 18px; height: 18px; margin: 2px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--signal); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
+/* ===== Cruising: Google-Maps-style ===== */
+#tab-cruise { display: flex; flex-direction: column; gap: 12px; }
+#tab-cruise[hidden] { display: none !important; }
+.cr-search { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 46px; border-radius: 23px; background: var(--surface); border: 1px solid var(--axis); color: var(--muted); }
+.cr-search:focus-within { border-color: var(--signal); }
+.cr-search input { flex: 1; border: 0 !important; background: transparent !important; padding: 0; min-height: 0; font-size: 15px; color: var(--ink); outline: none; }
+.cr-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -24px; padding: 0 24px 2px; }
+.cr-chips::-webkit-scrollbar { display: none; }
+.cr-chip { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px 0 11px; min-height: 0; border-radius: 18px !important; border: 1px solid var(--axis) !important;
+  background: var(--surface) !important; color: var(--ink) !important; font: 500 13.5px/1 var(--f-body); white-space: nowrap; transition: background .15s, border-color .15s; }
+.cr-chip svg { width: 17px; height: 17px; color: var(--ink-2); }
+.cr-chip:hover { border-color: var(--ink-2) !important; }
+.cr-chip.on { background: #F4F4F0 !important; color: #071426 !important; border-color: #F4F4F0 !important; }
+.cr-chip.on svg { color: #071426; }
+.cr-chip.tog.on { background: rgba(229,72,77,.18) !important; color: #FFB4B6 !important; border-color: #E5484D !important; }
+.cr-chip.tog.on svg { color: #FF8A8E; }
+.cr-chip.add { border-style: dashed !important; color: var(--signal) !important; }
+.cr-chip.add svg { color: var(--signal); }
+.cr-chip.add.on { background: var(--signal) !important; color: #071426 !important; border-style: solid !important; }
+.cr-meta { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 8px; color: var(--muted); font: 500 12px/1 var(--f-mono); }
+.cr-cost { display: flex; gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+.cr-cost button { border: 0 !important; background: transparent !important; border-radius: 999px !important; padding: 5px 10px; min-height: 0; font: 500 12px/1 var(--f-body); color: var(--ink-2) !important; }
+.cr-cost button.on { background: var(--axis) !important; color: var(--ink) !important; }
+.cr-list { display: flex; flex-direction: column; gap: 2px; }
+.cr-card { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 10px 10px; min-height: 0; border: 0 !important; border-radius: 12px !important;
+  background: transparent !important; color: var(--ink) !important; text-align: left; font: 400 13px/1.35 var(--f-body); transition: background .12s; }
+.cr-card:hover { background: rgba(255,255,255,.05) !important; }
+.cr-body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cr-body b { font: 600 14.5px/1.25 var(--f-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-body small { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.cr-body em, .cr-status { font-style: normal; font: 600 11.5px/1.2 var(--f-body); }
+.cr-body em.ok, .cr-status.ok { color: #5BE09A; } .cr-body em.gone, .cr-status.gone { color: #FF7A7F; } .cr-body em.old, .cr-status.old { color: #E6C36A; }
+.cr-dist { color: var(--ink-2); font: 600 13px/1 var(--f-body); text-align: right; } .cr-dist small { display: block; color: var(--muted); font: 500 10px/1.4 var(--f-mono); }
+.cr-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, transparent); color: var(--c); }
+.cr-ic svg { width: 21px; height: 21px; }
+.cr-ic.big { width: 52px; height: 52px; border-radius: 15px; } .cr-ic.big svg { width: 27px; height: 27px; }
+.cr-hint { color: var(--muted); font-size: 13px; padding: 10px 12px; }
+.cr-hint.strong { color: var(--ink); background: rgba(240,100,45,.14); border: 1px solid rgba(240,100,45,.5); border-radius: 10px; }
+.cr-empty { color: var(--muted); padding: 22px 12px; text-align: center; font-size: 13.5px; } .cr-empty a { color: var(--signal); }
+.cr-stars { display: inline-flex; gap: 1px; vertical-align: -1px; }
+.cr-stars i { width: 11px; height: 11px; background: #4A5A70; clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.cr-stars i.f { background: #F5B83D; } .cr-stars i.h { background: linear-gradient(90deg, #F5B83D 50%, #4A5A70 50%); }
+/* detail */
+#cr-detail { display: flex; flex-direction: column; gap: 14px; }
+#cr-detail[hidden] { display: none; }
+.cr-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px 6px 4px; min-height: 0; border: 0 !important; background: transparent !important; color: var(--ink-2) !important; font: 500 13px/1 var(--f-body); }
+.cr-back svg { width: 18px; height: 18px; }
+.cr-dh { display: flex; align-items: center; gap: 14px; }
+.cr-dh h2 { margin: 0 0 3px; padding: 0; border: 0; font: 700 21px/1.2 var(--f-display); letter-spacing: -.015em; }
+.cr-type { color: var(--muted); font-size: 13px; }
+.cr-rating { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-2); }
+.cr-rating b { font-size: 15px; color: var(--ink); } .cr-rating .open { color: #5BE09A; font-weight: 600; } .cr-rating .closed { color: #FF7A7F; font-weight: 600; }
+.cr-status { font-size: 13px; } .cr-status.none { color: var(--muted); font-weight: 500; }
+.cr-actions { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.cr-act { flex: none; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 76px; padding: 10px 4px; min-height: 0; border: 1px solid var(--border) !important; border-radius: 14px !important;
+  background: var(--surface) !important; color: var(--ink) !important; text-decoration: none; font: 500 11.5px/1.15 var(--f-body); text-align: center; }
+.cr-act svg { width: 20px; height: 20px; color: var(--signal); }
+.cr-act.pri { background: var(--signal) !important; border-color: var(--signal) !important; color: #071426 !important; } .cr-act.pri svg { color: #071426; }
+.cr-act:hover { border-color: var(--ink-2) !important; }
+.cr-rows { border-top: 1px solid var(--border); }
+.cr-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 10px 2px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.cr-row span { color: var(--muted); font-size: 12.5px; } .cr-row a { color: var(--signal); }
+#cr-detail h3 { margin: 4px 0 0; font: 600 15px/1.2 var(--f-display); text-transform: none; letter-spacing: 0; color: var(--ink); border: 0; padding: 0; }
+.cr-rep { padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); font-size: 13px; }
+.cr-rep b { margin-right: 8px; } .cr-rep span { color: var(--muted); font-size: 12px; } .cr-rep p { margin: 5px 0 0; color: var(--ink-2); }
+.cr-rep.stayed b { color: #5BE09A; } .cr-rep.gone b { color: #FF7A7F; }
+.cr-rev { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.cr-rev-h { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; } .cr-rev-h a { color: var(--ink-2); }
+.cr-rev p { margin: 6px 0 0; color: var(--ink-2); line-height: 1.5; }
+.cr-google { color: var(--muted); font-size: 11.5px; padding-top: 4px; }
+.cr-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--axis); }
+.cr-form-t { font: 600 14px/1.2 var(--f-body); }
+.cr-form textarea { font: inherit; color: var(--ink); background: #081930; border: 1px solid var(--axis); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.cr-form-b { display: flex; justify-content: flex-end; gap: 8px; }
+.cr-form-m { color: var(--ink-2); font-size: 12.5px; min-height: 1em; } .cr-fine { color: var(--muted); font-size: 11.5px; margin: 0; }
+.cr-types { display: flex; flex-wrap: wrap; gap: 6px; }
+.cr-types label { cursor: pointer; } .cr-types input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.cr-types span { display: inline-block; padding: 7px 11px; border-radius: 999px; border: 1px solid var(--axis); font-size: 12.5px; }
+.cr-types input:checked + span { background: #F4F4F0; color: #071426; border-color: #F4F4F0; }
+/* map pins and clusters */
+.crp-wrap { background: none; border: 0; }
+.crp { position: relative; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #0B1B30; color: var(--c); border: 2px solid var(--c);
+  box-shadow: 0 2px 6px rgba(0,0,0,.45); transition: transform .12s; }
+.crp svg { width: 16px; height: 16px; }
+.crp:hover { transform: scale(1.15); }
+.crp.usr { border-style: dashed; }
+.crp b { position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #0B1B30; }
+.crp b.ok { background: #5BE09A; } .crp b.gone { background: #FF5A60; } .crp b.old { background: #E6C36A; }
+.crc { border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 88%, #071426); color: #071426; font: 700 12.5px/1 var(--f-body);
+  border: 3px solid rgba(255,255,255,.85); box-shadow: 0 2px 8px rgba(0,0,0,.45); cursor: pointer; }
+.cr-tip { background: #071426; color: #F4F4F0; border: 1px solid #2B4468; font: 600 12px/1.2 var(--f-body); box-shadow: none; }
+.cr-tip::before { display: none; }
+body.cr-adding #map { cursor: crosshair; }
+.cr-pop b.no { color: #FF7A7F; } .cr-pop p { margin: 4px 0; }
+body.cruise .legend { max-width: 250px; }
+/* the long data credits fold away */
+.rules > summary { cursor: pointer; color: var(--muted); font: 500 12px/1.4 var(--f-body); list-style: none; }
+.rules > summary::-webkit-details-marker { display: none; }
+.rules > summary::after { content: " ▾"; }
+.rules[open] > summary { margin-bottom: 8px; }
+@media (max-width: 900px) { .cr-chips { margin: 0 -18px; padding: 0 18px 2px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -1044,35 +1117,20 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
     </div>
 
     <!-- COACH KITS -->
-    <!-- CRUISING: anchorages, moorings, marinas, pump-outs and services for cruisers and liveaboards -->
+    <!-- CRUISING: a map of everything on the water (moorings, anchorages, marinas, pump-outs, fuel, food, clubs, fishing) -->
     <div class="tab" id="tab-cruise" hidden>
-      <h1>Cruising</h1>
-      <p class="lede">Anchorages, mooring fields, marinas, pump-outs, fuel and launch ramps from NOAA nautical charts and OpenStreetMap. Move the map or search a harbor at the top; the list shows what is closest to the middle of the map.</p>
       <div id="cr-msg" class="note warn" hidden></div>
-      <div class="cr-filters" id="cr-types" role="group" aria-label="What to show"></div>
-      <div class="cr-row">
-        <div class="seg" id="cr-cost" role="group" aria-label="Cost">
-          <button type="button" data-c="any" class="active">Any cost</button><button type="button" data-c="free">Free</button><button type="button" data-c="paid">Paid</button>
-        </div>
-        <button type="button" class="cr-chip on" id="cr-dz" aria-pressed="true"><i style="background:#E5484D"></i>Discharge rules</button>
-        <span class="hint" id="cr-count"></span>
+      <div class="cr-search">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="cr-q" placeholder="Search moorings, marinas, restaurants…" autocomplete="off" aria-label="Search places on the water">
       </div>
-      <div class="cr-list" id="cr-list"></div>
-      <h2>Overboard discharge (US federal rules)</h2>
-      <ul class="advice">
-        <li><b>No Discharge Zones</b> (red on the map): no sewage overboard at all, treated or not. Use a pump-out.</li>
-        <li><b>Inside the 3-mile line</b> (dashed amber): untreated sewage may not go overboard. Treated sewage from a Coast Guard-approved Type I or Type II device is allowed outside No Discharge Zones; otherwise keep it in the holding tank.</li>
-        <li><b>Beyond 3 nautical miles</b>: federal law allows emptying a holding tank (untreated sewage). EPA: "Untreated sewage discharges are prohibited within three miles from shore."</li>
-        <li>Also no discharge in freshwater lakes or reservoirs that boats cannot enter or leave, or in rivers not navigable by interstate traffic. States and parks can add stricter rules, and some zones are newer than this map. Check the state's rules before you go.</li>
-      </ul>
-      <h2>About this data</h2>
-      <ul class="advice">
-        <li>NOAA electronic charts list charted anchorage areas, mooring buoys and fields, marinas and small-craft services such as pump-out stations, fuel, water and launch sites. Charts do not list prices, phone numbers or rules.</li>
-        <li>OpenStreetMap adds places mapped by volunteers, sometimes with a fee, phone, website or hours. "Free" and "Paid" only show when a source says so; most places have no cost on record, so call the harbormaster or marina before you go.</li>
-        <li>No Discharge Zones: EPA's map layer (last updated by EPA in April 2025). The 3-mile line: BOEM's Submerged Lands Act boundary for the Atlantic, Pacific and Alaska, which NOAA says generally matches the official 3 nautical mile line, with exceptions. The Gulf of Mexico line is not shown: the boundary there is 9 nautical miles off Texas and western Florida, not 3.</li>
-        <li>Places can close, move or change rules (seasonal moorings, time limits, permits). Check local notices, the US Coast Pilot and the harbormaster. Not for navigation.</li>
-      </ul>
-      <p class="hint" id="cr-built"></p>
+      <div class="cr-chips" id="cr-chips" role="tablist" aria-label="Show"></div>
+      <div id="cr-main">
+        <div class="cr-meta"><span id="cr-count"></span><div class="cr-cost" id="cr-cost" role="group" aria-label="Cost">
+          <button type="button" data-c="any" class="on">Any</button><button type="button" data-c="free">Free</button><button type="button" data-c="paid">Paid</button></div></div>
+        <div class="cr-list" id="cr-list"></div>
+      </div>
+      <div id="cr-detail" hidden></div>
     </div>
 
     <div class="tab" id="tab-kits" hidden>
@@ -1119,11 +1177,11 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
       <div id="model-out"></div>
     </div>
 
-    <footer class="rules">
+    <details class="rules"><summary>Data sources &amp; disclaimer</summary>
       Built for pre-race planning and post-race debriefs. Racing Rules of Sailing rule 41 (Outside Help), class rules and sailing instructions may limit electronic information during a race, so check them before using this on the water. Not for navigation.<br>
       Data: NOAA (NDBC buoys, CO-OPS tides and currents), National Weather Service and MET Norway forecasts (MET Norway data CC BY 4.0), Iowa Environmental Mesonet airport readings, IOC Sea Level Station Monitoring Facility tide gauges, US Census and GeoNames place names (CC BY 4.0). Coastline: © OpenStreetMap contributors (ODbL) and GSHHG.<br>
       <a href="privacy.html" target="_blank" rel="noopener">Privacy policy</a>
-    </footer>
+    </details>
   </section>
 
   <section class="mapwrap">
@@ -5139,142 +5197,360 @@ function rerenderCurrent() {
   if (activeTab === "coast") { drawCoastStations(); refreshArrows(); return; }
   if (liftOn) drawLiftMap(); else if (activeTab === "debrief") drawTrack(); else refreshArrows();
 }
-/* =================== Cruising: anchorages, moorings, marinas, pump-outs (site/boating.json) =================== */
-const CRUISE = { on: false, data: null, layer: null, types: null, cost: "any", sel: null };
-const CR_COLORS = { anchorage: "#3BA4F5", mooring_field: "#2BC4B4", mooring: "#7FE0D2", marina: "#F0642D", pumpout: "#B57BFF", fuel: "#F5C242",
-  ramp: "#9BD15A", boatyard: "#C9A27A", water: "#5BC0F8", showers: "#9EC3E6", laundry: "#9EC3E6", toilets: "#9EC3E6", provisions: "#E7A3C0",
-  chandler: "#D7B66B", club: "#E3E3E3", dinghy: "#CFE8FF", other: "#A7B3C2" };
-const CR_DEFAULT = ["anchorage", "mooring_field", "mooring", "marina", "pumpout", "fuel"];
+/* =================== Cruising: a map of everything on the water =================== */
+// Places: site/boating.json (NOAA charts + OpenStreetMap), community reports and added spots (Netlify function
+// "reports"), restaurants with Google ratings (Netlify function "places"), discharge rules (site/discharge.json).
+const FN = "/.netlify/functions/";
+const SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const CR_ICON = {
+  mooring: SVG('<circle cx="12" cy="9" r="5"/><path d="M12 14v6M8 20h8"/>'),
+  anchorage: SVG('<circle cx="12" cy="5" r="2"/><path d="M12 7v14M5 13a7 7 0 0 0 14 0M8 11h8"/>'),
+  marina: SVG('<path d="M3 17l2 3h14l2-3zM12 3v12M12 4l6 9h-6"/>'),
+  pumpout: SVG('<path d="M12 3s5 6 5 10a5 5 0 0 1-10 0c0-4 5-10 5-10z"/><path d="M10 14h4"/>'),
+  fuel: SVG('<path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M4 21h12M7 8h6"/><path d="M15 9l3 2v7a1.5 1.5 0 0 0 3 0V8l-3-3"/>'),
+  food: SVG('<path d="M7 3v8a2 2 0 0 0 2 2v8M5 3v5M9 3v5M17 3c-2 2-2 6 0 8v10"/>'),
+  club: SVG('<path d="M6 21V3M6 4l12 4-12 4"/>'),
+  ramp: SVG('<path d="M3 19h18L7 9zM14 7l3-3"/>'),
+  fishing: SVG('<path d="M3 12c3-4 8-5 13-2 1 .6 2 1.3 3 2-1 .7-2 1.4-3 2-5 3-10 2-13-2z"/><path d="M19 12l2-2v4zM8 11.5h.01"/>'),
+  services: SVG('<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-.5-.5-2.5z"/>'),
+  user: SVG('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'),
+  discharge: SVG('<path d="M4 4l16 16M12 3s5 6 5 10c0 1-.3 2-.8 2.8M7.3 9.7C7.1 10.5 7 11.3 7 12a5 5 0 0 0 7.8 4.1"/>'),
+};
+// chips: what each one shows (place types)
+const CR_CATS = [
+  { id: "all", label: "Everything", icon: null, types: ["mooring", "mooring_field", "anchorage", "marina", "pumpout", "fuel", "club", "ramp", "fishing", "reef", "boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other", "food"] },
+  { id: "moorings", label: "Moorings", icon: "mooring", types: ["mooring", "mooring_field"] },
+  { id: "anchor", label: "Anchorages", icon: "anchorage", types: ["anchorage"] },
+  { id: "marinas", label: "Marinas", icon: "marina", types: ["marina"] },
+  { id: "pumpout", label: "Pump-outs", icon: "pumpout", types: ["pumpout"] },
+  { id: "fuel", label: "Fuel", icon: "fuel", types: ["fuel"] },
+  { id: "food", label: "Restaurants", icon: "food", types: ["food"] },
+  { id: "clubs", label: "Yacht clubs", icon: "club", types: ["club"] },
+  { id: "ramps", label: "Ramps", icon: "ramp", types: ["ramp"] },
+  { id: "fish", label: "Fishing", icon: "fishing", types: ["fishing", "reef", "wreck"] },
+  { id: "svc", label: "Services", icon: "services", types: ["boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other"] },
+];
+const CR_STYLE = { // icon + colour per place type
+  mooring: ["mooring", "#2BC4B4"], mooring_field: ["mooring", "#2BC4B4"], anchorage: ["anchorage", "#3BA4F5"], marina: ["marina", "#F0642D"],
+  pumpout: ["pumpout", "#B57BFF"], fuel: ["fuel", "#F5C242"], food: ["food", "#FF6B8B"], club: ["club", "#E9EEF5"], ramp: ["ramp", "#9BD15A"],
+  fishing: ["fishing", "#4FD1E8"], reef: ["fishing", "#4FD1E8"], wreck: ["fishing", "#7F93AD"], boatyard: ["services", "#C9A27A"], chandler: ["services", "#D7B66B"],
+  water: ["services", "#5BC0F8"], showers: ["services", "#9EC3E6"], laundry: ["services", "#9EC3E6"], toilets: ["services", "#9EC3E6"],
+  provisions: ["services", "#E7A3C0"], dinghy: ["mooring", "#CFE8FF"], other: ["services", "#A7B3C2"],
+};
+const CR_TYPE_NAMES = { food: "Restaurant", reef: "Artificial reef", wreck: "Wreck", fishing: "Fishing spot", mooring_field: "Mooring field", mooring: "Mooring", dinghy: "Dinghy landing" };
+const CRUISE = { on: false, data: null, layer: null, cat: store("crCat") || "all", cost: "any", q: "", sel: null, comm: { summary: {}, spots: [] }, food: new Map(), adding: false };
+
+const crKey = (p) => p.key || `${p[0]}:${(+p[1]).toFixed(4)},${(+p[2]).toFixed(4)}`;
+const crTypeName = (t) => CR_TYPE_NAMES[t] || (CRUISE.data && CRUISE.data.types[t]) || "Place";
+const crName = (p) => p[3] || (p.nearName ? `${crTypeName(p[0])} at ${p.nearName}` : crTypeName(p[0]));
+const crAgo = (iso) => { const d = Math.round((Date.now() - Date.parse(iso + "T12:00:00")) / 864e5); return d <= 0 ? "today" : d === 1 ? "yesterday" : d < 60 ? `${d} days ago` : d < 730 ? `${Math.round(d / 30)} months ago` : `${Math.round(d / 365)} years ago`; };
+function crStatus(p) { // community state for a place: {cls, text} or null
+  const s = CRUISE.comm.summary[crKey(p)]; if (!s) return null;
+  if (s.gone) return { cls: "gone", text: `Reported gone ${crAgo(s.goneOn || new Date().toISOString().slice(0, 10))}` };
+  if (s.last) return { cls: Date.now() - Date.parse(s.last) < 120 * 864e5 ? "ok" : "old", text: `Stayed ${crAgo(s.last)}` };
+  return s.n ? { cls: "old", text: `${s.n} note${s.n > 1 ? "s" : ""}` } : null;
+}
+function crStars(r) { if (r == null) return ""; const f = Math.round(r * 2) / 2; let h = ""; for (let i = 1; i <= 5; i++) h += `<i class="${f >= i ? "f" : f >= i - 0.5 ? "h" : ""}"></i>`; return `<span class="cr-stars" aria-label="${r} stars">${h}</span>`; }
+
 async function loadCruise() {
   if (CRUISE.data) return CRUISE.data;
-  const r = await fetch("boating.json"); if (!r.ok) throw new Error("The cruising places have not been built yet (boating.json missing).");
+  const r = await fetch("boating.json"); if (!r.ok) throw new Error("The cruising places have not been built yet.");
   const d = await r.json();
   d.p.forEach((p, i) => { p.i = i; });
-  // unnamed services (often pump-outs) take the name of the nearest named place within ~400 m, e.g. "Pump-out at X Marina"
-  const named = d.p.filter((q) => q[3]);
-  for (const p of d.p) {
-    if (p[3]) continue; const cl = Math.cos(p[1] * Math.PI / 180); let best = null, bd = 0.4;
-    for (const q of named) { const dk = Math.hypot((q[1] - p[1]) * 111.3, (q[2] - p[2]) * 111.3 * cl); if (dk < bd) { bd = dk; best = q; } }
+  const named = d.p.filter((q) => q[3] && q[0] !== "wreck" && q[0] !== "reef");
+  for (const p of d.p) { // unnamed services take the name of the place they are at
+    if (p[3] || p[0] === "wreck" || p[0] === "reef") continue; const cl = Math.cos(p[1] * Math.PI / 180); let best = null, bd = 0.4;
+    for (const q of named) { if (Math.abs(q[1] - p[1]) > 0.01) continue; const dk = Math.hypot((q[1] - p[1]) * 111.3, (q[2] - p[2]) * 111.3 * cl); if (dk < bd) { bd = dk; best = q; } }
     if (best) p.nearName = best[3];
   }
   CRUISE.data = d; return d;
 }
-function crShown(p) {
-  if (!CRUISE.types.has(p[0])) return false;
-  return CRUISE.cost === "any" || p[5] === CRUISE.cost;
+async function loadComm() {
+  try { const r = await fetch(FN + "reports"); if (!r.ok) throw 0; CRUISE.comm = await r.json(); CRUISE.commOk = true; }
+  catch (_) { CRUISE.commOk = false; }
 }
-function crCostTag(p) { return p[5] === "free" ? `<span class="cr-cost free">Free</span>` : p[5] === "paid" ? `<span class="cr-cost paid">Paid</span>` : ""; }
-function crName(p) { return p[3] || (p.nearName ? `${CRUISE.data.types[p[0]]} at ${p.nearName}` : CRUISE.data.types[p[0]]); }
-function crDetails(p) {
-  const T = CRUISE.data.types, x = p[7] || {}, rows = [];
-  const add = (k, v) => { if (v) rows.push(`<div class="pr"><span class="pk">${k}</span><span>${v}</span></div>`); };
-  add("Type", T[p[0]]);
-  add("Cost", p[5] === "free" ? "Free (per source)" : p[5] === "paid" ? `Paid${x.charge ? `: ${esc(x.charge)}` : ""}` : "Not listed; ask the harbormaster");
-  if (p[4]) add("Notes", esc(p[4]));
-  const ph = x.phone || x["contact:phone"]; if (ph) add("Phone", `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>`);
-  const web = x.website || x["contact:website"]; if (web && /^https?:\/\//.test(web)) add("Website", `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 32))}</a>`);
-  add("VHF", esc(x.vhf || x["seamark:radio_station:channel"] || ""));
-  add("Hours", esc(x.opening_hours || ""));
-  add("Capacity", esc(x.capacity || ""));
-  add("Access", esc(x.access || ""));
-  add("Depth", x.depth ? `${esc(x.depth)} m (per source)` : "");
-  add("Source", esc(p[6]));
-  return `<div class="cr-pop"><b>${esc(crName(p))}</b>${rows.join("")}
-    <div class="cr-links"><a href="#" data-wx="${p.i}">Wind and weather here</a><a href="https://www.google.com/maps/search/?api=1&query=${p[1]},${p[2]}" target="_blank" rel="noopener">Open in maps</a></div></div>`;
+function crUserPlaces() { return (CRUISE.comm.spots || []).map((s) => Object.assign([s.type, s.lat, s.lon, s.name, s.note, "", "Added by a Nockd user", 0], { key: s.key, user: true, t: s.t })); }
+function crAll() {
+  const base = CRUISE.data ? CRUISE.data.p : [], user = crUserPlaces();
+  const seen = new Set(), food = []; for (const list of CRUISE.food.values()) for (const f of list) if (!seen.has(f.key)) { seen.add(f.key); food.push(f); }
+  return base.concat(user, food);
+}
+function crMatches(p, cat) {
+  const types = (CR_CATS.find((c) => c.id === cat) || CR_CATS[0]).types;
+  if (!types.includes(p[0])) return false;
+  if (CRUISE.cost !== "any" && p[5] !== CRUISE.cost) return false;
+  if (CRUISE.q) { const q = CRUISE.q.toLowerCase(); if (!(`${crName(p)} ${p[4] || ""} ${crTypeName(p[0])}`.toLowerCase().includes(q))) return false; }
+  return true;
+}
+function crIconHtml(p, st) {
+  const [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other;
+  return `<div class="crp${p.user ? " usr" : ""}" style="--c:${col}">${CR_ICON[ic]}${st ? `<b class="${st.cls}"></b>` : ""}</div>`;
 }
 function crDraw() {
   if (!CRUISE.on || !CRUISE.data) return;
   if (!CRUISE.layer) CRUISE.layer = L.layerGroup();
   CRUISE.layer.clearLayers();
-  const rend = CRUISE.rend || (CRUISE.rend = L.canvas({ padding: 0.3 }));
-  const b = map.getBounds().pad(0.2), z = map.getZoom();
+  const z = map.getZoom(), b = map.getBounds().pad(0.15), items = crAll().filter((p) => b.contains([p[1], p[2]]) && crMatches(p, CRUISE.cat));
+  const cell = z < 8 ? 70 : z < 11 ? 52 : z < 13 ? 34 : 0; // cluster size in pixels; none when zoomed in
+  const groups = new Map();
+  for (const p of items) {
+    const pt = map.latLngToContainerPoint([p[1], p[2]]), k = cell ? `${Math.floor(pt.x / cell)},${Math.floor(pt.y / cell)}` : String(p.i ?? crKey(p));
+    let g = groups.get(k); if (!g) groups.set(k, (g = [])); g.push(p);
+  }
   let n = 0;
-  for (const p of CRUISE.data.p) {
-    if (!crShown(p) || !b.contains([p[1], p[2]])) continue;
-    if (z < 7 && p[0] === "mooring") continue; // single buoys only when zoomed in; there are thousands
-    const m = L.circleMarker([p[1], p[2]], { renderer: rend, radius: z >= 11 ? 7 : z >= 8 ? 5.5 : 4, color: "#071426", weight: 1.2, fillColor: CR_COLORS[p[0]] || "#ccc", fillOpacity: 0.95 });
-    m.bindPopup(() => crDetails(p), { maxWidth: 280, className: "cr-popup" });
-    m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -6] });
-    CRUISE.layer.addLayer(m); if (++n > 6000) break;
+  for (const g of groups.values()) {
+    if (++n > 900) break;
+    if (g.length === 1 || !cell) {
+      for (const p of g) {
+        const st = crStatus(p), m = L.marker([p[1], p[2]], { icon: L.divIcon({ className: "crp-wrap", html: crIconHtml(p, st), iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false, riseOnHover: true });
+        m.on("click", () => crOpen(p)); m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -14], className: "cr-tip" });
+        CRUISE.layer.addLayer(m);
+      }
+    } else {
+      const la = g.reduce((s, p) => s + p[1], 0) / g.length, lo = g.reduce((s, p) => s + p[2], 0) / g.length;
+      const kinds = new Map(); g.forEach((p) => kinds.set(p[0], (kinds.get(p[0]) || 0) + 1));
+      const top = [...kinds.entries()].sort((a, b2) => b2[1] - a[1])[0][0], col = (CR_STYLE[top] || CR_STYLE.other)[1];
+      const sz = g.length > 99 ? 44 : g.length > 9 ? 38 : 32;
+      const m = L.marker([la, lo], { icon: L.divIcon({ className: "crp-wrap", html: `<div class="crc" style="--c:${col};width:${sz}px;height:${sz}px">${g.length > 999 ? Math.round(g.length / 1000) + "k" : g.length}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), keyboard: false });
+      m.on("click", () => map.fitBounds(L.latLngBounds(g.map((p) => [p[1], p[2]])).pad(0.3), { maxZoom: Math.min(16, z + 3) }));
+      CRUISE.layer.addLayer(m);
+    }
   }
   if (!map.hasLayer(CRUISE.layer)) CRUISE.layer.addTo(map);
-  crList();
+  crList(items);
 }
-function crList() {
-  const c = map.getCenter(), cl = Math.cos(c.lat * Math.PI / 180), b = map.getBounds();
-  const near = CRUISE.data.p.filter((p) => crShown(p) && b.contains([p[1], p[2]]))
-    .map((p) => [p, Math.hypot((p[1] - c.lat) * 60, (p[2] - c.lng) * 60 * cl)]).sort((a, b2) => a[1] - b2[1]);
-  $("#cr-count").textContent = near.length ? `${near.length.toLocaleString()} in view` : "";
-  $("#cr-list").innerHTML = near.length ? near.slice(0, 60).map(([p, d]) => `<button type="button" class="cr-item" data-i="${p.i}">
-      <i style="background:${CR_COLORS[p[0]]}"></i><span class="cr-n">${esc(crName(p))}<small>${CRUISE.data.types[p[0]]}${p[4] ? " · " + esc(p[4].slice(0, 60)) : ""}</small></span>${crCostTag(p)}<span class="cr-d">${d < 10 ? d.toFixed(1) : Math.round(d)} nm</span></button>`).join("")
-    : `<p class="hint">Nothing of the selected kinds in view. Zoom out, move the map, or turn on more kinds above.</p>`;
+function crList(items) {
+  if (CRUISE.sel) return;
+  const c = map.getCenter(), cl = Math.cos(c.lat * Math.PI / 180);
+  const near = items.map((p) => [p, Math.hypot((p[1] - c.lat) * 60, (p[2] - c.lng) * 60 * cl)]).sort((a, b) => a[1] - b[1]).slice(0, 60);
+  const cat = CR_CATS.find((x) => x.id === CRUISE.cat);
+  let note = "";
+  if (CRUISE.cat === "food" || (CRUISE.cat === "all" && map.getZoom() >= 13)) {
+    if (map.getZoom() < 13) note = `<div class="cr-hint">Zoom in on a harbor to see restaurants.</div>`;
+    else if (CRUISE.foodErr) note = `<div class="cr-hint">${esc(CRUISE.foodErr)}</div>`;
+  }
+  $("#cr-count").textContent = items.length ? `${items.length.toLocaleString()} ${CRUISE.cat === "all" ? "places" : cat.label.toLowerCase()} in view` : "";
+  $("#cr-list").innerHTML = note + (near.length ? near.map(([p, d]) => {
+    const st = crStatus(p), [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other;
+    const sub = p[0] === "food" ? `${p.rating != null ? `${p.rating.toFixed(1)} ${crStars(p.rating)} (${p.count.toLocaleString()})` : "No rating"}${p.kind ? ` · ${esc(p.kind)}` : ""}` : esc(crTypeName(p[0]));
+    return `<button type="button" class="cr-card" data-k="${esc(crKey(p))}"><span class="cr-ic" style="--c:${col}">${CR_ICON[ic]}</span>
+      <span class="cr-body"><b>${esc(crName(p))}</b><small>${sub}</small>${st ? `<em class="${st.cls}">${esc(st.text)}</em>` : ""}</span>
+      <span class="cr-dist">${d < 10 ? d.toFixed(1) : Math.round(d)}<small>nm</small></span></button>`;
+  }).join("") : `<div class="cr-empty">Nothing here yet. Zoom out, try another category, or <a href="#" id="cr-add2">add a spot</a>.</div>`);
+  const a2 = $("#cr-add2"); if (a2) a2.addEventListener("click", (e) => { e.preventDefault(); crAddMode(true); });
 }
-function crOpen(i) {
-  const p = CRUISE.data.p[i];
-  map.setView([p[1], p[2]], Math.max(map.getZoom(), 13));
-  setTimeout(() => L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng([p[1], p[2]]).setContent(crDetails(p)).openOn(map), 350);
+function crFind(k) { return crAll().find((p) => crKey(p) === k); }
+
+/* ---- detail view ---- */
+async function crOpen(p) {
+  CRUISE.sel = p; $("#cr-main").hidden = true; const box = $("#cr-detail"); box.hidden = false;
+  if (map.getZoom() < 13) map.setView([p[1], p[2]], 14); else map.panTo([p[1], p[2]]);
+  if (CRUISE.selPin) map.removeLayer(CRUISE.selPin);
+  CRUISE.selPin = L.circleMarker([p[1], p[2]], { radius: 22, color: "#F0642D", weight: 2, fill: false, interactive: false }).addTo(map);
+  crRenderDetail(p, null);
+  if (p[0] === "food" && !p.detail) {
+    try { const r = await fetch(`${FN}places?id=${encodeURIComponent(p.id)}`); const j = await r.json(); if (r.ok) p.detail = j.place; } catch (_) {}
+    if (CRUISE.sel === p) crRenderDetail(p, null);
+  }
+  if (p[0] !== "food") {
+    try { const r = await fetch(`${FN}reports?key=${encodeURIComponent(crKey(p))}`); const j = r.ok ? await r.json() : null; if (CRUISE.sel === p) crRenderDetail(p, j ? j.reports : []); }
+    catch (_) { if (CRUISE.sel === p) crRenderDetail(p, null, true); }
+  }
 }
-function renderCruiseFilters() {
-  const T = CRUISE.data.types, counts = {};
-  CRUISE.data.p.forEach((p) => (counts[p[0]] = (counts[p[0]] || 0) + 1));
-  $("#cr-types").innerHTML = Object.keys(T).filter((k) => counts[k]).map((k) => `<button type="button" class="cr-chip${CRUISE.types.has(k) ? " on" : ""}" data-k="${k}" aria-pressed="${CRUISE.types.has(k)}"><i style="background:${CR_COLORS[k]}"></i>${T[k]}<small>${counts[k].toLocaleString()}</small></button>`).join("");
-  $("#cr-types").querySelectorAll(".cr-chip").forEach((b) => b.addEventListener("click", () => {
-    const k = b.dataset.k; CRUISE.types.has(k) ? CRUISE.types.delete(k) : CRUISE.types.add(k);
-    store("crTypes", [...CRUISE.types]); renderCruiseFilters(); crDraw();
-  }));
+function crClose() {
+  CRUISE.sel = null; $("#cr-detail").hidden = true; $("#cr-main").hidden = false;
+  if (CRUISE.selPin) { map.removeLayer(CRUISE.selPin); CRUISE.selPin = null; }
+  crDraw();
+}
+function crRenderDetail(p, reports, offline) {
+  const [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other, x = (p[0] === "food" ? p.detail : p[7]) || {}, st = crStatus(p);
+  const rows = []; const row = (k, v) => { if (v) rows.push(`<div class="cr-row"><span>${k}</span><div>${v}</div></div>`); };
+  if (p[0] === "food") {
+    const d = p.detail || p;
+    row("Address", esc(d.address || "")); row("Phone", d.phone ? `<a href="tel:${esc(d.phone.replace(/[^+\d]/g, ""))}">${esc(d.phone)}</a>` : "");
+    row("Website", d.web ? `<a href="${esc(d.web)}" target="_blank" rel="noopener">${esc(d.web.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "").slice(0, 34))}</a>` : "");
+    row("Hours", (d.hours || []).map(esc).join("<br>"));
+  } else {
+    if (p[4]) row("Notes", esc(p[4]));
+    row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
+    const ph = x.phone || x["contact:phone"]; row("Phone", ph ? `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>` : "");
+    const web = x.website || x["contact:website"]; row("Website", web && /^https?:\/\//.test(web) ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 34))}</a>` : "");
+    row("VHF", esc(x.vhf || x["seamark:radio_station:channel"] || "")); row("Hours", esc(x.opening_hours || "")); row("Depth", x.depth ? `${esc(x.depth)} m` : "");
+    row("Source", esc(p[6]));
+  }
+  const d = p.detail || p;
+  const head = p[0] === "food"
+    ? `<div class="cr-rating">${d.rating != null ? `<b>${d.rating.toFixed(1)}</b>${crStars(d.rating)}<span>(${(d.count || 0).toLocaleString()})</span>` : "<span>No rating yet</span>"}${d.price ? `<span>${"$".repeat({ PRICE_LEVEL_INEXPENSIVE: 1, PRICE_LEVEL_MODERATE: 2, PRICE_LEVEL_EXPENSIVE: 3, PRICE_LEVEL_VERY_EXPENSIVE: 4 }[d.price] || 0)}</span>` : ""}${d.open != null ? `<span class="${d.open ? "open" : "closed"}">${d.open ? "Open now" : "Closed"}</span>` : ""}</div>`
+    : (st ? `<div class="cr-status ${st.cls}">${esc(st.text)}</div>` : `<div class="cr-status none">No reports yet. Been here? Let others know.</div>`);
+  const actions = `<div class="cr-actions">
+      <a class="cr-act" href="https://www.google.com/maps/dir/?api=1&destination=${p[1]},${p[2]}" target="_blank" rel="noopener">${SVG('<path d="M12 2l9 9-9 11-9-11z"/><path d="M12 8v6M9 11l3-3 3 3"/>')}<span>Directions</span></a>
+      <button type="button" class="cr-act" id="cr-wx">${SVG('<path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7"/>')}<span>Weather</span></button>
+      ${p[0] === "food" ? (d.url ? `<a class="cr-act" href="${esc(d.url)}" target="_blank" rel="noopener">${SVG('<path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/>')}<span>Google Maps</span></a>` : "")
+        : `<button type="button" class="cr-act pri" data-rep="stayed">${SVG('<path d="M20 6L9 17l-5-5"/>')}<span>I stayed here</span></button>
+           <button type="button" class="cr-act" data-rep="gone">${SVG('<circle cx="12" cy="12" r="9"/><path d="M8 8l8 8"/>')}<span>It's gone</span></button>
+           <button type="button" class="cr-act" data-rep="note">${SVG('<path d="M4 20h4L19 9l-4-4L4 16z"/>')}<span>Add note</span></button>`}
+    </div>`;
+  let comm = "";
+  if (p[0] === "food") {
+    const rv = (p.detail && p.detail.reviews) || [];
+    comm = rv.length ? `<h3>Reviews</h3>${rv.map((r) => `<div class="cr-rev"><div class="cr-rev-h">${crStars(r.rating)}<span>${r.authorUrl ? `<a href="${esc(r.authorUrl)}" target="_blank" rel="noopener">${esc(r.author)}</a>` : esc(r.author)} · ${esc(r.when)}</span></div><p>${esc(r.text)}</p></div>`).join("")}` : (p.detail ? "" : `<div class="cr-hint">Loading reviews…</div>`);
+    comm += `<div class="cr-google">Ratings and reviews from Google Maps</div>`;
+  } else {
+    comm = `<h3>From boaters</h3>${offline ? `<div class="cr-hint">Community reports are not available right now.</div>`
+      : reports == null ? `<div class="cr-hint">Loading…</div>`
+      : reports.length ? reports.slice(0, 12).map((r) => `<div class="cr-rep ${r.kind}"><b>${r.kind === "stayed" ? "Stayed" : r.kind === "gone" ? "Reported gone" : "Note"}</b><span>${esc(new Date(r.date + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }))}</span>${r.note ? `<p>${esc(r.note)}</p>` : ""}</div>`).join("")
+      : `<div class="cr-hint">Nobody has reported on this spot yet.</div>`}`;
+  }
+  $("#cr-detail").innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
+    <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : crTypeName(p[0]))}</span></div></div>
+    ${head}${actions}<div id="cr-form"></div>${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
+  $("#cr-back").addEventListener("click", crClose);
+  $("#cr-wx").addEventListener("click", () => { SP.series = null; SP.spot = { lat: p[1], lon: p[2], name: crName(p) }; store("spSpot", SP.spot); store("gxView", { lat: p[1], lng: p[2], z: 8 }); GX.started = false; location.hash = "#wind"; });
+  $("#cr-detail").querySelectorAll("[data-rep]").forEach((b) => b.addEventListener("click", () => crReportForm(p, b.dataset.rep)));
+}
+function crReportForm(p, kind) {
+  const today = new Date().toISOString().slice(0, 10);
+  $("#cr-form").innerHTML = `<form class="cr-form" id="cr-rf">
+    <div class="cr-form-t">${kind === "stayed" ? "When did you stay here?" : kind === "gone" ? "When did you notice it was gone?" : "Add a note for other boaters"}</div>
+    ${kind !== "note" ? `<input type="date" id="cr-rd" value="${today}" max="${today}" required>` : ""}
+    <textarea id="cr-rn" maxlength="280" rows="2" placeholder="${kind === "stayed" ? "Optional: ball condition, holding, price, who to call…" : kind === "gone" ? "Optional: what you saw" : "Depth, holding, dinghy dock, fees…"}"${kind === "note" ? " required" : ""}></textarea>
+    <div class="cr-form-b"><button type="button" id="cr-rc">Cancel</button><button type="submit" class="primary">Post</button></div><div class="cr-form-m" id="cr-rm"></div></form>`;
+  $("#cr-rc").addEventListener("click", () => ($("#cr-form").innerHTML = ""));
+  $("#cr-rf").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("#cr-rm").textContent = "Posting…";
+    try {
+      const r = await fetch(FN + "reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "report", key: crKey(p), kind, date: kind === "note" ? today : $("#cr-rd").value, note: $("#cr-rn").value }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { $("#cr-rm").textContent = j.error || "Could not post. Try again."; return; }
+      await loadComm(); crOpen(p);
+    } catch (_) { $("#cr-rm").textContent = "No connection. Try again when you have signal."; }
+  });
+}
+
+/* ---- add a spot ---- */
+function crAddMode(on) {
+  CRUISE.adding = on; document.body.classList.toggle("cr-adding", on);
+  const ab = $("#cr-addbtn"); if (ab) ab.classList.toggle("on", on);
+  if (on) { crClose(); $("#cr-list").insertAdjacentHTML("afterbegin", `<div class="cr-hint strong" id="cr-addhint">Tap the map where the spot is.</div>`); }
+  else { const h = $("#cr-addhint"); if (h) h.remove(); }
+}
+function crAddForm(ll) {
+  crAddMode(false); CRUISE.sel = { add: true }; $("#cr-main").hidden = true; const box = $("#cr-detail"); box.hidden = false;
+  if (CRUISE.selPin) map.removeLayer(CRUISE.selPin);
+  CRUISE.selPin = L.circleMarker(ll, { radius: 10, color: "#F0642D", weight: 3, fillColor: "#F0642D", fillOpacity: 0.4, interactive: false }).addTo(map);
+  const types = [["mooring", "Mooring"], ["mooring_field", "Mooring field"], ["anchorage", "Anchorage"], ["dinghy", "Dinghy landing"], ["pumpout", "Pump-out"], ["fuel", "Fuel"], ["ramp", "Launch ramp"], ["fishing", "Fishing spot"], ["other", "Other"]];
+  box.innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
+    <div class="cr-dh"><span class="cr-ic big" style="--c:#F0642D">${CR_ICON.user}</span><div><h2>Add a spot</h2><span class="cr-type">${ll.lat.toFixed(4)}, ${ll.lng.toFixed(4)}</span></div></div>
+    <form class="cr-form" id="cr-af"><div class="cr-types">${types.map(([k, n], i) => `<label><input type="radio" name="crt" value="${k}"${i ? "" : " checked"}><span>${n}</span></label>`).join("")}</div>
+    <input type="text" id="cr-an" maxlength="60" placeholder="Name (for example: Town guest moorings)" required>
+    <textarea id="cr-ao" maxlength="280" rows="3" placeholder="What should others know? Cost, who to call, holding, depth…"></textarea>
+    <div class="cr-form-b"><button type="button" id="cr-ac">Cancel</button><button type="submit" class="primary">Add spot</button></div><div class="cr-form-m" id="cr-am"></div>
+    <p class="cr-fine">Shared publicly and anonymously. No links.</p></form>`;
+  const done = () => crClose();
+  $("#cr-back").addEventListener("click", done); $("#cr-ac").addEventListener("click", done);
+  $("#cr-af").addEventListener("submit", async (e) => {
+    e.preventDefault(); $("#cr-am").textContent = "Saving…";
+    try {
+      const r = await fetch(FN + "reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "spot", type: box.querySelector("input[name=crt]:checked").value, lat: ll.lat, lon: ll.lng, name: $("#cr-an").value, note: $("#cr-ao").value }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { $("#cr-am").textContent = j.error || "Could not save. Try again."; return; }
+      await loadComm(); CRUISE.sel = null; const sp = crUserPlaces().find((q) => q.key === j.spot.key); crDraw(); if (sp) crOpen(sp); else crClose();
+    } catch (_) { $("#cr-am").textContent = "No connection. Try again when you have signal."; }
+  });
+}
+
+/* ---- restaurants (Google Places through the "places" function) ---- */
+let crFoodTimer = null;
+function crFood() {
+  clearTimeout(crFoodTimer);
+  if (!CRUISE.on || map.getZoom() < 13 || !(CRUISE.cat === "food" || CRUISE.cat === "all")) return;
+  crFoodTimer = setTimeout(async () => {
+    const c = map.getCenter(), k = `${c.lat.toFixed(2)},${c.lng.toFixed(2)}`; if (CRUISE.food.has(k)) return;
+    CRUISE.food.set(k, []);
+    try {
+      const r = await fetch(`${FN}places?lat=${c.lat.toFixed(4)}&lon=${c.lng.toFixed(4)}`), j = await r.json().catch(() => ({}));
+      if (!r.ok) { CRUISE.foodErr = j.error || "Restaurants are not available right now."; CRUISE.food.delete(k); crDraw(); return; }
+      CRUISE.foodErr = null;
+      CRUISE.food.set(k, (j.places || []).filter((f) => Number.isFinite(f.lat)).map((f) => Object.assign(["food", f.lat, f.lon, f.name, f.address || "", "", "Google Maps", 0], f, { key: `food:${f.id}` })));
+      if (CRUISE.food.size > 40) CRUISE.food.delete(CRUISE.food.keys().next().value);
+      crDraw();
+    } catch (_) { CRUISE.foodErr = "Restaurants are not available right now."; CRUISE.food.delete(k); crDraw(); }
+  }, 450);
+}
+
+/* ---- chips, search, enter / leave ---- */
+function crChips() {
+  $("#cr-chips").innerHTML = CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("")
+    + `<button type="button" class="cr-chip tog${DZ.on ? " on" : ""}" id="cr-dz" aria-pressed="${DZ.on}">${CR_ICON.discharge}<span>Discharge zones</span></button>`
+    + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button>`;
+  $("#cr-chips").querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => { CRUISE.cat = b.dataset.c; store("crCat", CRUISE.cat); crClose(); crChips(); crDraw(); crFood(); }));
+  $("#cr-dz").addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); crChips(); dzDraw(); });
+  $("#cr-addbtn").addEventListener("click", () => crAddMode(!CRUISE.adding));
 }
 async function enterCruise() {
   CRUISE.on = true;
-  if (!CRUISE.types) CRUISE.types = new Set(store("crTypes") || CR_DEFAULT);
+  if (layers.land && map.hasLayer(layers.land)) { map.removeLayer(layers.land); CRUISE.hidLand = true; } // the Newport debrief shoreline
   try { await loadCruise(); } catch (e) { showMsg($("#cr-msg"), e.message); return; }
   if (!CRUISE.on) return;
-  $("#cr-built").textContent = `Built ${new Date(CRUISE.data.built).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} from NOAA ENC Direct${CRUISE.data.p.some((p) => p[6].includes("OpenStreetMap")) ? " and OpenStreetMap (© OpenStreetMap contributors, ODbL)" : ""}.`;
-  renderCruiseFilters();
+  crChips();
   if (!CRUISE.started) {
     CRUISE.started = true;
-    const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.4, -71.4], 10, { animate: false });
+    const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.49, -71.33], 13, { animate: false });
+    loadComm().then(() => crDraw());
   }
-  crDraw(); dzDraw();
+  crDraw(); dzDraw(); crFood();
 }
-/* Overboard discharge layers for the Cruising tab: EPA No Discharge Zones + the 3 nautical mile line (site/discharge.json) */
-const DZ = { on: store("crDz") ?? true, data: null, layer: null };
+
+/* Discharge rules: EPA No Discharge Zones + the 3 nautical mile line (site/discharge.json) */
+const DZ = { on: store("crDz") ?? false, data: null, layer: null };
+function dzInside(lat, lon) { // EPA zone containing the point (even-odd over all its rings), or null
+  for (const z of DZ.data ? DZ.data.ndz : []) {
+    let inside = false;
+    for (const r of z.rings) for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, yi] = r[i], [xj, yj] = r[j];
+      if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    if (inside) return z;
+  }
+  return null;
+}
 async function dzDraw() {
   if (!CRUISE.on) return;
   if (!DZ.on) { if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer); setLegend(null); return; }
-  if (!DZ.data) { try { const r = await fetch("discharge.json"); if (!r.ok) throw 0; DZ.data = await r.json(); } catch (_) { showMsg($("#cr-msg"), "The discharge-rule map has not been built yet (discharge.json missing)."); return; } }
+  if (!DZ.data) { try { const r = await fetch("discharge.json"); if (!r.ok) throw 0; DZ.data = await r.json(); } catch (_) { showMsg($("#cr-msg"), "The discharge map is not available yet."); return; } }
   if (!CRUISE.on || !DZ.on) return;
   if (!DZ.layer) {
     if (!map.getPane("dzPane")) map.createPane("dzPane").style.zIndex = 390;
     const rend = L.canvas({ pane: "dzPane", padding: 0.3 }); DZ.layer = L.layerGroup();
-    for (const z of DZ.data.ndz) {
-      const pg = L.polygon(z.rings.map((r) => r.map(([x, y]) => [y, x])), { renderer: rend, color: "#E5484D", weight: 1.2, fillColor: "#E5484D", fillOpacity: 0.16 });
-      pg.bindPopup(() => `<div class="cr-pop"><b>No Discharge Zone</b><div class="pr"><span class="pk">Area</span><span>${esc(z.name)}</span></div>
-        <div class="pr"><span class="pk">State</span><span>${esc(z.state)}</span></div>${z.desc ? `<div class="pr"><span class="pk">Waters</span><span>${esc(z.desc)}</span></div>` : ""}
-        <div class="pr"><span class="pk">Rule</span><span>No sewage overboard, treated or untreated. Use a pump-out.</span></div>
-        ${z.date ? `<div class="pr"><span class="pk">Since</span><span>${esc(z.date)}</span></div>` : ""}
-        <div class="cr-links">${/^https?:\/\//.test(z.fr) ? `<a href="${esc(z.fr)}" target="_blank" rel="noopener">Federal Register notice</a>` : ""}<a href="https://www.epa.gov/vessels-marinas-and-ports/no-discharge-zones-ndzs-state" target="_blank" rel="noopener">EPA list</a></div></div>`, { maxWidth: 300, className: "cr-popup" });
-      DZ.layer.addLayer(pg);
-    }
+    for (const z of DZ.data.ndz) DZ.layer.addLayer(L.polygon(z.rings.map((r) => r.map(([x, y]) => [y, x])), { renderer: rend, color: "#E5484D", weight: 1.2, fillColor: "#E5484D", fillOpacity: 0.16, interactive: false }));
     for (const p of DZ.data.line3) DZ.layer.addLayer(L.polyline(p.map(([x, y]) => [y, x]), { renderer: rend, color: "#F5B83D", weight: 2, dashArray: "6 5", interactive: false }));
   }
   if (!map.hasLayer(DZ.layer)) DZ.layer.addTo(map);
-  setLegend(`<b>Overboard discharge</b><div class="dz-key"><span><i class="dz-ndz"></i>No Discharge Zone: nothing overboard</span><span><i class="dz-3"></i>3-mile line: untreated only beyond it</span></div>
-    <div class="fine">Inside 3 nautical miles only treated sewage from an approved Type I/II device, and never in a No Discharge Zone. Line: BOEM Submerged Lands Act boundary (Atlantic, Pacific, Alaska; not drawn in the Gulf of Mexico). Zones: EPA. Check state rules.</div>`);
+  setLegend(`<b>Discharge zones</b><div class="dz-key"><span><i class="dz-ndz"></i>No Discharge Zone: nothing overboard</span><span><i class="dz-3"></i>3 nm line: holding tanks only beyond it</span></div><div class="fine">Tap the water to check a spot. EPA zones; 3 nm line from BOEM (not drawn off Texas, Gulf Florida, Hawaii or Puerto Rico). Federal rules; states can be stricter.</div>`);
+}
+function dzCheck(ll) { // tap on the water with Discharge zones on: what the federal rules say here
+  if (!DZ.data) return;
+  const z = dzInside(ll.lat, ll.lng);
+  const html = z ? `<div class="cr-pop"><b class="no">No Discharge Zone</b><p>${esc(z.name)}${z.state ? `, ${esc(z.state)}` : ""}. Nothing overboard, treated or untreated. Use a pump-out.</p>${/^https?:\/\//.test(z.fr) ? `<a href="${esc(z.fr)}" target="_blank" rel="noopener">Federal Register notice</a>` : ""}</div>`
+    : `<div class="cr-pop"><b>Not in a No Discharge Zone</b><p>Treated sewage from a Type I or II device is allowed. Untreated (holding tank) only beyond 3 nautical miles from shore: the dashed line. In the Great Lakes and inland waters, check state rules.</p></div>`;
+  L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng(ll).setContent(html).openOn(map);
 }
 function leaveCruise() {
-  CRUISE.on = false; map.closePopup(); if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
+  CRUISE.on = false; crAddMode(false); map.closePopup();
+  if (CRUISE.hidLand && layers.land) { layers.land.addTo(map); CRUISE.hidLand = false; }
   if (CRUISE.layer && map.hasLayer(CRUISE.layer)) map.removeLayer(CRUISE.layer);
+  if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
+  if (CRUISE.selPin) { map.removeLayer(CRUISE.selPin); CRUISE.selPin = null; }
 }
 function initCruise() {
   document.querySelectorAll("#cr-cost button").forEach((b) => b.addEventListener("click", () => {
-    CRUISE.cost = b.dataset.c; document.querySelectorAll("#cr-cost button").forEach((x) => x.classList.toggle("active", x === b)); crDraw();
+    CRUISE.cost = b.dataset.c; document.querySelectorAll("#cr-cost button").forEach((x) => x.classList.toggle("on", x === b)); crDraw();
   }));
-  const dzb = $("#cr-dz"); dzb.classList.toggle("on", DZ.on); dzb.setAttribute("aria-pressed", String(DZ.on));
-  dzb.addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); dzb.classList.toggle("on", DZ.on); dzb.setAttribute("aria-pressed", String(DZ.on)); dzDraw(); });
-  $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-item"); if (b) crOpen(+b.dataset.i); });
-  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); });
-  map.on("popupopen", (e) => { const a = e.popup.getElement().querySelector("[data-wx]"); if (a) a.addEventListener("click", (ev) => {
-    ev.preventDefault(); const p = CRUISE.data.p[+a.dataset.wx]; store("gxView", { lat: p[1], lng: p[2], z: 8 }); GX.started = false; location.hash = "#wind"; }); });
+  let qt = null;
+  $("#cr-q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { CRUISE.q = e.target.value.trim(); if (CRUISE.sel) crClose(); else crDraw(); }, 150); });
+  $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-card"); if (b) { const p = crFind(b.dataset.k); if (p) crOpen(p); } });
+  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); });
+  map.on("click", (e) => { if (!CRUISE.on) return; if (CRUISE.adding) { crAddForm(e.latlng); return; } if (DZ.on) dzCheck(e.latlng); });
 }
 
 async function boot() {
