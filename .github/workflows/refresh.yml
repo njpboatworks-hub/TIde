@@ -57,6 +57,7 @@ jobs:
         run: |
           if [ "$(date -u +%u)" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             python -m scripts.boating_places || echo "Cruising places not refreshed (keeping last week's list)"
+            python -m scripts.discharge_zones || echo "Discharge-rule map not refreshed (keeping last week's)"
           else
             echo "Not Monday: keeping last week's cruising places"
           fi

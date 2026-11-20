@@ -1367,6 +1367,11 @@ body.gx .maptools { right: calc(92px + env(safe-area-inset-right, 0px)); }
 .cr-pop a { color: #FF9B70; }
 .cr-links { display: flex; gap: 14px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #22344F; }
 body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { display: none !important; }
+.dz-key { display: grid; gap: 4px; margin: 6px 0 2px; }
+.dz-key span { display: flex; align-items: center; gap: 8px; }
+.dz-key i { width: 18px; height: 10px; flex: none; display: inline-block; }
+.dz-ndz { background: rgba(229,72,77,.3); border: 1.5px solid #E5484D; }
+.dz-3 { border-top: 2px dashed #F5B83D; height: 0 !important; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -1687,13 +1692,22 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
         <div class="seg" id="cr-cost" role="group" aria-label="Cost">
           <button type="button" data-c="any" class="active">Any cost</button><button type="button" data-c="free">Free</button><button type="button" data-c="paid">Paid</button>
         </div>
+        <button type="button" class="cr-chip on" id="cr-dz" aria-pressed="true"><i style="background:#E5484D"></i>Discharge rules</button>
         <span class="hint" id="cr-count"></span>
       </div>
       <div class="cr-list" id="cr-list"></div>
+      <h2>Overboard discharge (US federal rules)</h2>
+      <ul class="advice">
+        <li><b>No Discharge Zones</b> (red on the map): no sewage overboard at all, treated or not. Use a pump-out.</li>
+        <li><b>Inside the 3-mile line</b> (dashed amber): untreated sewage may not go overboard. Treated sewage from a Coast Guard-approved Type I or Type II device is allowed outside No Discharge Zones; otherwise keep it in the holding tank.</li>
+        <li><b>Beyond 3 nautical miles</b>: federal law allows emptying a holding tank (untreated sewage). EPA: "Untreated sewage discharges are prohibited within three miles from shore."</li>
+        <li>Also no discharge in freshwater lakes or reservoirs that boats cannot enter or leave, or in rivers not navigable by interstate traffic. States and parks can add stricter rules, and some zones are newer than this map. Check the state's rules before you go.</li>
+      </ul>
       <h2>About this data</h2>
       <ul class="advice">
         <li>NOAA electronic charts list charted anchorage areas, mooring buoys and fields, marinas and small-craft services such as pump-out stations, fuel, water and launch sites. Charts do not list prices, phone numbers or rules.</li>
         <li>OpenStreetMap adds places mapped by volunteers, sometimes with a fee, phone, website or hours. "Free" and "Paid" only show when a source says so; most places have no cost on record, so call the harbormaster or marina before you go.</li>
+        <li>No Discharge Zones: EPA's map layer (last updated by EPA in April 2025). The 3-mile line: BOEM's Submerged Lands Act boundary for the Atlantic, Pacific and Alaska, which NOAA says generally matches the official 3 nautical mile line, with exceptions. The Gulf of Mexico line is not shown: the boundary there is 9 nautical miles off Texas and western Florida, not 3.</li>
         <li>Places can close, move or change rules (seasonal moorings, time limits, permits). Check local notices, the US Coast Pilot and the harbormaster. Not for navigation.</li>
       </ul>
       <p class="hint" id="cr-built"></p>
@@ -5706,7 +5720,7 @@ async function loadCruise() {
   for (const p of d.p) {
     if (p[3]) continue; const cl = Math.cos(p[1] * Math.PI / 180); let best = null, bd = 0.4;
     for (const q of named) { const dk = Math.hypot((q[1] - p[1]) * 111.3, (q[2] - p[2]) * 111.3 * cl); if (dk < bd) { bd = dk; best = q; } }
-    if (best) p.at = best[3];
+    if (best) p.nearName = best[3];
   }
   CRUISE.data = d; return d;
 }
@@ -5715,7 +5729,7 @@ function crShown(p) {
   return CRUISE.cost === "any" || p[5] === CRUISE.cost;
 }
 function crCostTag(p) { return p[5] === "free" ? `<span class="cr-cost free">Free</span>` : p[5] === "paid" ? `<span class="cr-cost paid">Paid</span>` : ""; }
-function crName(p) { return p[3] || (p.at ? `${CRUISE.data.types[p[0]]} at ${p.at}` : CRUISE.data.types[p[0]]); }
+function crName(p) { return p[3] || (p.nearName ? `${CRUISE.data.types[p[0]]} at ${p.nearName}` : CRUISE.data.types[p[0]]); }
 function crDetails(p) {
   const T = CRUISE.data.types, x = p[7] || {}, rows = [];
   const add = (k, v) => { if (v) rows.push(`<div class="pr"><span class="pk">${k}</span><span>${v}</span></div>`); };
@@ -5785,16 +5799,43 @@ async function enterCruise() {
     CRUISE.started = true;
     const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.4, -71.4], 10, { animate: false });
   }
-  crDraw();
+  crDraw(); dzDraw();
+}
+/* Overboard discharge layers for the Cruising tab: EPA No Discharge Zones + the 3 nautical mile line (site/discharge.json) */
+const DZ = { on: store("crDz") ?? true, data: null, layer: null };
+async function dzDraw() {
+  if (!CRUISE.on) return;
+  if (!DZ.on) { if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer); setLegend(null); return; }
+  if (!DZ.data) { try { const r = await fetch("discharge.json"); if (!r.ok) throw 0; DZ.data = await r.json(); } catch (_) { showMsg($("#cr-msg"), "The discharge-rule map has not been built yet (discharge.json missing)."); return; } }
+  if (!CRUISE.on || !DZ.on) return;
+  if (!DZ.layer) {
+    if (!map.getPane("dzPane")) map.createPane("dzPane").style.zIndex = 390;
+    const rend = L.canvas({ pane: "dzPane", padding: 0.3 }); DZ.layer = L.layerGroup();
+    for (const z of DZ.data.ndz) {
+      const pg = L.polygon(z.rings.map((r) => r.map(([x, y]) => [y, x])), { renderer: rend, color: "#E5484D", weight: 1.2, fillColor: "#E5484D", fillOpacity: 0.16 });
+      pg.bindPopup(() => `<div class="cr-pop"><b>No Discharge Zone</b><div class="pr"><span class="pk">Area</span><span>${esc(z.name)}</span></div>
+        <div class="pr"><span class="pk">State</span><span>${esc(z.state)}</span></div>${z.desc ? `<div class="pr"><span class="pk">Waters</span><span>${esc(z.desc)}</span></div>` : ""}
+        <div class="pr"><span class="pk">Rule</span><span>No sewage overboard, treated or untreated. Use a pump-out.</span></div>
+        ${z.date ? `<div class="pr"><span class="pk">Since</span><span>${esc(z.date)}</span></div>` : ""}
+        <div class="cr-links">${/^https?:\/\//.test(z.fr) ? `<a href="${esc(z.fr)}" target="_blank" rel="noopener">Federal Register notice</a>` : ""}<a href="https://www.epa.gov/vessels-marinas-and-ports/no-discharge-zones-ndzs-state" target="_blank" rel="noopener">EPA list</a></div></div>`, { maxWidth: 300, className: "cr-popup" });
+      DZ.layer.addLayer(pg);
+    }
+    for (const p of DZ.data.line3) DZ.layer.addLayer(L.polyline(p.map(([x, y]) => [y, x]), { renderer: rend, color: "#F5B83D", weight: 2, dashArray: "6 5", interactive: false }));
+  }
+  if (!map.hasLayer(DZ.layer)) DZ.layer.addTo(map);
+  setLegend(`<b>Overboard discharge</b><div class="dz-key"><span><i class="dz-ndz"></i>No Discharge Zone: nothing overboard</span><span><i class="dz-3"></i>3-mile line: untreated only beyond it</span></div>
+    <div class="fine">Inside 3 nautical miles only treated sewage from an approved Type I/II device, and never in a No Discharge Zone. Line: BOEM Submerged Lands Act boundary (Atlantic, Pacific, Alaska; not drawn in the Gulf of Mexico). Zones: EPA. Check state rules.</div>`);
 }
 function leaveCruise() {
-  CRUISE.on = false; map.closePopup();
+  CRUISE.on = false; map.closePopup(); if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
   if (CRUISE.layer && map.hasLayer(CRUISE.layer)) map.removeLayer(CRUISE.layer);
 }
 function initCruise() {
   document.querySelectorAll("#cr-cost button").forEach((b) => b.addEventListener("click", () => {
     CRUISE.cost = b.dataset.c; document.querySelectorAll("#cr-cost button").forEach((x) => x.classList.toggle("active", x === b)); crDraw();
   }));
+  const dzb = $("#cr-dz"); dzb.classList.toggle("on", DZ.on); dzb.setAttribute("aria-pressed", String(DZ.on));
+  dzb.addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); dzb.classList.toggle("on", DZ.on); dzb.setAttribute("aria-pressed", String(DZ.on)); dzDraw(); });
   $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-item"); if (b) crOpen(+b.dataset.i); });
   map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); });
   map.on("popupopen", (e) => { const a = e.popup.getElement().querySelector("[data-wx]"); if (a) a.addEventListener("click", (ev) => {
