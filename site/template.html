@@ -864,7 +864,7 @@ body.cruise .legend { max-width: 250px; }
 .rt-hz span { color: var(--ink-2); font-size: 12px; }
 .rt-hz.ok { border-color: #5BE09A; } .rt-hz.opening { border-color: #F5B83D; } .rt-hz.blocked { border-color: #FF5A60; }
 /* radar: dim satellite land, wind lines faint so the rain stands out */
-body.gx-radar .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
+body.gx-light .leaflet-tile-pane { filter: brightness(.55) saturate(.6); }
 body.gx-radar .leaflet-pane.leaflet-gxPane-pane .wind-canvas:not(.leaflet-zoom-animated) { opacity: .35; }
 .cr-warn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); font-size: 13px; }
 .cr-warn b { color: var(--c); font: 600 14px/1.2 var(--f-body); }
@@ -3736,6 +3736,7 @@ function buildCourse() {
   if (RACE.finish === "up") { M.fin = { kind: "fin", ...dest(m1, up + 180, Math.min(120, L * 0.1)) }; seq.push("fin"); }
   else seq.push("finish");
   RACE.marks = M; RACE.seq = seq;
+  if (RACE._dry) return; // trying positions: no drawing
   raceSave(); drawCourse(); renderRacePanel();
 }
 // Waypoint positions in order: start line centre, then each mark (a gate is its midpoint), then the finish.
@@ -3805,7 +3806,32 @@ function fitCourse() {
   const pts = Object.values(RACE.marks).map((m) => [m.lat, m.lon]);
   map.fitBounds(L.latLngBounds(pts).pad(0.15), { paddingTopLeft: [document.body.classList.contains("board") ? 40 : 30, 60], paddingBottomRight: [30, 40], maxZoom: 16 });
 }
-function placeCourse(lat, lon) { RACE.center = { lat, lon }; if (RACE.type !== "custom") RACE.marks = null; buildCourse(); fitCourse(); }
+function courseLandHere(la, lo) { const cp = map.latLngToContainerPoint([la, lo]), lp = onLandPx(cp.x, cp.y); return lp === null ? isCoastLand(la, lo) : lp; }
+function courseOnWater() { // every mark, both ends of the line, and points along each leg are on the water
+  const M = RACE.marks; if (!M) return false;
+  for (const m of Object.values(M)) if (m && m.lat != null && courseLandHere(m.lat, m.lon)) return false;
+  const pts = legPoints();
+  for (let i = 1; i < pts.length; i++) for (let k = 1; k < 8; k++) { const f = k / 8; if (courseLandHere(pts[i - 1].lat + (pts[i].lat - pts[i - 1].lat) * f, pts[i - 1].lon + (pts[i].lon - pts[i - 1].lon) * f)) return false; }
+  return true;
+}
+function placeCourse(lat, lon) {
+  if (RACE.type === "custom") { RACE.center = { lat, lon }; buildCourse(); fitCourse(); return; }
+  // try the spot asked for, then rings around it, until the whole course is on open water
+  const step = Math.max(150, RACE.lenNm * 1852 / 8), cl = Math.cos(rad(lat)); let found = null;
+  RACE._dry = true;
+  try {
+    outer: for (let r = 0; r <= 24; r++) for (let a = 0; a < (r ? 12 : 1); a++) {
+      const th = (a / 12) * 2 * Math.PI, la = lat + (r * step * Math.cos(th)) / 111320, lo = lon + (r * step * Math.sin(th)) / (111320 * cl);
+      RACE.center = { lat: la, lon: lo }; RACE.marks = null; buildCourse();
+      if (courseOnWater()) { found = { lat: la, lon: lo, r }; break outer; }
+    }
+  } finally { RACE._dry = false; }
+  RACE.center = found ? { lat: found.lat, lon: found.lon } : { lat, lon }; RACE.marks = null; buildCourse(); fitCourse();
+  const msg = $("#race-sim-msg");
+  if (!found) showMsg(msg, "There is no open water big enough for this course near here. Move the map over open water, or shorten the beat.");
+  else if (found.r) showMsg(msg, "Moved the course onto open water.");
+  else showMsg(msg, "");
+}
 
 /* ----- simulation ----- */
 function simGrids(pts) {
@@ -4884,7 +4910,7 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (GX.on && GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
+const stateStyle = () => (GX.on && gxLightBase() ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
@@ -4898,8 +4924,8 @@ function setNames(on) {
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
 // on the radar there are no weather colours under the lines, so they turn light to show the land
-const gxCoastStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
-const gxBorderStyle = () => (GX.layer === "radar" ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+const gxCoastStyle = () => (gxLightBase() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => (gxLightBase() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
   GXO.on = on;
@@ -5005,7 +5031,7 @@ async function enterGlobal(kind) {
   const ageH = (Date.now() - GX.run) / 3600e3;
   $("#gx-run").textContent = `Weather model run ${new Date(GX.run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${GX.crun ? `; ocean model ${new Date(GX.crun).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}. Forecast runs to ${gxTimeLabel(GX.hMax)}.`;
   const stale = $("#gx-stale"); stale.hidden = ageH < 36; stale.textContent = `This forecast is ${Math.round(ageH / 24)} days old. It refreshes when the site's daily update runs; until then the early hours are already in the past.`;
-  gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); if (GX.layer === "radar") gxRadar(true);
+  gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); gxRadar(GX.layer === "radar");
   if (kind === "wind" && PENDING_LINK && PENDING_LINK.tab === "wind") {
     const [la, lo] = PENDING_LINK.arg.split(",").map(Number); PENDING_LINK = null;
     if (Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la) <= 90) { map.setView([la, lo], Math.max(map.getZoom(), 8), { animate: false }); SP.series = null; spPick(la, lo, null); }
@@ -5065,8 +5091,10 @@ function radarPlay() {
   let k = 11; $("#radar-play").textContent = "Stop";
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
+const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].includes(GX.layer); // layers that leave land uncoloured
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
-  document.body.classList.toggle("gx-radar", on);
+  document.body.classList.toggle("gx-light", on);
+  document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
   if (baseLayer) {
     if (on && GX.on && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
     if (!on && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
@@ -5077,7 +5105,7 @@ function gxRadarBase(on) { // radar mode: dim satellite land underneath, light o
   if (stateLines) stateLines.setStyle(stateStyle());
 }
 function gxRadar(on) {
-  gxRadarBase(on && GX.on);
+  gxRadarBase(GX.on && gxLightBase());
   if (!on) { radarStop(); for (const l of RADAR.layers.values()) if (map.hasLayer(l)) map.removeLayer(l); RADAR.layers.clear(); return; }
   radarShow(0);
 }
