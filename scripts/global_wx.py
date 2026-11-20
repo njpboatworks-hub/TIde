@@ -53,6 +53,10 @@ FIELDS = [("u", "UGRD:10 m above ground"), ("v", "VGRD:10 m above ground"), ("gu
           ("pres", "PRMSL:mean sea level")]
 # uint8 encodings for the point tiles: value = lo + code * (hi - lo) / 254, code 255 = missing
 TILE_ENC = {"u": (-40, 40), "v": (-40, 40), "gust": (0, 60), "temp": (-50, 50), "rain": (0, 1), "cloud": (0, 100), "pres": (940, 1060)}
+# NOAA GFS-Wave (WAVEWATCH III), same cycle as the weather model: significant wave height (m), peak period (s) and
+# the direction the main waves come from (degrees). Land and sea ice have no value.
+WAVE_FIELDS = [("hs", "HTSGW:surface"), ("tp", "PERPW:surface"), ("dir", "DIRPW:surface")]
+WAVE_ENC = {"hs": (0, 15), "tp": (0, 25), "dir": (0, 360)}
 
 
 def get(url, rng=None, tries=5, timeout=120):
@@ -168,6 +172,74 @@ def build_gfs(meta):
                    "png": {"u": [-40, 40], "v": [-40, 40], "gust": [0, 60], "temp": [-50, 50], "rain_sqrt_max": 50, "cloud": [0, 100]},
                    "tile": {"deg": 10, "res": 1, "n": 11, "vars": list(TILE_ENC), "enc": TILE_ENC, "rain": "sqrt(mm_h/50)"}}
     print(f"GFS: {nst} steps out to {GFS_STEPS[-1]} h ({time.time() - t0:.0f}s)", flush=True)
+
+
+# ---------------------------------------------------------------- GFS-Wave
+def wave_step(base, fh):
+    import eccodes
+    idx = get(f"{base}.f{fh:03d}.grib2.idx")
+    if not idx:
+        return None
+    lines = idx.decode().strip().split("\n")
+    offs = [int(l.split(":")[1]) for l in lines]
+    out = {}
+    for name, key in WAVE_FIELDS:
+        for n, l in enumerate(lines):
+            if f":{key}:" in l:
+                end = offs[n + 1] - 1 if n + 1 < len(offs) else None
+                msg = get(f"{base}.f{fh:03d}.grib2", (offs[n], end))
+                if not msg:
+                    return None
+                h = eccodes.codes_new_from_message(msg)
+                ni, nj = eccodes.codes_get(h, "Ni"), eccodes.codes_get(h, "Nj")
+                miss = eccodes.codes_get(h, "missingValue")
+                a = eccodes.codes_get_values(h).reshape(nj, ni).astype(np.float32)
+                eccodes.codes_release(h)
+                a[a == miss] = np.nan
+                a = np.roll(a, ni // 2, axis=1)  # 0..359.75E -> 180W..
+                out[name] = a[::2, ::2]  # 0.25 -> 0.5 degree, the weather grid (rows 90N..90S)
+                break
+    return out if len(out) == len(WAVE_FIELDS) else None
+
+
+def build_wave(meta):
+    t0 = time.time()
+    if "gfs" not in meta:
+        raise RuntimeError("run the gfs part first (waves use the same cycle)")
+    run = dt.datetime.strptime(meta["gfs"]["run"], "%Y-%m-%dT%H:00Z")
+    base = f"{GFS}/gfs.{run:%Y%m%d}/{run:%H}/wave/gridded/gfswave.t{run:%H}z.global.0p25"
+    with cf.ThreadPoolExecutor(12) as ex:
+        steps = list(ex.map(lambda fh: wave_step(base, fh), GFS_STEPS))
+    if not all(steps):
+        raise RuntimeError(f"wave model incomplete for {run:%Y-%m-%d %HZ} ({sum(1 for x in steps if x)} of {len(steps)} steps)")
+    # map images: R = 1 + height (0..15 m), 0 = no value; G = period 0..25 s; B = direction 0..360
+    for k, w in enumerate(steps):
+        sea = np.isfinite(w["hs"])
+        r = np.where(sea, 1 + np.clip(np.round(np.nan_to_num(w["hs"]) / 15 * 254), 0, 254), 0).astype(np.uint8)
+        png(OUT / "v" / f"{k}.png", r, q8(w["tp"], 0, 25), q8(w["dir"], 0, 360))
+    # point tiles at 1 degree, like the weather ones; 255 = no value
+    nst = len(steps)
+    cube = {}
+    for name, (lo, hi) in WAVE_ENC.items():
+        a = np.stack([w[name][::2, ::2] for w in steps])
+        c = np.where(np.isfinite(a), np.clip(np.round((np.nan_to_num(a) - lo) / (hi - lo) * 254), 0, 254), 255).astype(np.uint8)
+        cube[name] = np.concatenate([c, c[:, :, :1]], axis=2)
+    (OUT / "pw").mkdir(parents=True, exist_ok=True)
+    for f in (OUT / "pw").glob("*.bin*"):
+        f.unlink()
+    kept = 0
+    for la in range(-90, 90, 10):
+        for lo in range(-180, 180, 10):
+            r0 = 90 - (la + 10)
+            rows = slice(r0, r0 + 11) if r0 + 11 <= 181 else slice(r0, 181)
+            block = np.stack([cube[n][:, rows, lo + 180: lo + 191] for n in WAVE_ENC])
+            if block.shape[2] < 11:
+                block = np.concatenate([block, np.repeat(block[:, :, -1:], 11 - block.shape[2], axis=2)], axis=2)
+            if (block[0] != 255).any():
+                (OUT / "pw" / f"{la}_{lo}.bin.gz").write_bytes(gzip.compress(block.tobytes(), 9, mtime=0)); kept += 1
+    meta["wave"] = {"run": meta["gfs"]["run"], "hours": GFS_STEPS, "png": {"hs": [0, 15], "tp": [0, 25], "dir": [0, 360]},
+                    "tile": {"deg": 10, "res": 1, "n": 11, "vars": list(WAVE_ENC), "enc": WAVE_ENC, "missing": 255}}
+    print(f"Waves: {nst} steps, {kept} sea tiles ({time.time() - t0:.0f}s)", flush=True)
 
 
 # ---------------------------------------------------------------- RTOFS
@@ -290,6 +362,8 @@ def main(parts):
     meta = json.loads(mp.read_text()) if mp.exists() else {}
     if "gfs" in parts:
         build_gfs(meta)
+    if "wave" in parts:
+        build_wave(meta)
     if "rtofs" in parts:
         build_rtofs(meta)
     meta["built"] = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None).strftime("%Y-%m-%dT%H:%MZ")
@@ -297,4 +371,4 @@ def main(parts):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:] or ["gfs", "rtofs"])
+    main(sys.argv[1:] or ["gfs", "wave", "rtofs"])

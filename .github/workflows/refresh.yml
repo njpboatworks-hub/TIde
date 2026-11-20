@@ -51,6 +51,7 @@ jobs:
         run: |
           pip install eccodes netCDF4 pillow shapely
           python -m scripts.global_wx gfs
+          python -m scripts.global_wx wave || echo "Waves not refreshed today (keeping the previous run)"
           python -m scripts.global_wx rtofs || echo "Ocean currents not refreshed today (keeping the previous run)"
 
       - name: Continue the coast-map forecasts past the NWS 7 days with GFS (to 16 days)
