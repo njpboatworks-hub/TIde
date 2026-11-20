@@ -1,12 +1,13 @@
 # Builds the Cruising tab's data (site/boating.json and site/discharge.json) on GitHub's computers, which can reach
-# OpenStreetMap, NOAA, EPA and BOEM. Runs every Sunday and can be run by hand (Actions -> Build cruising data ->
-# Run workflow). OpenStreetMap is asked in map squares spread over 6 machines, each with a time budget, so one slow
-# server cannot sink the run; the merged result is committed to the repository and the daily refresh publishes it.
+# OpenStreetMap, NOAA, EPA and BOEM. Runs daily and can be run by hand (Actions -> Build cruising data -> Run workflow).
+# OpenStreetMap is asked in 2 x 2.5 degree squares spread over 6 machines with a time budget each; every answered
+# square is saved in data/osm/, and each run asks for missing squares first, then the oldest, so coverage fills in
+# over a few runs and then stays fresh. The merged result is committed and the daily refresh publishes it.
 name: Build cruising data
 
 on:
   schedule:
-    - cron: "37 6 * * 0"   # Sundays 06:37 UTC
+    - cron: "37 6 * * *"   # every day 06:37 UTC: missing squares first, then the oldest ones
   workflow_dispatch:
 
 permissions:
@@ -30,11 +31,14 @@ jobs:
         with:
           python-version: "3.12"
       - name: OpenStreetMap squares, part ${{ matrix.part }}
-        run: python -m scripts.boating_places osm-part ${{ matrix.part }} 6 osm-part-${{ matrix.part }}.json 2700
+        run: |
+          mkdir -p new-squares
+          python -m scripts.boating_places osm-part ${{ matrix.part }} 6 new-squares 2700
       - uses: actions/upload-artifact@v4
         with:
           name: osm-part-${{ matrix.part }}
-          path: osm-part-${{ matrix.part }}.json
+          path: new-squares/
+          if-no-files-found: ignore
           retention-days: 7
 
   build:
@@ -68,7 +72,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add site/boating.json site/discharge.json
+          git add site/boating.json site/discharge.json data/osm
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
-          git commit -m "Weekly cruising data refresh"
+          git commit -m "Cruising data refresh"
           for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && break; sleep 10; done

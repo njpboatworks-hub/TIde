@@ -16,12 +16,15 @@ Usage: python -m scripts.boating_places
 """
 from __future__ import annotations
 
+import gzip
 import json
+import re
 import math
 import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
 
 from backend.config import ROOT
 
@@ -212,7 +215,7 @@ def osm_boxes():
     B = set()
     if src.exists():
         for q in json.loads(src.read_text()).get("p", []):
-            if q[6].startswith("NOAA") and q[1] >= 15:
+            if q[6].startswith("NOAA") and q[1] >= 15 and q[0] not in ("wreck", "reef"):
                 la, lo = math.floor(q[1] / 2) * 2, math.floor(q[2] / 2.5) * 2.5
                 B.add((la, lo, la + 2, lo + 2.5))
     if not B:
@@ -256,10 +259,31 @@ def osm_type(t):
     return None
 
 
-def osm_fetch(part=0, parts=1, budget_s=2400):
-    """Ask OpenStreetMap about every parts-th square (starting at part), until the time budget runs out.
-    Returns raw elements; squares that fail are skipped (the weekly run tries again)."""
-    boxes = osm_boxes()[part::parts]
+OSM_CACHE = ROOT / "data" / "osm"
+
+
+def square_file(box, cache=None):
+    return (cache or OSM_CACHE) / f"{box[0]:g}_{box[1]:g}.json.gz"
+
+
+def square_age(box, cache=None):
+    f = square_file(box, cache)
+    if not f.exists():
+        return float("inf")
+    try:
+        d = json.loads(gzip.decompress(f.read_bytes()))
+        return time.time() - datetime.strptime(d["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc).timestamp()
+    except Exception:
+        return float("inf")
+
+
+def osm_fetch(part=0, parts=1, budget_s=2400, out_dir=None):
+    """Ask OpenStreetMap about this part's squares (every parts-th one), squares never fetched or fetched longest ago
+    first, until the time budget runs out. Each answered square is written to out_dir (default data/osm) as
+    <south>_<west>.json.gz, so a later run only needs the squares that are missing or old."""
+    out_dir = out_dir or OSM_CACHE
+    out_dir.mkdir(parents=True, exist_ok=True)
+    boxes = sorted(osm_boxes()[part::parts], key=lambda b: -square_age(b))
     elements, ok, t0 = {}, 0, time.time()
     for k, (s_, w, n, e) in enumerate(boxes):
         if time.time() - t0 > budget_s:
@@ -275,8 +299,10 @@ def osm_fetch(part=0, parts=1, budget_s=2400):
             time.sleep(5)
         if d:
             ok += 1
-            for el in d.get("elements", []):
-                elements[f"{el.get('type')}{el.get('id')}"] = el
+            els = {f"{el.get('type')}{el.get('id')}": el for el in d.get("elements", [])}
+            elements.update(els)
+            square_file((s_, w, n, e), out_dir).write_bytes(gzip.compress(json.dumps(
+                {"fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "box": [s_, w, n, e], "elements": els}, separators=(",", ":")).encode(), 9, mtime=0))
         time.sleep(1)
     print(f"  OpenStreetMap part {part + 1}/{parts}: {ok} of {len(boxes)} squares answered, {len(elements)} objects ({time.time() - t0:.0f}s)", flush=True)
     return elements
@@ -390,16 +416,40 @@ def tidy(P):
     return res
 
 
+def load_osm_cache(cache=None):
+    """All saved squares -> {id: element}."""
+    cache = cache or OSM_CACHE
+    osm, n = {}, 0
+    for f in sorted(cache.glob("*.json.gz")):
+        try:
+            osm.update(json.loads(gzip.decompress(f.read_bytes()))["elements"]); n += 1
+        except Exception as e:
+            print(f"  skipped {f.name}: {e}", flush=True)
+    print(f"  OpenStreetMap: {len(osm)} objects from {n} of {len(osm_boxes())} squares", flush=True)
+    return osm
+
+
 def main(osm_dir=None):
     t0 = time.time()
-    osm = None
-    if osm_dir:
-        import glob
-        osm = {}
-        for f in sorted(glob.glob(f"{osm_dir}/**/*.json", recursive=True)):
-            osm.update(json.loads(open(f).read()))
-        print(f"  OpenStreetMap: {len(osm)} objects from saved parts", flush=True)
-    P = from_enc() + from_enc_fishing() + from_osm(osm)
+    osm, carried = None, []
+    if osm_dir:  # newly fetched squares (from the parallel jobs) replace the saved copies, then everything is merged
+        import shutil
+        OSM_CACHE.mkdir(parents=True, exist_ok=True)
+        for f in Path(osm_dir).rglob("*.json.gz"):
+            shutil.copy(f, OSM_CACHE / f.name)
+        osm = load_osm_cache()
+    # OpenStreetMap places from the previous build in squares the cache does not cover yet are kept, so coverage only grows
+    carried = []
+    prev = ROOT / "site" / "boating.json"
+    if osm is not None and prev.exists():
+        have = {(f.name.split("_")[0], f.name.split("_")[1].replace(".json.gz", "")) for f in OSM_CACHE.glob("*.json.gz")}
+        for q in json.loads(prev.read_text()).get("p", []):
+            if q[6] == "OpenStreetMap":
+                key = (f"{math.floor(q[1] / 2) * 2:g}", f"{math.floor(q[2] / 2.5) * 2.5:g}")
+                if key not in have:
+                    q[7] = q[7] or {}; carried.append(q)
+        print(f"  kept {len(carried)} OpenStreetMap places from the last build for squares not fetched yet", flush=True)
+    P = from_enc() + from_enc_fishing() + from_osm(osm) + (carried if osm_dir else [])
     # dump stations without a boat tag: keep the ones within ~400 m of a marina (marina pump-outs), drop the rest (RV sites)
     marinas = [(p[1], p[2]) for p in P if p[0] == "marina"]
     mgrid = {}
@@ -419,6 +469,10 @@ def main(osm_dir=None):
             p[0] = "pumpout"
         keep.append(p)
     P = keep
+    # yacht, sailing and boat clubs are often mapped (or charted) as marinas: go by the name
+    for p in P:
+        if p[0] in ("marina", "other") and re.search(r"\b(yacht|sailing|boat|corinthian|rowing)\s+club\b|\byacht\s+squadron\b", p[3] or "", re.I):
+            p[0] = "club"
     P = tidy(dedupe(P))
     for p in P:
         if not p[7]:
@@ -434,10 +488,9 @@ def main(osm_dir=None):
 if __name__ == "__main__":
     import sys
     a = sys.argv[1:]
-    if a[:1] == ["osm-part"]:  # python -m scripts.boating_places osm-part K N out.json [budget_seconds]
-        k, n, out = int(a[1]), int(a[2]), a[3]
-        els = osm_fetch(k, n, int(a[4]) if len(a) > 4 else 2400)
-        open(out, "w").write(json.dumps(els, separators=(",", ":")))
+    if a[:1] == ["osm-part"]:  # python -m scripts.boating_places osm-part K N OUT_DIR [budget_seconds]
+        k, n, out = int(a[1]), int(a[2]), Path(a[3])
+        osm_fetch(k, n, int(a[4]) if len(a) > 4 else 2400, out)
     elif a[:1] == ["--osm-dir"]:
         main(a[1])
     else:
