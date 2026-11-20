@@ -210,7 +210,7 @@ OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
   nwr["shop"="boat"];
   nwr["leisure"="fishing"];
   nwr["man_made"="pier"]["fishing"="yes"];
-  nwr["name"~"(yacht|sailing|boat|corinthian|rowing|canoe|power squadron) club|yacht squadron|sailing (association|center|centre|school|foundation)|community sailing|boating club",i];
+  nwr["name"~"(yacht|sailing|boat|corinthian|rowing|canoe|power squadron) club|yacht squadron|sailing (association|center|centre|school|foundation)|community sailing|boating club",i](around.water:1500);
   nwr["amenity"~"^(restaurant|bar|pub|cafe|fast_food|ice_cream)$"]["name"](around.water:250);
 );
 out tags center;"""
@@ -312,7 +312,7 @@ def osm_fetch(part=0, parts=1, budget_s=2400, out_dir=None):
         d = None
         for a in range(2):  # two servers at most, short waits, so one slow square cannot eat the budget
             url = OVERPASS[(k + part + a) % len(OVERPASS)]
-            d = get_json(url, data=urllib.parse.urlencode({"data": q}).encode(), tries=1, timeout=150)
+            d = get_json(url, data=urllib.parse.urlencode({"data": q}).encode(), tries=1, timeout=200)
             if d:
                 break
             time.sleep(5)
