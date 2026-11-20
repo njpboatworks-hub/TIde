@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "boating.json", "discharge.json"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "boating.json", "discharge.json", "nav.json"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -47,7 +47,7 @@ def main():
     page = (SITE / "index.html").read_text().replace("<title>Nockd Tide Guide</title>", "<title>Nockd Lift, Header and Tide Guide</title>", 1)
     (OUT / "index.html").write_text(HEAD + page + "\n</body></html>\n")  # claude.ai adds this wrapper itself
     for f in FILES[2:]:
-        if f in ("boating.json", "discharge.json") and not (SITE / f).exists():  # built weekly by scripts.boating_places; the page says when it is missing
+        if f in ("boating.json", "discharge.json", "nav.json") and not (SITE / f).exists():  # built weekly by scripts.boating_places; the page says when it is missing
             print("note: site/boating.json not built yet (run python -m scripts.boating_places)"); continue
         shutil.copy(SITE / f, OUT / f)
     (OUT / "config.js").write_text(CONFIG)

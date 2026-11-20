@@ -61,18 +61,21 @@ jobs:
         run: python -m scripts.boating_places --osm-dir osm-parts
       - name: Discharge rules (EPA No Discharge Zones + 3 nautical mile line)
         run: python -m scripts.discharge_zones || echo "discharge map not rebuilt; keeping the previous one"
+      - name: Bridges, cables, Coast Guard, restricted areas
+        run: python -m scripts.nav_hazards || echo "chart hazards not rebuilt; keeping the previous ones"
       - uses: actions/upload-artifact@v4
         with:
           name: cruising-data
           path: |
             site/boating.json
             site/discharge.json
+            site/nav.json
           retention-days: 14
       - name: Save the new data in the repository
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add site/boating.json site/discharge.json data/osm
+          git add site/boating.json site/discharge.json site/nav.json data/osm
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Cruising data refresh"
           for i in 1 2 3; do git pull --rebase origin main && git push origin HEAD:main && break; sleep 10; done
