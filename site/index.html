@@ -4159,7 +4159,19 @@ function setBasemap(kind) {
         const img = new Image(); img.crossOrigin = "anonymous";
         img.onload = () => {
           const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, sz.x, sz.y);
-          try { const d = x.getImageData(0, 0, sz.x, sz.y); for (let k = 0; k < d.data.length; k += 4) if (d.data[k] + d.data[k + 1] + d.data[k + 2] < 24) d.data[k + 3] = 0; x.putImageData(d, 0, 0); } catch (_) {}
+          // no-data tiles are black, and open water in this imagery is near-black and patchy from one photo to the next:
+          // fade dark pixels out so the even world imagery shows through on the water
+          try {
+            const d = x.getImageData(0, 0, sz.x, sz.y), D = d.data; let black = 0;
+            for (let k = 0; k < D.length; k += 4) if (Math.max(D[k], D[k + 1], D[k + 2]) <= 10) black++;
+            const noData = black > D.length / 8; // mostly black: a no-data tile (or its edge)
+            for (let k = 0; k < D.length; k += 4) {
+              const mx = Math.max(D[k], D[k + 1], D[k + 2]);
+              if (noData && mx <= 10) { D[k + 3] = 0; continue; }
+              if (mx < 46) { const t = Math.max(0, (mx - 10) / 36); D[k] = 24 + (D[k] - 24) * t; D[k + 1] = 50 + (D[k + 1] - 50) * t; D[k + 2] = 41 + (D[k + 2] - 41) * t; } // dark water: the world imagery's water colour
+            }
+            x.putImageData(d, 0, 0);
+          } catch (_) {}
           done(null, c);
         };
         img.onerror = () => done(null, c); // missing tile: stay transparent (no error count, EOX shows)
@@ -4191,6 +4203,7 @@ function setBasemap(kind) {
     }));
   }
   document.querySelectorAll("#basemap-tools button").forEach((b) => b.classList.toggle("active", b.dataset.base === basemap));
+  if (typeof CRUISE !== "undefined" && CRUISE.on) cruiseWaterSoon();
   restyleLand();
   if (arrowLayer) arrowLayer.redraw();
   if (typeof labelsOn !== "undefined") setNames(labelsOn);
@@ -5567,7 +5580,7 @@ const GxLayer = L.Layer.extend({
   onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); if (GX.bv) GX.bv.remove(); GX.cv = GX.pv = GX.bv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
   _pause() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.pv) { GX.pv.style.transition = "opacity .15s"; GX.pv.style.opacity = 0; } },
   _anim(e) { zoomCanvas(GX.cv, e.center, e.zoom); zoomCanvas(GX.bv, e.center, e.zoom); },
-  _zoom() { if (!map._animatingZoom) { zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); zoomCanvas(GX.bv, map.getCenter(), map.getZoom()); const now = Date.now(); if (now - (GX.pinchAt || 0) > 350) { GX.pinchAt = now; gxRender(); gxLandSoon(); } } },
+  _zoom() { if (!map._animatingZoom) { zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); zoomCanvas(GX.bv, map.getCenter(), map.getZoom()); } }, // no redraw mid-pinch: it would hold up the gesture
   _show() { if (!GX.cv) return; L.DomUtil.setPosition(GX.pv, map.containerPointToLayerPoint([0, 0])); gxRender().then(() => { if (GX.pv) GX.pv.style.opacity = 1; }); },
 });
 let gxLayerObj = null, eoxLabels = {};
@@ -5781,19 +5794,10 @@ const GXL = { cv: null, w50: null, idx: null, tiles: new Map(), seq: 0, t: null 
 const gxJSON = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 function gxLandTile(k) { if (!GXL.tiles.has(k)) GXL.tiles.set(k, gxJSON(`world/l10/${k}.json`)); return GXL.tiles.get(k); }
 function gxLandSoon() { clearTimeout(GXL.t); GXL.t = setTimeout(gxLandDraw, 30); }
-async function gxLandDraw() {
-  if (!GX.on) return;
-  if (!GXL.cv) {
-    if (!map.getPane("gxLandPane")) { map.createPane("gxLandPane").style.zIndex = 425; map.getPane("gxLandPane").style.pointerEvents = "none"; }
-    GXL.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
-    GXL.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
-    map.on("zoomanim", (e) => { if (GX.on) { zoomCanvas(GXL.cv, e.center, e.zoom); zoomCanvas(GXL.bv, e.center, e.zoom); } });
-    map.on("zoom", () => { if (GX.on && !map._animatingZoom) { zoomCanvas(GXL.cv, map.getCenter(), map.getZoom()); zoomCanvas(GXL.bv, map.getCenter(), map.getZoom()); } });
-    map.on("moveend", () => GX.on && gxLandSoon());
-  }
-  const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.5), py = Math.round(size.y * 0.5);
-  const CW = size.x + 2 * px, CH = size.y + 2 * py;
-  const nw = map.containerPointToLatLng([-px, -py]), se = map.containerPointToLatLng([size.x + px, size.y + py]);
+/* A canvas the size of the view plus padding, black where there is land: world land, finer land tiles zoomed in, and the
+   detailed shoreline tiles at zoom 9+ where we have them. Shared by the Forecast land veil and the Cruising water. */
+async function shoreMaskFor(z, px, py, CW, CH, stale) {
+  const size = map.getSize(), nw = map.containerPointToLatLng([-px, -py]), se = map.containerPointToLatLng([size.x + px, size.y + py]);
   const S = Math.max(-85, se.lat), N = Math.min(85, nw.lat), Wl = nw.lng, E = se.lng;
   const sets = []; // [polys, clipBox or null]
   let detail = [];
@@ -5810,7 +5814,7 @@ async function gxLandDraw() {
       if (want.length <= 40) detail = await Promise.all(want.map(async (k) => [k, idx.land.has(k) ? "land" : await routeTile(k)]));
     }
   }
-  if (seq !== GXL.seq || !GX.on) return;
+  if (stale()) return null;
   const dpr = Math.min(2, window.devicePixelRatio || 1), Wp = Math.round(CW * dpr), Hp = Math.round(CH * dpr);
   const mask = document.createElement("canvas"); mask.width = Wp; mask.height = Hp;
   const m = mask.getContext("2d"); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.fillStyle = "#000";
@@ -5827,6 +5831,23 @@ async function gxLandDraw() {
     else if (g) { const ps = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : []; m.beginPath(); for (const poly of ps) for (const r of poly) ring(r); m.fill("evenodd"); }
     m.restore();
   }
+  return { mask, dpr, Wp, Hp };
+}
+async function gxLandDraw() {
+  if (!GX.on) return;
+  if (!GXL.cv) {
+    if (!map.getPane("gxLandPane")) { map.createPane("gxLandPane").style.zIndex = 425; map.getPane("gxLandPane").style.pointerEvents = "none"; }
+    GXL.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
+    GXL.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
+    map.on("zoomanim", (e) => { if (GX.on) { zoomCanvas(GXL.cv, e.center, e.zoom); zoomCanvas(GXL.bv, e.center, e.zoom); } });
+    map.on("zoom", () => { if (GX.on && !map._animatingZoom) { zoomCanvas(GXL.cv, map.getCenter(), map.getZoom()); zoomCanvas(GXL.bv, map.getCenter(), map.getZoom()); } });
+    map.on("moveend", () => GX.on && gxLandSoon());
+  }
+  const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.5), py = Math.round(size.y * 0.5);
+  const CW = size.x + 2 * px, CH = size.y + 2 * py;
+  const nw = map.containerPointToLatLng([-px, -py]);
+  const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== GXL.seq || !GX.on); if (!LM) return;
+  const { mask, dpr, Wp, Hp } = LM;
   // coastline: the land's edge, found by shifting the land a pixel each way
   const edge = document.createElement("canvas"); edge.width = Wp; edge.height = Hp; const e = edge.getContext("2d");
   const w = Math.max(1, Math.round(dpr * (z >= 9 ? 1.3 : 1)));
@@ -7084,6 +7105,30 @@ async function crHereNow(p) {
   return out;
 }
 
+
+/* Cruising on satellite: open water painted one even colour (the photos are a patchwork of dark water and sun glare),
+   fading out from zoom 15 so that zoomed in on a harbor the real photo shows boats and moorings */
+const CWV = { cv: null, seq: 0, t: null };
+function cruiseWaterSoon() { clearTimeout(CWV.t); CWV.t = setTimeout(cruiseWater, 40); }
+async function cruiseWater() {
+  const z = map.getZoom(), a = z < 14.5 ? 0.96 : z < 15.5 ? 0.6 : 0, on = CRUISE.on && basemap === "satellite" && a > 0;
+  if (!CWV.cv) {
+    if (!map.getPane("waterPane")) { map.createPane("waterPane").style.zIndex = 250; map.getPane("waterPane").style.pointerEvents = "none"; }
+    CWV.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("waterPane"));
+    map.on("zoomanim", (e) => CRUISE.on && zoomCanvas(CWV.cv, e.center, e.zoom));
+    map.on("zoom", () => { if (CRUISE.on && !map._animatingZoom) zoomCanvas(CWV.cv, map.getCenter(), map.getZoom()); });
+  }
+  const seq = ++CWV.seq;
+  if (!on) { CWV.cv.style.display = "none"; return; }
+  const size = map.getSize(), px = Math.round(size.x * 0.25), py = Math.round(size.y * 0.25), CW = size.x + 2 * px, CH = size.y + 2 * py;
+  const nw = map.containerPointToLatLng([-px, -py]);
+  const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== CWV.seq || !CRUISE.on); if (!LM) return;
+  const cv = CWV.cv; cv.style.display = "";
+  L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py])); cv._tl = nw; cv._z = z;
+  cv.width = LM.Wp; cv.height = LM.Hp; cv.style.width = CW + "px"; cv.style.height = CH + "px";
+  const c = cv.getContext("2d"); c.fillStyle = `rgba(20,46,62,${a})`; c.fillRect(0, 0, LM.Wp, LM.Hp);
+  c.globalCompositeOperation = "destination-out"; c.drawImage(LM.mask, 0, 0); c.globalCompositeOperation = "source-over";
+}
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
   $("#cr-chips").innerHTML = `<button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
@@ -7112,7 +7157,7 @@ async function enterCruise() {
     const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.49, -71.33], 13, { animate: false });
     loadComm().then(() => crDraw());
   }
-  crDraw(); dzDraw(); crFood();
+  crDraw(); dzDraw(); crFood(); cruiseWaterSoon();
   navLoad().then(() => { if (CRUISE.on) { crDraw(); navDraw(); } });
   warnLoad().then(() => { if (!CRUISE.on) return; warnDraw(); if (CRUISE.sel && CRUISE.sel[1] != null && !CRUISE.sel.route) crRenderDetail(CRUISE.sel, CRUISE.sel.lastReports ?? null); });
   if (PENDING_LINK && PENDING_LINK.tab === "cruise") {
@@ -7172,7 +7217,7 @@ function dzCheck(ll) { // tap on the water with Discharge zones on: what the fed
   L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng(ll).setContent(html).openOn(map);
 }
 function leaveCruise() {
-  CRUISE.on = false; crAddMode(false); map.closePopup();
+  CRUISE.on = false; if (CWV.cv) { CWV.cv.style.display = "none"; CWV.seq++; } crAddMode(false); map.closePopup();
   if (CRUISE.hidLand && layers.land) { layers.land.addTo(map); CRUISE.hidLand = false; }
   if (CRUISE.layer && map.hasLayer(CRUISE.layer)) map.removeLayer(CRUISE.layer);
   if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
@@ -7188,7 +7233,7 @@ function initCruise() {
   let qt = null;
   $("#cr-q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { CRUISE.q = e.target.value.trim(); if (CRUISE.sel) crClose(); else crDraw(); }, 150); });
   $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-card"); if (b) { const p = crFind(b.dataset.k); if (p) crOpen(p); } });
-  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); });
+  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); cruiseWaterSoon(); });
   map.on("click", (e) => { if (!CRUISE.on) return; if (ROUTE.picking) { routePick(e.latlng); return; } if (CRUISE.adding) { crAddForm(e.latlng); return; } if (DZ.on) dzCheck(e.latlng); });
 }
 
