@@ -810,7 +810,11 @@ body.cruise .legend { max-width: 250px; }
 .rules > summary::-webkit-details-marker { display: none; }
 .rules > summary::after { content: " ▾"; }
 .rules[open] > summary { margin-bottom: 8px; }
-@media (max-width: 900px) { .cr-chips { margin: 0 -18px; padding: 0 18px 2px; } }
+@media (max-width: 900px) {
+  .cr-chips { margin: 0 -18px; padding: 0 18px 2px; }
+  body.cruise .legend { top: 8px; bottom: auto !important; left: 52px; max-width: 200px; max-height: 45%; }
+  body.cruise .mapwrap { height: 60vh; }
+}
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -5303,7 +5307,7 @@ function crDraw() {
     if (g.length === 1 || !cell) {
       for (const p of g) {
         const st = crStatus(p), m = L.marker([p[1], p[2]], { icon: L.divIcon({ className: "crp-wrap", html: crIconHtml(p, st), iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false, riseOnHover: true });
-        m.on("click", () => crOpen(p)); m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -14], className: "cr-tip" });
+        m.on("click", (e) => (CRUISE.adding ? crAddForm(e.latlng) : crOpen(p))); m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -14], className: "cr-tip" });
         CRUISE.layer.addLayer(m);
       }
     } else {
@@ -5312,7 +5316,7 @@ function crDraw() {
       const top = [...kinds.entries()].sort((a, b2) => b2[1] - a[1])[0][0], col = (CR_STYLE[top] || CR_STYLE.other)[1];
       const sz = g.length > 99 ? 44 : g.length > 9 ? 38 : 32;
       const m = L.marker([la, lo], { icon: L.divIcon({ className: "crp-wrap", html: `<div class="crc" style="--c:${col};width:${sz}px;height:${sz}px">${g.length > 999 ? Math.round(g.length / 1000) + "k" : g.length}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), keyboard: false });
-      m.on("click", () => map.fitBounds(L.latLngBounds(g.map((p) => [p[1], p[2]])).pad(0.3), { maxZoom: Math.min(16, z + 3) }));
+      m.on("click", (e) => CRUISE.adding ? crAddForm(e.latlng) : map.fitBounds(L.latLngBounds(g.map((p) => [p[1], p[2]])).pad(0.3), { maxZoom: Math.min(16, z + 3) }));
       CRUISE.layer.addLayer(m);
     }
   }
@@ -5431,7 +5435,7 @@ function crReportForm(p, kind) {
 function crAddMode(on) {
   CRUISE.adding = on; document.body.classList.toggle("cr-adding", on);
   const ab = $("#cr-addbtn"); if (ab) ab.classList.toggle("on", on);
-  if (on) { crClose(); $("#cr-list").insertAdjacentHTML("afterbegin", `<div class="cr-hint strong" id="cr-addhint">Tap the map where the spot is.</div>`); }
+  if (on) { map.closePopup(); crClose(); $("#cr-list").insertAdjacentHTML("afterbegin", `<div class="cr-hint strong" id="cr-addhint">Tap the map where the spot is.</div>`); }
   else { const h = $("#cr-addhint"); if (h) h.remove(); }
 }
 function crAddForm(ll) {
@@ -5516,7 +5520,7 @@ function dzInside(lat, lon) { // EPA zone containing the point (even-odd over al
 }
 async function dzDraw() {
   if (!CRUISE.on) return;
-  if (!DZ.on) { if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer); setLegend(null); return; }
+  if (!DZ.on) { if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer); map.closePopup(); setLegend(null); return; }
   if (!DZ.data) { try { const r = await fetch("discharge.json"); if (!r.ok) throw 0; DZ.data = await r.json(); } catch (_) { showMsg($("#cr-msg"), "The discharge map is not available yet."); return; } }
   if (!CRUISE.on || !DZ.on) return;
   if (!DZ.layer) {
@@ -5528,11 +5532,16 @@ async function dzDraw() {
   if (!map.hasLayer(DZ.layer)) DZ.layer.addTo(map);
   setLegend(`<b>Discharge zones</b><div class="dz-key"><span><i class="dz-ndz"></i>No Discharge Zone: nothing overboard</span><span><i class="dz-3"></i>3 nm line: holding tanks only beyond it</span></div><div class="fine">Tap the water to check a spot. EPA zones; 3 nm line from BOEM (not drawn off Texas, Gulf Florida, Hawaii or Puerto Rico). Federal rules; states can be stricter.</div>`);
 }
+function greatLakes(lat, lon) { // rough box around the five lakes and their connecting waters
+  return lat > 41.3 && lat < 49.1 && lon > -92.3 && lon < -75.9 && !(lat < 43.4 && lon > -79.0) && !(lat > 45.3 && lon > -80.5);
+}
 function dzCheck(ll) { // tap on the water with Discharge zones on: what the federal rules say here
   if (!DZ.data) return;
   const z = dzInside(ll.lat, ll.lng);
   const html = z ? `<div class="cr-pop"><b class="no">No Discharge Zone</b><p>${esc(z.name)}${z.state ? `, ${esc(z.state)}` : ""}. Nothing overboard, treated or untreated. Use a pump-out.</p>${/^https?:\/\//.test(z.fr) ? `<a href="${esc(z.fr)}" target="_blank" rel="noopener">Federal Register notice</a>` : ""}</div>`
-    : `<div class="cr-pop"><b>Not in a No Discharge Zone</b><p>Treated sewage from a Type I or II device is allowed. Untreated (holding tank) only beyond 3 nautical miles from shore: the dashed line. In the Great Lakes and inland waters, check state rules.</p></div>`;
+    : greatLakes(ll.lat, ll.lng)
+      ? `<div class="cr-pop"><b>Great Lakes: check this state's rules</b><p>Not in an EPA No Discharge Zone here, but Great Lakes states can ban all boat sewage discharge under their own laws, and these are fresh waters with drinking-water intakes. Plan to use a pump-out.</p></div>`
+      : `<div class="cr-pop"><b>Not in a No Discharge Zone</b><p>Treated sewage from a Type I or II device is allowed. Untreated (holding tank) only beyond 3 nautical miles from shore: the dashed line. Inland lakes and rivers: check state rules.</p></div>`;
   L.popup({ maxWidth: 280, className: "cr-popup" }).setLatLng(ll).setContent(html).openOn(map);
 }
 function leaveCruise() {

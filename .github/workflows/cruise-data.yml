@@ -1,6 +1,7 @@
 # Builds the Cruising tab's data (site/boating.json and site/discharge.json) on GitHub's computers, which can reach
 # OpenStreetMap, NOAA, EPA and BOEM. Runs every Sunday and can be run by hand (Actions -> Build cruising data ->
-# Run workflow). The new files are committed to the repository, so the daily refresh publishes them.
+# Run workflow). OpenStreetMap is asked in map squares spread over 6 machines, each with a time budget, so one slow
+# server cannot sink the run; the merged result is committed to the repository and the daily refresh publishes it.
 name: Build cruising data
 
 on:
@@ -16,9 +17,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  osm:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [0, 1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: OpenStreetMap squares, part ${{ matrix.part }}
+        run: python -m scripts.boating_places osm-part ${{ matrix.part }} 6 osm-part-${{ matrix.part }}.json 2700
+      - uses: actions/upload-artifact@v4
+        with:
+          name: osm-part-${{ matrix.part }}
+          path: osm-part-${{ matrix.part }}.json
+          retention-days: 7
+
+  build:
+    needs: osm
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,8 +49,12 @@ jobs:
           python-version: "3.12"
       - name: Install Python packages
         run: pip install -r requirements-refresh.txt shapely
-      - name: Cruising places (NOAA charts + OpenStreetMap, in map squares)
-        run: python -m scripts.boating_places
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: osm-part-*
+          path: osm-parts
+      - name: Cruising places (NOAA charts + the OpenStreetMap parts)
+        run: python -m scripts.boating_places --osm-dir osm-parts
       - name: Discharge rules (EPA No Discharge Zones + 3 nautical mile line)
         run: python -m scripts.discharge_zones || echo "discharge map not rebuilt; keeping the previous one"
       - uses: actions/upload-artifact@v4

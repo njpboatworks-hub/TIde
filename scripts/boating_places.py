@@ -205,17 +205,20 @@ out tags center;"""
 
 
 def osm_boxes():
-    """Small boxes over US waters (a whole-country query times out): lower 48 in 4 x 5 degree squares, then Alaska's
-    coast, Hawaii, Puerto Rico and the Virgin Islands."""
-    B = []
-    for la in range(24, 50, 4):
-        for lo in range(-125, -66, 5):
-            B.append((la, lo, min(la + 4, 50), lo + 5))
-    for la in range(51, 72, 5):
-        for lo in range(-180, -129, 10):
-            B.append((la, lo, la + 5, lo + 10))
-    B += [(18.5, -161, 22.5, -154), (17.5, -68, 18.7, -64.4)]
-    return B
+    """Map squares to ask OpenStreetMap about (a whole-country query times out). 2 x 2.5 degree squares that hold at
+    least one place from the NOAA charts (so coasts, the Great Lakes and the big rivers), plus Hawaii and Puerto Rico.
+    Falls back to a coarse grid over the whole country when there is no NOAA list yet."""
+    src = ROOT / "site" / "boating.json"
+    B = set()
+    if src.exists():
+        for q in json.loads(src.read_text()).get("p", []):
+            if q[6].startswith("NOAA") and q[1] >= 15:
+                la, lo = math.floor(q[1] / 2) * 2, math.floor(q[2] / 2.5) * 2.5
+                B.add((la, lo, la + 2, lo + 2.5))
+    if not B:
+        B = {(la, lo, min(la + 4, 50), lo + 5) for la in range(24, 50, 4) for lo in range(-125, -66, 5)}
+    B |= {(18.5, -161.0, 22.5, -154.0), (17.5, -68.0, 18.7, -64.4)}
+    return sorted(B)
 
 
 def osm_type(t):
@@ -253,24 +256,37 @@ def osm_type(t):
     return None
 
 
-def from_osm():
-    elements, ok, boxes = {}, 0, osm_boxes()
+def osm_fetch(part=0, parts=1, budget_s=2400):
+    """Ask OpenStreetMap about every parts-th square (starting at part), until the time budget runs out.
+    Returns raw elements; squares that fail are skipped (the weekly run tries again)."""
+    boxes = osm_boxes()[part::parts]
+    elements, ok, t0 = {}, 0, time.time()
     for k, (s_, w, n, e) in enumerate(boxes):
+        if time.time() - t0 > budget_s:
+            print(f"  time budget used: stopped after {k} of {len(boxes)} squares", flush=True)
+            break
         q = OSM_Q.replace("{s}", str(s_)).replace("{w}", str(w)).replace("{n}", str(n)).replace("{e}", str(e))
         d = None
-        for a in range(3):  # each server in turn, with a pause, so the public servers are not hammered
-            url = OVERPASS[(k + a) % len(OVERPASS)]
-            d = get_json(url, data=urllib.parse.urlencode({"data": q}).encode(), tries=1, timeout=300)
+        for a in range(2):  # two servers at most, short waits, so one slow square cannot eat the budget
+            url = OVERPASS[(k + part + a) % len(OVERPASS)]
+            d = get_json(url, data=urllib.parse.urlencode({"data": q}).encode(), tries=1, timeout=150)
             if d:
                 break
-            time.sleep(10)
+            time.sleep(5)
         if d:
             ok += 1
             for el in d.get("elements", []):
-                elements[(el.get("type"), el.get("id"))] = el
-        time.sleep(1.5)
-    print(f"  OpenStreetMap: {ok} of {len(boxes)} map squares answered, {len(elements)} objects", flush=True)
-    if not ok:
+                elements[f"{el.get('type')}{el.get('id')}"] = el
+        time.sleep(1)
+    print(f"  OpenStreetMap part {part + 1}/{parts}: {ok} of {len(boxes)} squares answered, {len(elements)} objects ({time.time() - t0:.0f}s)", flush=True)
+    return elements
+
+
+def from_osm(elements=None):
+    if elements is None:
+        elements = osm_fetch()
+    if not elements:
+        print("  OpenStreetMap: nothing to add", flush=True)
         return []
     P = []
     for e in elements.values():
@@ -374,9 +390,16 @@ def tidy(P):
     return res
 
 
-def main():
+def main(osm_dir=None):
     t0 = time.time()
-    P = from_enc() + from_enc_fishing() + from_osm()
+    osm = None
+    if osm_dir:
+        import glob
+        osm = {}
+        for f in sorted(glob.glob(f"{osm_dir}/**/*.json", recursive=True)):
+            osm.update(json.loads(open(f).read()))
+        print(f"  OpenStreetMap: {len(osm)} objects from saved parts", flush=True)
+    P = from_enc() + from_enc_fishing() + from_osm(osm)
     # dump stations without a boat tag: keep the ones within ~400 m of a marina (marina pump-outs), drop the rest (RV sites)
     marinas = [(p[1], p[2]) for p in P if p[0] == "marina"]
     mgrid = {}
@@ -409,4 +432,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    a = sys.argv[1:]
+    if a[:1] == ["osm-part"]:  # python -m scripts.boating_places osm-part K N out.json [budget_seconds]
+        k, n, out = int(a[1]), int(a[2]), a[3]
+        els = osm_fetch(k, n, int(a[4]) if len(a) > 4 else 2400)
+        open(out, "w").write(json.dumps(els, separators=(",", ":")))
+    elif a[:1] == ["--osm-dir"]:
+        main(a[1])
+    else:
+        main()
