@@ -182,27 +182,40 @@ def from_enc():
     return P
 
 
-OSM_Q = """[out:json][timeout:900][maxsize:1073741824];
-area["ISO3166-1"="US"][admin_level=2]->.us;
+OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
 (
-  nwr["leisure"="marina"](area.us);
-  nwr["seamark:type"="anchorage"](area.us);
-  nwr["seamark:type"="mooring"](area.us);
-  nwr["mooring"]["mooring"!="no"](area.us);
-  nwr["amenity"="sanitary_dump_station"](area.us);
-  nwr["waterway"="sanitary_dump_station"](area.us);
-  nwr["seamark:small_craft_facility:category"](area.us);
-  nwr["waterway"="fuel"](area.us);
-  nwr["amenity"="fuel"]["boat"="yes"](area.us);
-  nwr["leisure"="slipway"](area.us);
-  nwr["club"~"^(sailing|yacht|boat|rowing)$"](area.us);
-  nwr["sport"="sailing"]["leisure"~"^(sports_centre|club)$"](area.us);
-  nwr["craft"="boatbuilder"](area.us);
-  nwr["shop"="boat"](area.us);
-  nwr["leisure"="fishing"](area.us);
-  nwr["man_made"="pier"]["fishing"="yes"](area.us);
+  nwr["leisure"="marina"];
+  nwr["seamark:type"="anchorage"];
+  nwr["seamark:type"="mooring"];
+  nwr["mooring"]["mooring"!="no"];
+  nwr["amenity"="sanitary_dump_station"];
+  nwr["waterway"="sanitary_dump_station"];
+  nwr["seamark:small_craft_facility:category"];
+  nwr["waterway"="fuel"];
+  nwr["amenity"="fuel"]["boat"="yes"];
+  nwr["leisure"="slipway"];
+  nwr["club"~"^(sailing|yacht|boat|rowing)$"];
+  nwr["sport"="sailing"]["leisure"~"^(sports_centre|club)$"];
+  nwr["craft"="boatbuilder"];
+  nwr["shop"="boat"];
+  nwr["leisure"="fishing"];
+  nwr["man_made"="pier"]["fishing"="yes"];
 );
 out tags center;"""
+
+
+def osm_boxes():
+    """Small boxes over US waters (a whole-country query times out): lower 48 in 4 x 5 degree squares, then Alaska's
+    coast, Hawaii, Puerto Rico and the Virgin Islands."""
+    B = []
+    for la in range(24, 50, 4):
+        for lo in range(-125, -66, 5):
+            B.append((la, lo, min(la + 4, 50), lo + 5))
+    for la in range(51, 72, 5):
+        for lo in range(-180, -129, 10):
+            B.append((la, lo, la + 5, lo + 10))
+    B += [(18.5, -161, 22.5, -154), (17.5, -68, 18.7, -64.4)]
+    return B
 
 
 def osm_type(t):
@@ -241,16 +254,26 @@ def osm_type(t):
 
 
 def from_osm():
-    d = None
-    for url in OVERPASS:  # the main server first, then public mirrors
-        d = get_json(url, data=urllib.parse.urlencode({"data": OSM_Q}).encode(), tries=2, timeout=1000)
+    elements, ok, boxes = {}, 0, osm_boxes()
+    for k, (s_, w, n, e) in enumerate(boxes):
+        q = OSM_Q.replace("{s}", str(s_)).replace("{w}", str(w)).replace("{n}", str(n)).replace("{e}", str(e))
+        d = None
+        for a in range(3):  # each server in turn, with a pause, so the public servers are not hammered
+            url = OVERPASS[(k + a) % len(OVERPASS)]
+            d = get_json(url, data=urllib.parse.urlencode({"data": q}).encode(), tries=1, timeout=300)
+            if d:
+                break
+            time.sleep(10)
         if d:
-            break
-    if not d:
-        print("  OpenStreetMap: not reachable, skipped", flush=True)
+            ok += 1
+            for el in d.get("elements", []):
+                elements[(el.get("type"), el.get("id"))] = el
+        time.sleep(1.5)
+    print(f"  OpenStreetMap: {ok} of {len(boxes)} map squares answered, {len(elements)} objects", flush=True)
+    if not ok:
         return []
     P = []
-    for e in d.get("elements", []):
+    for e in elements.values():
         t = e.get("tags", {}); c = e.get("center") or ({"lat": e.get("lat"), "lon": e.get("lon")} if "lat" in e else None)
         ty = osm_type(t)
         if not ty or not c:
