@@ -899,6 +899,8 @@ body.race-on .legend { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 body.gx-zoomed .leaflet-gx-pane canvas.leaflet-zoom-animated { opacity: .5; }
 body.gx-zoomed:not(.gx-light) .leaflet-tile-pane { opacity: .85; }
 body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacity .25s ease; }
+/* forecast: neutral water behind the colours */
+body.gx #map { background: #0C1B2E !important; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -4819,10 +4821,10 @@ async function gxRender() {
   const cv = GX.cv, size = map.getSize();
   // the colour canvas is drawn 30% bigger than the view on every side, so panning shows colour, not gaps, and it is
   // scaled along with Leaflet's zoom animation (see GxLayer); it is only replaced once the new picture is ready
-  const px = Math.round(size.x * 0.3), py = Math.round(size.y * 0.3), CW = size.x + 2 * px, CH = size.y + 2 * py;
+  const px = Math.round(size.x * 0.6), py = Math.round(size.y * 0.6), CW = size.x + 2 * px, CH = size.y + 2 * py;
   $("#gx-nodata").hidden = !!(F && F.main);
   if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : GX.layer === "sst" ? "Water temperature forecast reaches about 8 days ahead. Move the time back to see it." : "No forecast for this time."; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
-  const S = 4, W = Math.ceil(CW / S), H = Math.ceil(CH / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
+  const S = Math.max(4, Math.ceil(Math.sqrt((CW * CH) / 260000))), W = Math.ceil(CW / S), H = Math.ceil(CH / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
   const lats = new Float64Array(H), lons = new Float64Array(W);
   for (let j = 0; j < H; j++) lats[j] = map.containerPointToLatLng([0, j * S + S / 2 - py]).lat;
   for (let i = 0; i < W; i++) lons[i] = map.containerPointToLatLng([i * S + S / 2 - px, 0]).lng;
@@ -4844,6 +4846,18 @@ async function gxRender() {
   ctx.drawImage(off, 0, 0, W * S, H * S);
   GX.lats = lats; GX.lons = lons; GX.S = S; GX.px = px; GX.py = py;
   gxParticlesRestart(); gxDrawLabels();
+  // a coarse copy reaching two screens past every edge, under the sharp one: a big pinch-out shows colour, never black
+  requestAnimationFrame(() => { if (seq !== gxRenderSeq || !GX.bv) return;
+    const bx = size.x * 2, by = size.y * 2, BW = size.x + 2 * bx, BH = size.y + 2 * by, BS = Math.max(8, Math.ceil(Math.sqrt((BW * BH) / 50000))), bw = Math.ceil(BW / BS), bh = Math.ceil(BH / BS), bimg = new ImageData(bw, bh);
+    const tl = map.containerPointToLatLng([-bx, -by]);
+    for (let j = 0; j < bh; j++) { const la = map.containerPointToLatLng([0, j * BS + BS / 2 - by]).lat; if (la > 85.05 || la < -85.05) continue;
+      for (let i = 0; i < bw; i++) { const lo = map.containerPointToLatLng([i * BS + BS / 2 - bx, 0]).lng, c2 = col(gxValue(F.main, la, lo)); if (!c2) continue;
+        const k = (j * bw + i) * 4; bimg.data[k] = c2[0]; bimg.data[k + 1] = c2[1]; bimg.data[k + 2] = c2[2]; bimg.data[k + 3] = c2[3] * op; } }
+    const o2 = document.createElement("canvas"); o2.width = bw; o2.height = bh; o2.getContext("2d").putImageData(bimg, 0, 0);
+    const bv = GX.bv; L.DomUtil.setPosition(bv, map.containerPointToLayerPoint([-bx, -by])); bv._tl = tl; bv._z = map.getZoom();
+    bv.width = Math.round(BW / 2); bv.height = Math.round(BH / 2); bv.style.width = BW + "px"; bv.style.height = BH + "px";
+    const bc = bv.getContext("2d"); bc.imageSmoothingEnabled = true; bc.drawImage(o2, 0, 0, bv.width, bv.height);
+  });
 }
 // Moving lines: each particle drifts with the wind (or current) and leaves a fading trail.
 function gxParticlesRestart() {
@@ -4885,13 +4899,14 @@ function gxParticlesRestart() {
 // Leaflet's zoom animation (like the map tiles), then redrawn sharp at the end. Only the moving lines pause.
 const GxLayer = L.Layer.extend({
   onAdd(m) {
+    GX.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane"));
     GX.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
     m.on("movestart zoomstart", this._pause, this); m.on("moveend", this._show, this); m.on("zoomanim", this._anim, this); m.on("zoom", this._zoom, this);
   },
-  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); GX.cv = GX.pv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
+  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); if (GX.bv) GX.bv.remove(); GX.cv = GX.pv = GX.bv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
   _pause() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.pv) { GX.pv.style.transition = "opacity .15s"; GX.pv.style.opacity = 0; } },
-  _anim(e) { zoomCanvas(GX.cv, e.center, e.zoom); },
-  _zoom() { if (!map._animatingZoom) zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); },
+  _anim(e) { zoomCanvas(GX.cv, e.center, e.zoom); zoomCanvas(GX.bv, e.center, e.zoom); },
+  _zoom() { if (!map._animatingZoom) { zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); zoomCanvas(GX.bv, map.getCenter(), map.getZoom()); const now = Date.now(); if (now - (GX.pinchAt || 0) > 350) { GX.pinchAt = now; gxRender(); gxLandSoon(); } } },
   _show() { if (!GX.cv) return; L.DomUtil.setPosition(GX.pv, map.containerPointToLayerPoint([0, 0])); gxRender().then(() => { if (GX.pv) GX.pv.style.opacity = 1; }); },
 });
 let gxLayerObj = null, eoxLabels = {};
@@ -4914,7 +4929,7 @@ async function setStates(on) {
   stateLines.setStyle(stateStyle());
   if (on && !map.hasLayer(stateLines)) stateLines.addTo(map); if (!on && map.hasLayer(stateLines)) map.removeLayer(stateLines);
 }
-const stateStyle = () => (GX.on && (gxLightBase() || gxZoomed()) ? { color: "#C9D6E6", weight: 0.8, opacity: 0.45, dashArray: null } : GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
+const stateStyle = () => (GX.on ? { color: "#10161f", weight: 0.75, opacity: 0.5, dashArray: null } : basemap === "drawn" ? { color: css("--ink-2"), weight: 1.1, opacity: 0.7, dashArray: "5 4" } : { color: "#ffffff", weight: 1.3, opacity: 0.8, dashArray: null });
 function setNames(on) {
   setStates(on);
   if (!externalMaps() || !map.getPane("namesPane")) return;
@@ -4928,8 +4943,8 @@ function setNames(on) {
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
 // on the radar there are no weather colours under the lines, so they turn light to show the land
-const gxCoastStyle = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
-const gxBorderStyle = () => (gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
+const gxCoastStyle = () => ({ color: "#0E1620", weight: 1, opacity: 0, interactive: false }); const gxCoastStyleOld = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxBorderStyle = () => ({ color: "#0E1620", weight: 0.9, opacity: 0.55, interactive: false }); const gxBorderStyleOld = () => (gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
   GXO.on = on;
@@ -5069,6 +5084,7 @@ async function enterGlobal(kind) {
   if (kind === "wind") { if (SP.pin && !map.hasLayer(SP.pin)) SP.pin.addTo(map); if (!SP.series) { const sp = SP.spot || { lat: 41.47, lon: -71.36, name: null }; /* first visit: Narragansett Bay off Newport */ spPick(sp.lat, sp.lon, sp.name); } }
 }
 function leaveGlobal() {
+  if (GXL.cv) { GXL.cv.width = GXL.cv.height = 0; GXL.bv.width = GXL.bv.height = 0; GXL.seq++; }
   GX.on = false; gxStop(); cancelAnimationFrame(GX.anim); gxRadar(false); if (SP.pin && map.hasLayer(SP.pin)) map.removeLayer(SP.pin);
   if (gxLayerObj && map.hasLayer(gxLayerObj)) map.removeLayer(gxLayerObj);
   if (GXO.group) gxOutlines(false);
@@ -5095,6 +5111,97 @@ function gxBuildTimeline() {
   map.on("click", (e) => { if (!GX.on) return; if (activeTab === "weather") setFxSpot(e.latlng.lat, e.latlng.lng, null); else { gxProbe(e.latlng, e.containerPoint); spPick(e.latlng.lat, e.latlng.lng, null); } });
   map.on("moveend", () => { if (GX.on) store("gxView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom() }); });
 }
+
+/* Land on the Forecast map: a light veil with a crisp dark coastline over the weather colours (Windy-style).
+   Natural Earth land (world/land-50m.json zoomed out, world/l10 tiles zoomed in) and, zoomed in close on US coasts,
+   the detailed GSHHG shoreline tiles the Racing map uses. The coastline is traced from the filled land, so tile
+   edges never show as lines. */
+const GXL = { cv: null, w50: null, idx: null, tiles: new Map(), seq: 0, t: null };
+const gxJSON = (u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+function gxLandTile(k) { if (!GXL.tiles.has(k)) GXL.tiles.set(k, gxJSON(`world/l10/${k}.json`)); return GXL.tiles.get(k); }
+function gxLandSoon() { clearTimeout(GXL.t); GXL.t = setTimeout(gxLandDraw, 30); }
+async function gxLandDraw() {
+  if (!GX.on) return;
+  if (!GXL.cv) {
+    if (!map.getPane("gxLandPane")) { map.createPane("gxLandPane").style.zIndex = 425; map.getPane("gxLandPane").style.pointerEvents = "none"; }
+    GXL.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
+    GXL.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
+    map.on("zoomanim", (e) => { if (GX.on) { zoomCanvas(GXL.cv, e.center, e.zoom); zoomCanvas(GXL.bv, e.center, e.zoom); } });
+    map.on("zoom", () => { if (GX.on && !map._animatingZoom) { zoomCanvas(GXL.cv, map.getCenter(), map.getZoom()); zoomCanvas(GXL.bv, map.getCenter(), map.getZoom()); } });
+    map.on("moveend", () => GX.on && gxLandSoon());
+  }
+  const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.5), py = Math.round(size.y * 0.5);
+  const CW = size.x + 2 * px, CH = size.y + 2 * py;
+  const nw = map.containerPointToLatLng([-px, -py]), se = map.containerPointToLatLng([size.x + px, size.y + py]);
+  const S = Math.max(-85, se.lat), N = Math.min(85, nw.lat), Wl = nw.lng, E = se.lng;
+  const sets = []; // [polys, clipBox or null]
+  let detail = [];
+  if (z < 5.5) { if (!GXL.w50) GXL.w50 = await gxJSON("world/land-50m.json"); if (GXL.w50) sets.push([GXL.w50, null]); }
+  else {
+    if (!GXL.idx) GXL.idx = new Set((await gxJSON("world/l10/index.json")) || []);
+    const keys = [];
+    for (let la = Math.floor(S / 10) * 10; la < N; la += 10) for (let lo = Math.floor(Wl / 10) * 10; lo < E; lo += 10) { const k = `${la}_${(((lo + 180) % 360) + 360) % 360 - 180}`; if (GXL.idx.has(k)) keys.push(k); }
+    if (keys.length > 20) keys.length = 20;
+    const got = await Promise.all(keys.map(gxLandTile)); got.forEach((g) => g && sets.push([g, null]));
+    if (z >= 9) { // the detailed shoreline where we have it (US coasts, Great Lakes, Hawaii, Iberia)
+      const idx = await routeIndex(), want = [];
+      for (let la = Math.floor(S); la <= Math.floor(N); la++) for (let lo = Math.floor(Wl); lo <= Math.floor(E); lo++) { const k = `${la}_${lo}`; if (idx.detail.has(k) || idx.land.has(k)) want.push(k); }
+      if (want.length <= 40) detail = await Promise.all(want.map(async (k) => [k, idx.land.has(k) ? "land" : await routeTile(k)]));
+    }
+  }
+  if (seq !== GXL.seq || !GX.on) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1), Wp = Math.round(CW * dpr), Hp = Math.round(CH * dpr);
+  const mask = document.createElement("canvas"); mask.width = Wp; mask.height = Hp;
+  const m = mask.getContext("2d"); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.fillStyle = "#000";
+  const P = (lon, lat) => { const q = map.latLngToContainerPoint([lat, lon]); return [q.x + px, q.y + py]; };
+  const ring = (r) => { r.forEach(([x, y], j) => { const [a, b] = P(x, y); j ? m.lineTo(a, b) : m.moveTo(a, b); }); m.closePath(); };
+  const boxPath = (k) => { const [la, lo] = k.split("_").map(Number); const [a, b] = P(lo, la + 1), [c, d] = P(lo + 1, la); m.rect(a, b, c - a, d - b); };
+  m.save();
+  if (detail.length) { m.beginPath(); m.rect(0, 0, CW, CH); for (const [k] of detail) boxPath(k); m.clip("evenodd"); } // coarse land everywhere except where the detail is
+  m.beginPath(); for (const [polys] of sets) for (const poly of polys) for (const r of poly) ring(r); m.fill("evenodd");
+  m.restore();
+  for (const [k, g] of detail) {
+    m.save(); m.beginPath(); boxPath(k); m.clip();
+    if (g === "land") { m.beginPath(); boxPath(k); m.fill(); }
+    else if (g) { const ps = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : []; m.beginPath(); for (const poly of ps) for (const r of poly) ring(r); m.fill("evenodd"); }
+    m.restore();
+  }
+  // coastline: the land's edge, found by shifting the land a pixel each way
+  const edge = document.createElement("canvas"); edge.width = Wp; edge.height = Hp; const e = edge.getContext("2d");
+  const w = Math.max(1, Math.round(dpr * (z >= 9 ? 1.3 : 1)));
+  for (const [dx, dy] of [[w, 0], [-w, 0], [0, w], [0, -w]]) {
+    const t = document.createElement("canvas"); t.width = Wp; t.height = Hp; const tc = t.getContext("2d");
+    tc.drawImage(mask, 0, 0); tc.globalCompositeOperation = "destination-out"; tc.drawImage(mask, dx, dy);
+    e.drawImage(t, 0, 0);
+  }
+  const cv = GXL.cv;
+  L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py])); cv._tl = nw; cv._z = z;
+  cv.width = Wp; cv.height = Hp; cv.style.width = CW + "px"; cv.style.height = CH + "px";
+  const c = cv.getContext("2d");
+  c.drawImage(mask, 0, 0); c.globalCompositeOperation = "source-in"; c.fillStyle = gxLandVeil(); c.fillRect(0, 0, Wp, Hp);
+  c.globalCompositeOperation = "source-over";
+  const ec = edge.getContext("2d"); ec.globalCompositeOperation = "source-in"; ec.fillStyle = "rgba(14,22,32,.85)"; ec.fillRect(0, 0, Wp, Hp);
+  c.drawImage(edge, 0, 0);
+  gxLandBackdrop(seq);
+}
+async function gxLandBackdrop(seq) {
+  if (!GXL.w50) GXL.w50 = await gxJSON("world/land-50m.json");
+  if (!GXL.w50 || seq !== GXL.seq || !GX.on) return;
+  if (!GXL.bb) GXL.bb = GXL.w50.map((poly) => { let a = 180, b = -180, c = 90, d = -90; for (const [x, y] of poly[0]) { a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, y); d = Math.max(d, y); } return [a, b, c, d]; });
+  const size = map.getSize(), bx = size.x * 2, by = size.y * 2, BW = size.x + 2 * bx, BH = size.y + 2 * by, sc = 0.5, Wp = Math.round(BW * sc), Hp = Math.round(BH * sc);
+  const nw = map.containerPointToLatLng([-bx, -by]), se = map.containerPointToLatLng([size.x + bx, size.y + by]);
+  const mask = document.createElement("canvas"); mask.width = Wp; mask.height = Hp; const m = mask.getContext("2d"); m.setTransform(sc, 0, 0, sc, 0, 0); m.fillStyle = "#000"; m.beginPath();
+  GXL.w50.forEach((poly, i) => { const [a, b, c, d] = GXL.bb[i]; if (b < nw.lng || a > se.lng || d < se.lat || c > nw.lat) return;
+    for (const r of poly) { r.forEach(([x, y], j) => { const q = map.latLngToContainerPoint([y, x]); j ? m.lineTo(q.x + bx, q.y + by) : m.moveTo(q.x + bx, q.y + by); }); m.closePath(); } });
+  m.fill("evenodd");
+  const bv = GXL.bv; L.DomUtil.setPosition(bv, map.containerPointToLayerPoint([-bx, -by])); bv._tl = nw; bv._z = map.getZoom();
+  bv.width = Wp; bv.height = Hp; bv.style.width = BW + "px"; bv.style.height = BH + "px";
+  const c = bv.getContext("2d"); c.drawImage(mask, 0, 0); c.globalCompositeOperation = "source-in"; c.fillStyle = gxLandVeil(); c.fillRect(0, 0, Wp, Hp);
+  // the detailed land is drawn on top for the area around the view: cut a hole there so the veil is not doubled
+  const pxm = size.x * 0.5, pym = size.y * 0.5; c.globalCompositeOperation = "destination-out"; c.fillRect((bx - pxm) * sc, (by - pym) * sc, (size.x + 2 * pxm) * sc, (size.y + 2 * pym) * sc);
+}
+// light veil over coloured layers; on layers that leave land empty (radar, rain...) a solid grey land
+const gxLandVeil = () => (gxLightBase() ? "rgba(120,132,146,.55)" : "rgba(232,236,241,.38)");
 /* Live radar: NOAA NEXRAD composite tiles from Iowa Environmental Mesonet (frames every 5 min for the last hour) */
 const RADAR = { layers: new Map(), frame: 0, timer: null };
 const RADAR_STOPS = [[0, [100, 200, 240]], [5.5, [40, 160, 70]], [11.25, [250, 230, 40]], [15.5, [240, 120, 30]], [19.5, [220, 20, 30]], [25, [200, 40, 200]]]; // same colours as the radar key, on a square-root scale of 0 to 25 mm/h
@@ -5121,7 +5228,7 @@ function radarPlay() {
   let k = 11; $("#radar-play").textContent = "Stop";
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
-const gxZoomed = () => GX.on && !!baseLayer && map.getZoom() >= 8; // zoomed in: satellite under the colours, with place names
+const gxZoomed = () => false; // (satellite under the forecast was replaced by the drawn land veil) // zoomed in: satellite under the colours, with place names
 const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].includes(GX.layer); // layers that leave land uncoloured
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
   const zoomed = gxZoomed(); document.body.classList.toggle("gx-zoomed", zoomed);
@@ -5129,10 +5236,8 @@ function gxRadarBase(on) { // radar mode: dim satellite land underneath, light o
   if (GX.on && map.getPane("namesPane")) { const nl = namesLayer("bright"); if (map.hasLayer(nl)) map.removeLayer(nl); } // our own labels name the coast here (with the values)
   document.body.classList.toggle("gx-light", on);
   document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
-  if (baseLayer) {
-    if (on && GX.on && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
-    if (!on && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
-  }
+  if (baseLayer && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
+  if (GX.on) gxLandSoon();
   const restyle = (g) => g && g.eachLayer((l) => (l.eachLayer ? restyle(l) : l.setStyle && l.setStyle(l.options.weight < 1 ? gxBorderStyle() : gxCoastStyle())));
   restyle(GXO.group); if (GXO.coarse && !GXO.group?.hasLayer(GXO.coarse)) restyle(GXO.coarse);
   for (const l of GXO.fine.values()) if (l) restyle(l);
@@ -5145,7 +5250,7 @@ function gxRadar(on) {
 }
 function gxSetLayer(l) {
   GX.layer = l; radarSync(); document.querySelectorAll("#gx-layers button").forEach((b) => { b.classList.toggle("active", b.dataset.l === l); b.setAttribute("aria-checked", String(b.dataset.l === l)); });
-  gxRadar(l === "radar"); radarSync(); gxLegend(); gxRender();
+  gxRadar(l === "radar"); radarSync(); gxLegend(); gxRender(); gxLandSoon();
 }
 let gxTimer = null;
 function radarSync() { // radar follows the time bar: live frames within the last hour, the model's rain at any other hour
