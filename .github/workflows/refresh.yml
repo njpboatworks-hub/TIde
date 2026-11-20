@@ -49,7 +49,7 @@ jobs:
 
       - name: Worldwide wind and weather (NOAA GFS, 16 days) and ocean currents (NOAA RTOFS, 8 days)
         run: |
-          pip install eccodes netCDF4 pillow
+          pip install eccodes netCDF4 pillow shapely
           python -m scripts.global_wx gfs
           python -m scripts.global_wx rtofs || echo "Ocean currents not refreshed today (keeping the previous run)"
 

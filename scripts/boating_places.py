@@ -27,13 +27,14 @@ from backend.config import ROOT
 
 UA = {"User-Agent": "wind-analytics-prototype"}
 ENC = "https://encdirect.noaa.gov/arcgis/rest/services/encdirect"
-OVERPASS = "https://overpass-api.de/api/interpreter"
+OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter", "https://overpass.private.coffee/api/interpreter"]
 
 TYPES = {
     "anchorage": "Anchorage", "mooring_field": "Mooring field", "mooring": "Mooring buoy", "marina": "Marina",
     "pumpout": "Pump-out", "fuel": "Fuel", "ramp": "Launch ramp", "boatyard": "Boatyard", "water": "Water",
     "showers": "Showers", "laundry": "Laundry", "toilets": "Toilets", "provisions": "Provisions",
     "chandler": "Chandlery", "club": "Yacht club", "dinghy": "Dinghy landing", "other": "Other service",
+    "reef": "Artificial reef", "wreck": "Wreck", "fishing": "Fishing spot",
 }
 # S-57 CATSCF (category of small craft facility) -> our type
 CATSCF = {
@@ -181,27 +182,43 @@ def from_enc():
     return P
 
 
-OSM_Q = """[out:json][timeout:600];
+OSM_Q = """[out:json][timeout:900][maxsize:1073741824];
 area["ISO3166-1"="US"][admin_level=2]->.us;
 (
   nwr["leisure"="marina"](area.us);
   nwr["seamark:type"="anchorage"](area.us);
-  nwr["seamark:type"="mooring"]["seamark:mooring:category"="buoy"](area.us);
-  nwr["mooring"](area.us);
-  nwr["amenity"="sanitary_dump_station"]["boat"!="no"](area.us);
-  nwr["seamark:small_craft_facility:category"~"pump"](area.us);
+  nwr["seamark:type"="mooring"](area.us);
+  nwr["mooring"]["mooring"!="no"](area.us);
+  nwr["amenity"="sanitary_dump_station"](area.us);
+  nwr["waterway"="sanitary_dump_station"](area.us);
+  nwr["seamark:small_craft_facility:category"](area.us);
   nwr["waterway"="fuel"](area.us);
+  nwr["amenity"="fuel"]["boat"="yes"](area.us);
   nwr["leisure"="slipway"](area.us);
+  nwr["club"~"^(sailing|yacht|boat|rowing)$"](area.us);
+  nwr["sport"="sailing"]["leisure"~"^(sports_centre|club)$"](area.us);
+  nwr["craft"="boatbuilder"](area.us);
+  nwr["shop"="boat"](area.us);
+  nwr["leisure"="fishing"](area.us);
+  nwr["man_made"="pier"]["fishing"="yes"](area.us);
 );
 out tags center;"""
 
 
 def osm_type(t):
-    sm = t.get("seamark:type", "")
-    if t.get("amenity") == "sanitary_dump_station" or "pump" in t.get("seamark:small_craft_facility:category", ""):
-        if t.get("boat") in ("yes", "designated") or "seamark:type" in t or t.get("waterway"):
+    sm = t.get("seamark:type", ""); scf = t.get("seamark:small_craft_facility:category", "")
+    if t.get("amenity") == "sanitary_dump_station" or t.get("waterway") == "sanitary_dump_station" or "pump" in scf:
+        if t.get("boat") in ("yes", "designated") or "seamark:type" in t or t.get("waterway") or t.get("leisure") == "marina":
             return "pumpout"
-        return None  # RV dump stations on land
+        return "pumpout?"  # could be an RV dump station on land: kept only if it is at a marina (see main)
+    if scf:
+        for word, ty in (("fuel", "fuel"), ("slipway", "ramp"), ("boat_hoist", "boatyard"), ("boatyard", "boatyard"), ("chandler", "chandler"),
+                         ("water_tap", "water"), ("shower", "showers"), ("laundrette", "laundry"), ("toilets", "toilets"), ("visitor_berth", "marina"),
+                         ("visitors_mooring", "mooring"), ("nautical_club", "club"), ("provisions", "provisions")):
+            if word in scf:
+                return ty
+    if t.get("club") in ("sailing", "yacht", "boat", "rowing") or t.get("sport") == "sailing":
+        return "club"
     if t.get("leisure") == "marina":
         return "marina"
     if sm == "anchorage":
@@ -212,11 +229,23 @@ def osm_type(t):
         return "fuel"
     if t.get("leisure") == "slipway":
         return "ramp"
+    if t.get("amenity") == "fuel" and t.get("boat") == "yes":
+        return "fuel"
+    if t.get("craft") == "boatbuilder":
+        return "boatyard"
+    if t.get("shop") == "boat":
+        return "chandler"
+    if t.get("leisure") == "fishing" or (t.get("man_made") == "pier" and t.get("fishing") == "yes"):
+        return "fishing"
     return None
 
 
 def from_osm():
-    d = get_json(OVERPASS, data=urllib.parse.urlencode({"data": OSM_Q}).encode(), tries=3, timeout=700)
+    d = None
+    for url in OVERPASS:  # the main server first, then public mirrors
+        d = get_json(url, data=urllib.parse.urlencode({"data": OSM_Q}).encode(), tries=2, timeout=1000)
+        if d:
+            break
     if not d:
         print("  OpenStreetMap: not reachable, skipped", flush=True)
         return []
@@ -232,6 +261,39 @@ def from_osm():
                                    "mooring", "access", "operator", "depth", "seamark:anchorage:category", "vhf", "seamark:radio_station:channel") if t.get(k)}
         P.append([ty, round(c["lat"], 5), round(c["lon"], 5), t.get("name", "") or t.get("seamark:name", ""), t.get("description", "")[:300], cost, "OpenStreetMap", extra])
     print(f"  OpenStreetMap: {len(P)} places", flush=True)
+    return P
+
+
+def from_enc_fishing():
+    """Charted fish havens (artificial reefs) and wrecks: the spots anglers look for. Wrecks only from the coastal
+    and approach charts (the harbour charts add thousands of small hulks in marinas)."""
+    P = []
+    for scale in ("enc_coastal", "enc_approach", "enc_harbour"):
+        L = enc_layers(scale)
+        for name, lid in L.items():
+            if name.startswith("Obstruction") and not name.endswith("_line"):
+                fs = enc_features(scale, lid, "OBJNAM,CATOBS,VALSOU,INFORM")
+                kept = 0
+                for f in fs:
+                    a = f.get("attributes", {})
+                    if "fish" not in clean(a.get("CATOBS")).lower():
+                        continue
+                    c = center(f.get("geometry") or {})
+                    if not c:
+                        continue
+                    d = a.get("VALSOU"); info = "; ".join(x for x in (f"least depth {d:g} m" if isinstance(d, (int, float)) and d > 0 else "", clean(a.get("INFORM"))) if x)
+                    P.append(["reef", round(c[0], 5), round(c[1], 5), clean(a.get("OBJNAM")), info[:300], "", "NOAA chart", {}]); kept += 1
+                print(f"  {scale} {name}: kept {kept} fish havens", flush=True)
+            elif name.startswith("Wreck") and scale != "enc_harbour":
+                fs = enc_features(scale, lid, "OBJNAM,CATWRK,VALSOU,INFORM")
+                for f in fs:
+                    a = f.get("attributes", {}); c = center(f.get("geometry") or {})
+                    if not c:
+                        continue
+                    d = a.get("VALSOU"); cat = clean(a.get("CATWRK")).lower()
+                    info = "; ".join(x for x in (cat, f"least depth {d:g} m" if isinstance(d, (int, float)) and d > 0 else "", clean(a.get("INFORM"))) if x)
+                    P.append(["wreck", round(c[0], 5), round(c[1], 5), clean(a.get("OBJNAM")), info[:300], "", "NOAA chart", {}])
+                print(f"  {scale} {name}: {len(fs)} wrecks", flush=True)
     return P
 
 
@@ -291,7 +353,26 @@ def tidy(P):
 
 def main():
     t0 = time.time()
-    P = from_enc() + from_osm()
+    P = from_enc() + from_enc_fishing() + from_osm()
+    # dump stations without a boat tag: keep the ones within ~400 m of a marina (marina pump-outs), drop the rest (RV sites)
+    marinas = [(p[1], p[2]) for p in P if p[0] == "marina"]
+    mgrid = {}
+    for la, lo in marinas:
+        mgrid.setdefault((round(la * 50), round(lo * 50)), []).append((la, lo))
+    keep = []
+    for p in P:
+        if p[0] == "pumpout?":
+            k = (round(p[1] * 50), round(p[2] * 50)); near = False
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    for la, lo in mgrid.get((k[0] + dy, k[1] + dx), []):
+                        if math.hypot((la - p[1]) * 111, (lo - p[2]) * 111 * math.cos(math.radians(la))) < 0.4:
+                            near = True
+            if not near:
+                continue
+            p[0] = "pumpout"
+        keep.append(p)
+    P = keep
     P = tidy(dedupe(P))
     for p in P:
         if not p[7]:

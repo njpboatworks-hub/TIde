@@ -1372,6 +1372,33 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 .dz-key i { width: 18px; height: 10px; flex: none; display: inline-block; }
 .dz-ndz { background: rgba(229,72,77,.3); border: 1.5px solid #E5484D; }
 .dz-3 { border-top: 2px dashed #F5B83D; height: 0 !important; }
+/* Forecast spot table (Windy-style) */
+.sp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.sp-title h1 { margin: 0 0 2px; font-size: 26px; }
+.sp-title span { color: var(--muted); font: 500 12px/1.2 var(--f-mono); }
+.sp-geo { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px !important; font-size: 13px; flex: none; }
+.sp-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); scrollbar-width: thin; }
+.sp-empty { padding: 28px 16px; color: var(--muted); text-align: center; font-size: 14px; }
+.sp-table { border-collapse: separate; border-spacing: 0; font: 500 12px/1 var(--f-body); font-variant-numeric: tabular-nums; width: max-content; }
+.sp-table th, .sp-table td { padding: 0; border: 0; white-space: nowrap; text-align: center; }
+.sp-table tbody th, .sp-table thead th:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface); color: var(--muted); font: 500 10.5px/1 var(--f-mono); text-transform: none; letter-spacing: 0;
+  text-align: left; padding: 0 10px; min-width: 66px; border-right: 1px solid var(--border); }
+.sp-table td { width: 34px; min-width: 34px; height: 26px; cursor: pointer; }
+.sp-days th { height: 30px; padding: 0 8px; text-align: left; font: 600 12px/1 var(--f-body); color: var(--ink); background: var(--surface); position: static; border-bottom: 1px solid var(--border); }
+.sp-days th:first-child { position: sticky; }
+.sp-hours td { color: var(--muted); font-size: 11px; height: 24px; border-bottom: 1px solid var(--border); }
+.sp-table td.nt { background-color: rgba(255,255,255,.025); }
+.sp-table .dstart { border-left: 1px solid var(--axis); }
+.sp-num td { font-weight: 600; font-size: 12.5px; height: 28px; }
+.sp-arrow { display: inline-block; font-size: 15px; line-height: 1; color: var(--ink); }
+.sp-arrow.sm { font-size: 11px; margin-right: 1px; }
+.sp-cloud i { display: inline-block; width: 22px; height: 10px; border-radius: 6px; background: #C9D3DF; }
+.sp-small td { color: var(--ink-2); font-size: 11px; }
+.sp-cur td { font-size: 10.5px; }
+.sp-table td.cur { box-shadow: inset 2px 0 0 var(--signal), inset -2px 0 0 var(--signal); }
+.sp-hours td.cur { color: var(--signal); font-weight: 700; }
+.sp-model { color: var(--muted); font-size: 11.5px; margin: 10px 0 0; }
+.sp-pin i { display: block; width: 18px; height: 18px; margin: 2px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--signal); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.45); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -1525,18 +1552,14 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 
     <!-- WIND MAP: worldwide wind, gusts, currents and weather -->
     <div class="tab" id="tab-wind" hidden>
-      <h1>Forecast</h1>
-      <p class="lede">Wind, gusts, ocean currents, rain, live radar, air and water temperature and cloud for the whole world, up to 16 days ahead. Pick a layer on the right edge of the map, hover or tap for the numbers at any spot, and press play to watch the weather move.</p>
       <div id="gx-msg" class="note warn" hidden></div>
-      <p class="hint" id="gx-run"></p>
       <div id="gx-stale" class="note warn" hidden></div>
-      <h2>Good to know</h2>
-      <ul class="advice">
-        <li>Wind and weather come from NOAA's Global Forecast System (GFS) on a grid about 50 km apart. It shows the big picture: fronts, storms, trade winds and sea breezes over big areas. Near shore, a bay or a harbor, use the Coast Map, which adds local stations, land shelter and lifts and headers.</li>
-        <li>Ocean currents come from NOAA's global ocean model (RTOFS), about 8 days ahead: the Gulf Stream, eddies and wind-driven drift. It does not include tidal streams; the Coast Map has those near US and Iberian shores.</li>
-        <li>Forecasts get less certain the further ahead you look. After about 5 days, treat them as a rough guide and check again closer to the day.</li>
-        <li>Change units and colours with the settings button at the top right.</li>
-      </ul>
+      <div class="sp-head">
+        <div class="sp-title"><h1 id="sp-name">Forecast</h1><span id="sp-sub">Tap the map to pick a spot</span></div>
+        <button type="button" id="sp-geo" class="sp-geo" title="Forecast for where I am"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>My location</button>
+      </div>
+      <div class="sp-wrap" id="sp-wrap"><div class="sp-empty">Tap anywhere on the map for its 16-day forecast.</div></div>
+      <p class="sp-model" id="gx-run"></p>
     </div>
 
     <!-- FORECAST: 16-day weather for one spot -->
@@ -5440,9 +5463,10 @@ async function enterGlobal(kind) {
   $("#gx-run").textContent = `Weather model run ${new Date(GX.run).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}${GX.crun ? `; ocean model ${new Date(GX.crun).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}. Forecast runs to ${gxTimeLabel(GX.hMax)}.`;
   const stale = $("#gx-stale"); stale.hidden = ageH < 36; stale.textContent = `This forecast is ${Math.round(ageH / 24)} days old. It refreshes when the site's daily update runs; until then the early hours are already in the past.`;
   gxSetTime(GX.t); gxLegend(); gxLayerObj._show(); if (GX.layer === "radar") gxRadar(true);
+  if (kind === "wind") { if (SP.pin && !map.hasLayer(SP.pin)) SP.pin.addTo(map); if (!SP.series) { const sp = SP.spot || (() => { const c = map.getCenter(); return { lat: c.lat, lon: c.lng }; })(); spPick(sp.lat, sp.lon, sp.name); } }
 }
 function leaveGlobal() {
-  GX.on = false; gxStop(); cancelAnimationFrame(GX.anim); gxRadar(false);
+  GX.on = false; gxStop(); cancelAnimationFrame(GX.anim); gxRadar(false); if (SP.pin && map.hasLayer(SP.pin)) map.removeLayer(SP.pin);
   if (gxLayerObj && map.hasLayer(gxLayerObj)) map.removeLayer(gxLayerObj);
   if (GXO.group) gxOutlines(false);
   if (baseLayer && !map.hasLayer(baseLayer)) baseLayer.addTo(map);
@@ -5465,7 +5489,7 @@ function gxBuildTimeline() {
   document.querySelectorAll("#gx-layers button").forEach((b) => b.addEventListener("click", () => gxSetLayer(b.dataset.l)));
   map.on("mousemove", (e) => GX.on && gxProbe(e.latlng, e.containerPoint));
   map.on("mouseout", () => ($("#gx-probe").hidden = true));
-  map.on("click", (e) => { if (!GX.on) return; if (activeTab === "weather") setFxSpot(e.latlng.lat, e.latlng.lng, null); else gxProbe(e.latlng, e.containerPoint); });
+  map.on("click", (e) => { if (!GX.on) return; if (activeTab === "weather") setFxSpot(e.latlng.lat, e.latlng.lng, null); else { gxProbe(e.latlng, e.containerPoint); spPick(e.latlng.lat, e.latlng.lng, null); } });
   map.on("moveend", () => { if (GX.on) store("gxView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom() }); });
 }
 /* Live radar: NOAA NEXRAD composite tiles from Iowa Environmental Mesonet (frames every 5 min for the last hour) */
@@ -5503,7 +5527,7 @@ function gxSetLayer(l) {
 }
 let gxTimer = null;
 function gxSetTime(t) {
-  GX.t = t; $("#gx-slider").value = Math.round(t); $("#gx-label").textContent = gxTimeLabel(t);
+  GX.t = t; if (SP.cols.length) spMark(); $("#gx-slider").value = Math.round(t); $("#gx-label").textContent = gxTimeLabel(t);
   clearTimeout(gxTimer); gxTimer = setTimeout(gxRender, GX.play ? 0 : 60);
   // warm the cache for the next steps
   const pr = gxPair("w", t + 6); if (pr) { gxStep("w", pr[1]).catch(() => {}); if (GX_LAYERS[GX.layer].src !== "w") { const q = gxPair(GX_LAYERS[GX.layer].src, t + 6); if (q) gxStep(GX_LAYERS[GX.layer].src, q[1]).catch(() => {}); } }
@@ -5529,6 +5553,78 @@ async function gxProbe(ll, cp) {
   box.style.left = `${Math.min(size.x - bw - 8, cp.x + 16)}px`; box.style.top = `${Math.max(8, Math.min(size.y - bh - 70, cp.y - bh - 12))}px`;
 }
 
+/* =================== Forecast sidebar: Windy-style table for one spot =================== */
+const SP = { spot: store("spSpot"), pin: null, series: null, cols: [] };
+const SP_TEMP_STOPS = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]];
+function spCell(rgb) { const [r, g, b] = rgb, lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255; return `background:rgb(${r},${g},${b});color:${lum > 0.6 ? "#0B1626" : "#FFFFFF"}`; }
+function spHour(d) { const h = d.getHours(); return h === 0 ? "12a" : h < 12 ? `${h}a` : h === 12 ? "12p" : `${h - 12}p`; }
+async function spPick(lat, lon, name) {
+  lon = (((lon + 180) % 360) + 360) % 360 - 180;
+  SP.spot = { lat, lon, name: name || null }; store("spSpot", SP.spot);
+  if (SP.pin) map.removeLayer(SP.pin);
+  SP.pin = L.marker([lat, lon], { icon: L.divIcon({ className: "sp-pin", html: "<i></i>", iconSize: [22, 22], iconAnchor: [11, 22] }), interactive: false, pane: "markerPane" }).addTo(map);
+  $("#sp-sub").textContent = `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}, ${Math.abs(lon).toFixed(2)}°${lon >= 0 ? "E" : "W"}`;
+  if (!name) {
+    await loadPlaces(); let best = null, bd = 25; const cl = Math.cos(rad(lat));
+    for (const p of PLACES || []) { if (p.k !== "town" && p.k !== "place") continue; const km = Math.hypot((p.lat - lat) * 111.32, (p.lon - lon) * 111.32 * cl); if (km < bd) { bd = km; best = p; } }
+    if (!best) { await loadWorld(); for (const w of WORLD || []) { const km = Math.hypot((w.lat - lat) * 111.32, (w.lon - lon) * 111.32 * cl); if (km < bd) { bd = km; best = w; } } }
+    name = best ? (bd < 3 ? best.n : `Near ${best.n}`) : "Open water";
+  }
+  $("#sp-name").textContent = name;
+  $("#sp-wrap").innerHTML = `<div class="sp-empty">Loading…</div>`;
+  try { SP.series = await fxSeries(lat, lon); } catch (_) { SP.series = null; }
+  spRender();
+}
+function spRender() {
+  const S = SP.series, wrap = $("#sp-wrap"); if (!wrap) return;
+  if (!S) { wrap.innerHTML = `<div class="sp-empty">No forecast for this spot yet.</div>`; return; }
+  const now = Date.now(), cols = [];
+  S.hours.forEach((h, k) => { const t = GX.run + h * 3600e3; if (t >= now - 90 * 60e3) cols.push({ k, h, d: new Date(t) }); });
+  SP.cols = cols;
+  const wl = lutFrom(windStops(), 60), tl = lutFrom(SP_TEMP_STOPS, 95);
+  const wc = (ms) => { const i = Math.max(0, Math.min(255, Math.round((ms * 1.943844) / 60 * 255))); return spCell([wl[i * 3], wl[i * 3 + 1], wl[i * 3 + 2]]); };
+  const tc = (c) => { const i = Math.max(0, Math.min(255, Math.round((c + 40) / 95 * 255))); return spCell([tl[i * 3], tl[i * 3 + 1], tl[i * 3 + 2]]); };
+  const cur = (h) => { const C = S.cur; if (!C) return null; const H = C.hours; if (h < H[0] - 3 || h > H[H.length - 1] + 3) return null;
+    let q = 0; while (q < H.length - 2 && H[q + 1] <= h) q++; const w = Math.max(0, Math.min(1, (h - H[q]) / ((H[q + 1] - H[q]) || 1)));
+    const u = C.u[q] + (C.u[q + 1] - C.u[q]) * w, v = C.v[q] + (C.v[q + 1] - C.v[q]) * w; return Number.isFinite(u) ? [u, v] : null; };
+  // day header
+  const days = []; for (const c of cols) { const key = c.d.toDateString(); if (!days.length || days[days.length - 1].key !== key) days.push({ key, d: c.d, n: 0 }); days[days.length - 1].n++; }
+  const today = new Date().toDateString(), tmr = new Date(Date.now() + 864e5).toDateString();
+  const dayLbl = (d) => d.toDateString() === today ? "Today" : d.toDateString() === tmr ? "Tomorrow" : d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  const row = (label, cells, cls = "") => `<tr class="${cls}"><th>${label}</th>${cells.join("")}</tr>`;
+  const night = (d) => { const h = d.getHours(); return h < 6 || h >= 19; };
+  const C = (c, inner, style = "") => `<td data-h="${c.h}" class="${night(c.d) ? "nt" : ""}${c.d.getHours() < 3 ? " dstart" : ""}"${style ? ` style="${style}"` : ""}>${inner}</td>`;
+  const u = (k) => S.u[k], v = (k) => S.v[k];
+  const html = `<table class="sp-table"><thead>
+    <tr class="sp-days"><th></th>${days.map((x, i) => `<th colspan="${x.n}" class="${i ? "dstart" : ""}">${dayLbl(x.d)}</th>`).join("")}</tr>
+    <tr class="sp-hours"><th>Time</th>${cols.map((c) => C(c, spHour(c.d))).join("")}</tr></thead><tbody>
+    ${row("Wind", cols.map((c) => { const dir = (deg(Math.atan2(-u(c.k), -v(c.k))) + 360) % 360; return C(c, `<span class="sp-arrow" style="transform:rotate(${(dir + 180) % 360}deg)" title="from ${Math.round(dir)}°">↑</span>`); }), "sp-dir")}
+    ${row(windUnit(), cols.map((c) => { const ms = Math.hypot(u(c.k), v(c.k)); return C(c, Math.round(windNum(ms)), wc(ms)); }), "sp-num")}
+    ${row("Gusts", cols.map((c) => C(c, Math.round(windNum(S.gust[c.k])), wc(S.gust[c.k]))), "sp-num")}
+    ${row(SET.temp === "F" ? "°F" : "°C", cols.map((c) => C(c, Math.round(tempNum(S.temp[c.k])), tc(S.temp[c.k]))), "sp-num")}
+    ${row(SET.rain === "in" ? "Rain in" : "Rain mm", cols.map((c) => { const r = S.rain[c.k]; return C(c, r >= 0.1 ? (SET.rain === "in" ? (r / 25.4).toFixed(2) : r.toFixed(1)) : "", r >= 0.1 ? `background:rgba(64,156,255,${Math.min(0.85, 0.2 + r / 6)});color:#fff` : ""); }), "sp-rain")}
+    ${row("Cloud", cols.map((c) => { const cl = S.cloud[c.k]; return C(c, `<i style="opacity:${Math.max(0.08, cl / 100)}"></i>`); }), "sp-cloud")}
+    ${row("hPa", cols.map((c) => C(c, Math.round(S.pres[c.k]))), "sp-small")}
+    ${S.cur ? row("Current", cols.map((c) => { const q = cur(c.h); if (!q) return C(c, ""); const sp = Math.hypot(q[0], q[1]), dir = (deg(Math.atan2(q[0], q[1])) + 360) % 360;
+        return C(c, `<span class="sp-arrow sm" style="transform:rotate(${dir}deg)">↑</span>${(sp * (UNIT[SET.cur] || UNIT.kt)[1]).toFixed(1)}`); }), "sp-small sp-cur") : ""}
+    </tbody></table>`;
+  wrap.innerHTML = html;
+  spMark();
+}
+function spMark() { // highlight the column at the map's time
+  const wrap = $("#sp-wrap"); if (!wrap || !SP.cols.length) return;
+  let best = null, bd = Infinity; for (const c of SP.cols) { const d = Math.abs(c.h - GX.t); if (d < bd) { bd = d; best = c.h; } }
+  wrap.querySelectorAll("td.cur").forEach((td) => td.classList.remove("cur"));
+  wrap.querySelectorAll(`td[data-h="${best}"]`).forEach((td) => td.classList.add("cur"));
+}
+function spInit() {
+  $("#sp-wrap").addEventListener("click", (e) => { const td = e.target.closest("td[data-h]"); if (td) gxSetTime(+td.dataset.h); });
+  $("#sp-geo").addEventListener("click", () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((p) => { map.setView([p.coords.latitude, p.coords.longitude], Math.max(map.getZoom(), 7)); spPick(p.coords.latitude, p.coords.longitude, "My location"); },
+      () => { $("#sp-sub").textContent = "Location not available; tap the map instead"; }, { timeout: 10000 });
+  });
+}
 /* =================== Forecast tab: 16 days for one spot =================== */
 const FX = { spot: store("fxSpot"), pin: null, tiles: new Map() };
 async function fxTile(kind, la, lo) {
@@ -5654,7 +5750,7 @@ function renderFxPicker() {
   document.querySelectorAll("#fx-venues button").forEach((b) => b.addEventListener("click", () => { const x = v[+b.dataset.i]; map.setView([x[1], x[2]], 7); setFxSpot(x[1], x[2], x[0]); }));
 }
 function initGlobal() {
-  $("#fx-geo").addEventListener("click", fxUseLocation);
+  $("#fx-geo").addEventListener("click", fxUseLocation); spInit();
   renderFxPicker();
 }
 

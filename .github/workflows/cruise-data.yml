@@ -1,0 +1,33 @@
+# Builds the Cruising tab's data (site/boating.json and site/discharge.json) on GitHub's computers, which can reach
+# OpenStreetMap. Run it by hand (Actions -> Build cruising data -> Run workflow); the files are attached to the run as an
+# artifact named "cruising-data". The daily "Refresh wind data" workflow also rebuilds them on Mondays.
+name: Build cruising data
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python packages
+        run: pip install -r requirements-refresh.txt shapely
+      - name: Cruising places (NOAA charts + OpenStreetMap)
+        run: python -m scripts.boating_places
+      - name: Discharge rules (EPA No Discharge Zones + 3 nautical mile line)
+        run: python -m scripts.discharge_zones || echo "discharge map not rebuilt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cruising-data
+          path: |
+            site/boating.json
+            site/discharge.json
+          retention-days: 14
