@@ -1,7 +1,7 @@
 # Refreshes the wind forecast, station readings and tide/current predictions every day,
-# rebuilds the website folder and publishes it to Cloudflare Pages (project "gustiq").
+# rebuilds the website folder and publishes it to Cloudflare Pages (project "nockd").
 # Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see deploy/CLOUDFLARE.md).
-# The server parts need ANTHROPIC_API_KEY and GOOGLE_PLACES_KEY as secrets and the KV binding GUSTIQ_KV, all set
+# The server parts need ANTHROPIC_API_KEY and GOOGLE_PLACES_KEY as secrets and the KV binding NOCKD_KV, all set
 # in the Cloudflare project (not in GitHub).
 name: Refresh wind data
 
@@ -74,5 +74,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # first run only: create the project (fails harmlessly once it exists)
-          npx --yes wrangler@4.166.0 pages project create gustiq --production-branch main || true
-          npx --yes wrangler@4.166.0 pages deploy deploy/sailiq-wind-site --project-name gustiq --branch main --commit-dirty=true --commit-message "Daily data refresh"
+          npx --yes wrangler@4.166.0 pages project create nockd --production-branch main || true
+          npx --yes wrangler@4.166.0 pages deploy deploy/sailiq-wind-site --project-name nockd --branch main --commit-dirty=true --commit-message "Daily data refresh"

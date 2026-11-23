@@ -28,9 +28,9 @@ The "Ask the AI coach" box calls a small server function (`functions/api/ask.js`
 
 1. Create an API key at console.anthropic.com (Settings → API keys). Add a payment method there; each
    question is billed to that account. You can set a monthly spend limit in the same console.
-2. In Cloudflare: **Workers & Pages → gustiq → Settings → Variables and Secrets → Add**, type Secret.
+2. In Cloudflare: **Workers & Pages → nockd → Settings → Variables and Secrets → Add**, type Secret.
    Name: `ANTHROPIC_API_KEY`, value: the key. Never put the key in GitHub or in the website files.
 3. Run the workflow once (Actions → Refresh wind data → Run workflow). The Race Planning tab's chat then answers.
 
-The functions only accept requests from njpboatworks.com, gustiq.app, the gustiq*.pages.dev address and the
+The functions only accept requests from njpboatworks.com, the nockd*.pages.dev address and the
 iPhone app. To allow another domain, add a Cloudflare variable `ALLOWED_ORIGINS` with a comma-separated list.

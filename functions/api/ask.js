@@ -1,12 +1,12 @@
-// Gustiq AI coach: answers sailors' questions about the wind, current and race course shown on the map.
+// Nockd AI coach: answers sailors' questions about the wind, current and race course shown on the map.
 // Runs as a Cloudflare Pages Function at /api/ask. Needs the secret ANTHROPIC_API_KEY in the Cloudflare project
 // (Settings -> Variables and Secrets). The key never reaches the web page.
 import Anthropic from "@anthropic-ai/sdk";
 import { replies } from "../../cf/common.js";
 
 
-const SYSTEM = `You are the Gustiq AI sailing coach. You help young sailors (often kids) and their coaches understand
-the wind, tidal current and race course on the Gustiq map they are looking at.
+const SYSTEM = `You are the Nockd AI sailing coach. You help young sailors (often kids) and their coaches understand
+the wind, tidal current and race course on the Nockd map they are looking at.
 
 You get a JSON summary of what the map shows: the region, the conditions mode (typical wind, a wind the coach set,
 or live and forecast), wind and current at the map centre and at each race mark, tide, the course, and simulated

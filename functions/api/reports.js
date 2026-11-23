@@ -1,6 +1,6 @@
-// Gustiq community reports for the Cruising tab: "I stayed here" (with the date), "it's gone", short notes, and
+// Nockd community reports for the Cruising tab: "I stayed here" (with the date), "it's gone", short notes, and
 // spots people add themselves. Anonymous. Runs as a Cloudflare Pages Function at /api/reports and stores data in
-// Cloudflare KV (binding name GUSTIQ_KV, set in the Cloudflare project under Settings -> Bindings).
+// Cloudflare KV (binding name NOCKD_KV, set in the Cloudflare project under Settings -> Bindings).
 //
 //   GET  /api/reports              -> { summary: { key: { last, n, gone, lastNote } }, spots: [...] }
 //   GET  /api/reports?key=K        -> { reports: [...] } for one place (newest first)
@@ -32,8 +32,8 @@ export async function onRequest({ request, env }) {
   const { origin, allowed, cors, json } = replies(env, request, "GET, POST, OPTIONS");
   if (request.method === "OPTIONS") return new Response(null, { status: origin && allowed ? 204 : 403, headers: cors });
   if (!allowed) return json(403, { error: "Not allowed from this website." });
-  const kv = env.GUSTIQ_KV;
-  if (!kv) return json(503, { error: "Reports are not set up yet: add the KV binding GUSTIQ_KV in Cloudflare." });
+  const kv = env.NOCKD_KV;
+  if (!kv) return json(503, { error: "Reports are not set up yet: add the KV binding NOCKD_KV in Cloudflare." });
   const url = new URL(request.url);
 
   if (request.method === "GET") {

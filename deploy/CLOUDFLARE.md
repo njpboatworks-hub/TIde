@@ -1,4 +1,4 @@
-# Publishing Gustiq on Cloudflare Pages
+# Publishing Nockd on Cloudflare Pages
 
 The website (static files in `deploy/sailiq-wind-site`) and the three server parts in `functions/api`
 (`ask` = AI coach, `reports` = community reports and added spots, `places` = restaurant ratings) run on
@@ -14,12 +14,12 @@ Cloudflare Pages. The GitHub workflow `refresh.yml` publishes every day.
 4. **GitHub secrets.** In the GitHub repository: *Settings -> Secrets and variables -> Actions -> New repository
    secret*. Add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 5. **First publish.** GitHub *Actions -> Refresh wind data -> Run workflow*. This creates the Pages project
-   `gustiq` and publishes the site. Its address is shown in Cloudflare under *Workers & Pages -> gustiq*
-   (normally `https://gustiq.pages.dev`; Cloudflare adds a few letters if that name is taken).
-6. **Storage for reports (KV).** *Storage & Databases -> KV -> Create namespace*, name it `gustiq-reports`.
-   Then *Workers & Pages -> gustiq -> Settings -> Bindings -> Add -> KV namespace*:
-   variable name `GUSTIQ_KV`, namespace `gustiq-reports`. Do this for Production.
-7. **Secret keys.** *Workers & Pages -> gustiq -> Settings -> Variables and Secrets -> Add*, type *Secret*:
+   `nockd` and publishes the site. Its address is shown in Cloudflare under *Workers & Pages -> nockd*
+   (normally `https://nockd.pages.dev`; Cloudflare adds a few letters if that name is taken).
+6. **Storage for reports (KV).** *Storage & Databases -> KV -> Create namespace*, name it `nockd-reports`.
+   Then *Workers & Pages -> nockd -> Settings -> Bindings -> Add -> KV namespace*:
+   variable name `NOCKD_KV`, namespace `nockd-reports`. Do this for Production.
+7. **Secret keys.** *Workers & Pages -> nockd -> Settings -> Variables and Secrets -> Add*, type *Secret*:
    - `ANTHROPIC_API_KEY` (AI coach)
    - `GOOGLE_PLACES_KEY` (restaurant ratings; optional)
    Optional plain variables: `PLACES_DAILY_CAP` (default 600), `REPORT_SALT` (any random text),

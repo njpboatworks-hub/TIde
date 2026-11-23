@@ -1,4 +1,4 @@
-"""Build the web part of the Gustiq iPhone app (ios-app/www).
+"""Build the web part of the Nockd iPhone app (ios-app/www).
 
 The app contains only the page itself (HTML, script, logo and settings, well under 1 MB). The map data (forecasts,
 tides, currents, the worldwide grids; about 250 MB that changes every few hours) is loaded from the website, so the app
@@ -27,7 +27,7 @@ WWW, HOSTFILE = APP / "www", APP / "data-host.txt"
 # without depending on that CDN. They come from ios-app/node_modules (npm install in ios-app).
 LIBS = {"https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js": "leaflet/dist/leaflet.js",
         "https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js": "chart.js/dist/chart.umd.js"}
-FILES = ["logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-gustiq-32.png", "icon-gustiq-192.png", "apple-touch-icon-gustiq.png"]
+FILES = ["logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png"]
 
 # Runs before the page's own script: relative data requests ("live.json", "global/meta.json", the AI coach at
 # "/api/ask") go to the website instead of the files inside the app.
@@ -43,7 +43,7 @@ window.NOCKD_APP = true; window.NOCKD_DATA = %s;
 // no signal (common out on the water): say so instead of leaving empty maps
 addEventListener("DOMContentLoaded", function () {
   var b = document.createElement("div");
-  b.textContent = "No internet connection. Gustiq needs a connection to load forecasts, tides and maps.";
+  b.textContent = "No internet connection. Nockd needs a connection to load forecasts, tides and maps.";
   b.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:99999;padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 8px;background:#b3261e;color:#fff;font:600 14px/1.3 system-ui,sans-serif;text-align:center";
   var show = function () { b.hidden = navigator.onLine; }; show(); document.body.appendChild(b);
   addEventListener("online", function () { show(); }); addEventListener("offline", show);
@@ -67,7 +67,7 @@ def main():
     if WWW.exists():
         shutil.rmtree(WWW)
     WWW.mkdir(parents=True)
-    page = (SITE / "index.html").read_text().replace("<title>Gustiq</title>", "<title>Gustiq</title>", 1)
+    page = (SITE / "index.html").read_text().replace("<title>Nockd</title>", "<title>Nockd</title>", 1)
     (WWW / "lib").mkdir()
     for url, rel in LIBS.items():
         if url not in page:

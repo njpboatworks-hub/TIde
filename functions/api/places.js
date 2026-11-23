@@ -2,7 +2,7 @@
 // Runs as a Cloudflare Pages Function at /api/places. Needs the secret GOOGLE_PLACES_KEY in the Cloudflare project
 // (Settings -> Variables and Secrets). The key never reaches the web page. A daily cap (PLACES_DAILY_CAP, default
 // 600 calls, kept low because the free Cloudflare KV plan allows a limited number of saves a day) protects the
-// Google bill. The count is kept in the KV binding GUSTIQ_KV.
+// Google bill. The count is kept in the KV binding NOCKD_KV.
 //
 //   GET /api/places?lat=41.49&lon=-71.31   -> { places: [...] }   (Nearby Search, up to 20)
 //   GET /api/places?id=ChIJ...             -> { place: {..., reviews} } (Place Details with reviews)
@@ -37,8 +37,8 @@ export async function onRequest({ request, env }) {
   if (!key) return json(503, { error: "Restaurant listings are not set up yet: add GOOGLE_PLACES_KEY in Cloudflare." });
 
   // daily cap on Google calls
-  const kv = env.GUSTIQ_KV;
-  if (!kv) return json(503, { error: "Restaurant listings are not set up yet: add the KV binding GUSTIQ_KV in Cloudflare." });
+  const kv = env.NOCKD_KV;
+  if (!kv) return json(503, { error: "Restaurant listings are not set up yet: add the KV binding NOCKD_KV in Cloudflare." });
   const cap = +(env.PLACES_DAILY_CAP || 600), day = `places/${new Date().toISOString().slice(0, 10)}`;
   const used = (await kv.get(day, { type: "json" }).catch(() => 0)) || 0;
   if (used >= cap) return json(429, { error: "Restaurant listings have reached today's limit. They will be back tomorrow." });

@@ -1,12 +1,12 @@
-// Shared helpers for the Cloudflare Pages Functions in functions/api (Gustiq's server side).
+// Shared helpers for the Cloudflare Pages Functions in functions/api (Nockd's server side).
 // Settings come from the Cloudflare project (Settings -> Variables and Secrets), never from this code.
-const DEFAULT_ORIGINS = "https://njpboatworks.com,https://www.njpboatworks.com,https://gustiq.app,https://www.gustiq.app,capacitor://localhost";
+const DEFAULT_ORIGINS = "https://njpboatworks.com,https://www.njpboatworks.com,capacitor://localhost";
 
-// capacitor://localhost is the Gustiq iPhone app; the gustiq*.pages.dev pattern covers the
-// Cloudflare address (Cloudflare adds a few letters if "gustiq" is taken) and its preview copies
+// capacitor://localhost is the Nockd iPhone app; the nockd*.pages.dev pattern covers the
+// Cloudflare address (Cloudflare adds a few letters if "nockd" is taken) and its preview copies
 export function okOrigin(env, o) {
   const allowed = (env.ALLOWED_ORIGINS || DEFAULT_ORIGINS).split(",").map((s) => s.trim()).filter(Boolean);
-  return allowed.includes(o) || /^https:\/\/([a-z0-9-]+\.)?gustiq[a-z0-9-]*\.pages\.dev$/.test(o);
+  return allowed.includes(o) || /^https:\/\/([a-z0-9-]+\.)?nockd[a-z0-9-]*\.pages\.dev$/.test(o);
 }
 
 // CORS headers plus a JSON reply helper. Returns { cors, json, origin, allowed }.

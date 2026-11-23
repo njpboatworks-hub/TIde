@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-gustiq-32.png", "icon-gustiq-192.png", "apple-touch-icon-gustiq.png", "icon-gustiq-512.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "discharge.json", "nav.json", "marinezones.json"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-nockd-32.png", "icon-nockd-192.png", "apple-touch-icon-nockd.png", "icon-nockd-512.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "discharge.json", "nav.json", "marinezones.json"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -22,7 +22,7 @@ window.SAILIQ_CONFIG = {
 };
 """
 
-# Header rules (the _headers format works on Cloudflare Pages and Netlify): let the Gustiq iPhone app (which runs from inside the phone, not from this website) read the
+# Header rules (the _headers format works on Cloudflare Pages and Netlify): let the Nockd iPhone app (which runs from inside the phone, not from this website) read the
 # public map data files. Nothing private is served from this folder.
 HEADERS = """/*
   Access-Control-Allow-Origin: *
@@ -30,14 +30,14 @@ HEADERS = """/*
 
 HEAD = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Gustiq: wind and weather forecasts, tides, currents, racing tools and a cruising map for boaters across US coasts, the Great Lakes, the Bahamas and the Caribbean.">
-<link rel="icon" href="favicon.ico?v=gustiq1" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-gustiq-32.png?v=gustiq1">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-gustiq-192.png?v=gustiq1">
-<link rel="apple-touch-icon" href="apple-touch-icon-gustiq.png?v=gustiq1">
-<meta name="apple-mobile-web-app-title" content="Gustiq">
-<meta property="og:title" content="Gustiq">
-<meta property="og:image" content="icon-gustiq-512.png">
+<meta name="description" content="Nockd: wind and weather forecasts, tides, currents, racing tools and a cruising map for boaters across US coasts, the Great Lakes, the Bahamas and the Caribbean.">
+<link rel="icon" href="favicon.ico?v=nockd1" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-nockd-32.png?v=nockd1">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-nockd-192.png?v=nockd1">
+<link rel="apple-touch-icon" href="apple-touch-icon-nockd.png?v=nockd1">
+<meta name="apple-mobile-web-app-title" content="Nockd">
+<meta property="og:title" content="Nockd">
+<meta property="og:image" content="icon-nockd-512.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 </head><body>
 """
@@ -67,7 +67,7 @@ def main():
     if OUT.exists():
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
-    page = (SITE / "index.html").read_text().replace("<title>Gustiq</title>", "<title>Gustiq: wind, water, racing and cruising</title>", 1)
+    page = (SITE / "index.html").read_text().replace("<title>Nockd</title>", "<title>Nockd: wind, water, racing and cruising</title>", 1)
     (OUT / "index.html").write_text(HEAD + page + "\n</body></html>\n")  # claude.ai adds this wrapper itself
     for f in FILES[2:]:
         if f in ("boating.json", "discharge.json", "nav.json", "marinezones.json") and not (SITE / f).exists():  # built weekly by scripts.boating_places; the page says when it is missing
