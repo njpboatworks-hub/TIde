@@ -22,7 +22,7 @@ window.SAILIQ_CONFIG = {
 };
 """
 
-# Netlify header rules: let the Gustiq iPhone app (which runs from inside the phone, not from this website) read the
+# Header rules (the _headers format works on Cloudflare Pages and Netlify): let the Gustiq iPhone app (which runs from inside the phone, not from this website) read the
 # public map data files. Nothing private is served from this folder.
 HEADERS = """/*
   Access-Control-Allow-Origin: *

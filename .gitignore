@@ -18,3 +18,5 @@ data/hawaii/tiles/
 data/hydro_cache/
 node_modules/
 site/global/
+.wrangler/
+.dev.vars

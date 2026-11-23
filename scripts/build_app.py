@@ -5,7 +5,7 @@ tides, currents, the worldwide grids; about 250 MB that changes every few hours)
 always shows the same fresh data as the site and does not need an App Store update when the data changes.
 
 Usage:
-  python -m scripts.build_app --data https://your-site.netlify.app/
+  python -m scripts.build_app --data https://your-site.pages.dev/
 The address is saved in ios-app/data-host.txt, so later builds can leave out --data.
 It must be the real Netlify address (or a domain pointed straight at Netlify with DNS), not a domain that is
 forwarded "with masking": masking puts the site inside a frame, and the data files cannot be read through it.
@@ -30,7 +30,7 @@ LIBS = {"https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js": "leaflet/d
 FILES = ["logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-gustiq-32.png", "icon-gustiq-192.png", "apple-touch-icon-gustiq.png"]
 
 # Runs before the page's own script: relative data requests ("live.json", "global/meta.json", the AI coach at
-# "/.netlify/functions/ask") go to the website instead of the files inside the app.
+# "/api/ask") go to the website instead of the files inside the app.
 BOOT = """<script>
 window.NOCKD_APP = true; window.NOCKD_DATA = %s;
 (function () {
@@ -54,11 +54,11 @@ addEventListener("DOMContentLoaded", function () {
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", help="website address the app loads its data from, e.g. https://example.netlify.app/")
+    ap.add_argument("--data", help="website address the app loads its data from, e.g. https://example.pages.dev/")
     a = ap.parse_args()
     host = a.data or (HOSTFILE.read_text().strip() if HOSTFILE.exists() else "")
     if not re.match(r"^https?://[^/\s]+", host or ""):
-        raise SystemExit("Give the website address once with --data https://your-site.netlify.app/")
+        raise SystemExit("Give the website address once with --data https://your-site.pages.dev/")
     host = host.rstrip("/") + "/"
     if a.data:
         HOSTFILE.write_text(host + "\n")

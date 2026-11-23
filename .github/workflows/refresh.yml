@@ -1,7 +1,8 @@
 # Refreshes the wind forecast, station readings and tide/current predictions every day,
-# rebuilds the website folder and publishes it to Netlify.
-# Needs two repository secrets: NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID (see deploy/AUTO_UPDATE.md).
-# The AI coach also needs ANTHROPIC_API_KEY set as an environment variable in Netlify (not in GitHub).
+# rebuilds the website folder and publishes it to Cloudflare Pages (project "gustiq").
+# Needs two repository secrets: CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (see deploy/CLOUDFLARE.md).
+# The server parts need ANTHROPIC_API_KEY and GOOGLE_PLACES_KEY as secrets and the KV binding GUSTIQ_KV, all set
+# in the Cloudflare project (not in GitHub).
 name: Refresh wind data
 
 on:
@@ -64,11 +65,14 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install the AI coach function's package (Anthropic SDK)
+      - name: Install the server functions' package (Anthropic SDK)
         run: npm ci --omit=dev
 
-      - name: Publish to Netlify (website + AI coach function)
+      - name: Publish to Cloudflare Pages (website + functions/api)
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx --yes netlify-cli@17 deploy --prod --dir deploy/sailiq-wind-site --functions netlify/functions --message "Daily data refresh"
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # first run only: create the project (fails harmlessly once it exists)
+          npx --yes wrangler@4.166.0 pages project create gustiq --production-branch main || true
+          npx --yes wrangler@4.166.0 pages deploy deploy/sailiq-wind-site --project-name gustiq --branch main --commit-dirty=true --commit-message "Daily data refresh"

@@ -1,17 +1,16 @@
 // Restaurants and bars near a harbor for the Cruising tab, from the Google Places API (New).
-// Needs the environment variable GOOGLE_PLACES_KEY in Netlify (Site configuration -> Environment variables).
-// The key never reaches the web page. A daily cap (PLACES_DAILY_CAP, default 2000 calls) protects the Google bill.
+// Runs as a Cloudflare Pages Function at /api/places. Needs the secret GOOGLE_PLACES_KEY in the Cloudflare project
+// (Settings -> Variables and Secrets). The key never reaches the web page. A daily cap (PLACES_DAILY_CAP, default
+// 600 calls, kept low because the free Cloudflare KV plan allows a limited number of saves a day) protects the
+// Google bill. The count is kept in the KV binding GUSTIQ_KV.
 //
-//   GET /.netlify/functions/places?lat=41.49&lon=-71.31   -> { places: [...] }   (Nearby Search, up to 20)
-//   GET /.netlify/functions/places?id=ChIJ...             -> { place: {..., reviews} } (Place Details with reviews)
+//   GET /api/places?lat=41.49&lon=-71.31   -> { places: [...] }   (Nearby Search, up to 20)
+//   GET /api/places?id=ChIJ...             -> { place: {..., reviews} } (Place Details with reviews)
 //
 // Google's terms require showing Google attribution with this data and the review authors' names; the page does.
 // Responses are not stored on the server; browsers may keep them for 10 minutes.
-import { getStore } from "@netlify/blobs";
+import { replies } from "../../cf/common.js";
 
-const ALLOWED = (process.env.ALLOWED_ORIGINS || "https://njpboatworks.com,https://www.njpboatworks.com,capacitor://localhost")
-  .split(",").map((s) => s.trim()).filter(Boolean);
-const okOrigin = (o) => ALLOWED.includes(o) || o.endsWith(".netlify.app");
 const API = "https://places.googleapis.com/v1";
 const LIST_FIELDS = ["id", "displayName", "location", "rating", "userRatingCount", "priceLevel", "primaryTypeDisplayName",
   "googleMapsUri", "currentOpeningHours.openNow", "formattedAddress"].map((f) => `places.${f}`).join(",");
@@ -29,23 +28,23 @@ function slim(p) {
   };
 }
 
-export default async (req) => {
-  const origin = req.headers.get("origin") || "";
-  const cors = origin && okOrigin(origin) ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "GET, OPTIONS", Vary: "Origin" } : {};
-  const json = (status, body, extra = {}) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors, ...extra } });
-  if (req.method === "OPTIONS") return new Response(null, { status: origin && okOrigin(origin) ? 204 : 403, headers: cors });
-  if (req.method !== "GET") return json(405, { error: "Use GET." });
-  if (origin && !okOrigin(origin)) return json(403, { error: "Not allowed from this website." });
-  const key = process.env.GOOGLE_PLACES_KEY;
-  if (!key) return json(503, { error: "Restaurant listings are not set up yet: add GOOGLE_PLACES_KEY in Netlify." });
+export async function onRequest({ request, env }) {
+  const { origin, allowed, cors, json } = replies(env, request, "GET, OPTIONS");
+  if (request.method === "OPTIONS") return new Response(null, { status: origin && allowed ? 204 : 403, headers: cors });
+  if (request.method !== "GET") return json(405, { error: "Use GET." });
+  if (!allowed) return json(403, { error: "Not allowed from this website." });
+  const key = env.GOOGLE_PLACES_KEY;
+  if (!key) return json(503, { error: "Restaurant listings are not set up yet: add GOOGLE_PLACES_KEY in Cloudflare." });
 
   // daily cap on Google calls
-  const cap = +(process.env.PLACES_DAILY_CAP || 2000), store = getStore("places-usage"), day = new Date().toISOString().slice(0, 10);
-  const used = (await store.get(day, { type: "json" }).catch(() => 0)) || 0;
+  const kv = env.GUSTIQ_KV;
+  if (!kv) return json(503, { error: "Restaurant listings are not set up yet: add the KV binding GUSTIQ_KV in Cloudflare." });
+  const cap = +(env.PLACES_DAILY_CAP || 600), day = `places/${new Date().toISOString().slice(0, 10)}`;
+  const used = (await kv.get(day, { type: "json" }).catch(() => 0)) || 0;
   if (used >= cap) return json(429, { error: "Restaurant listings have reached today's limit. They will be back tomorrow." });
-  await store.setJSON(day, used + 1).catch(() => {});
+  await kv.put(day, JSON.stringify(used + 1), { expirationTtl: 172800 }).catch(() => {});
 
-  const url = new URL(req.url), id = url.searchParams.get("id");
+  const url = new URL(request.url), id = url.searchParams.get("id");
   try {
     if (id) {
       if (!/^[A-Za-z0-9_-]{10,300}$/.test(id)) return json(400, { error: "Bad place." });
@@ -67,4 +66,4 @@ export default async (req) => {
   } catch (e) {
     return json(502, { error: "Could not reach Google right now." });
   }
-};
+}

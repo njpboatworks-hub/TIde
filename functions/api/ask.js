@@ -1,9 +1,9 @@
 // Gustiq AI coach: answers sailors' questions about the wind, current and race course shown on the map.
-// Runs as a Netlify Function. Needs the environment variable ANTHROPIC_API_KEY set in Netlify
-// (Site configuration -> Environment variables). The key never reaches the web page.
+// Runs as a Cloudflare Pages Function at /api/ask. Needs the secret ANTHROPIC_API_KEY in the Cloudflare project
+// (Settings -> Variables and Secrets). The key never reaches the web page.
 import Anthropic from "@anthropic-ai/sdk";
+import { replies } from "../../cf/common.js";
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
 const SYSTEM = `You are the Gustiq AI sailing coach. You help young sailors (often kids) and their coaches understand
 the wind, tidal current and race course on the Gustiq map they are looking at.
@@ -23,24 +23,15 @@ How to answer:
   down first" or "switch to Live & forecast").
 - Stay on sailing, wind, weather, tides and the course. Politely decline unrelated requests.`;
 
-// capacitor://localhost is the Gustiq iPhone app (the page inside the app runs from that address)
-const ALLOWED = (process.env.ALLOWED_ORIGINS || "https://njpboatworks.com,https://www.njpboatworks.com,capacitor://localhost")
-  .split(",").map((s) => s.trim()).filter(Boolean);
-
-const okOrigin = (o) => ALLOWED.includes(o) || o.endsWith(".netlify.app");
-
-export default async (req) => {
-  const origin = req.headers.get("origin") || "";
-  // the iPhone app calls from another address, so the browser first checks these permission headers
-  const cors = origin && okOrigin(origin) ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Allow-Methods": "POST, OPTIONS", Vary: "Origin" } : {};
-  const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } });
-  if (req.method === "OPTIONS") return new Response(null, { status: origin && okOrigin(origin) ? 204 : 403, headers: cors });
-  if (req.method !== "POST") return json(405, { error: "Use POST." });
-  if (origin && !okOrigin(origin)) return json(403, { error: "Not allowed from this website." });
-  if (!process.env.ANTHROPIC_API_KEY) return json(503, { error: "The AI coach is not set up yet: add ANTHROPIC_API_KEY in Netlify." });
+export async function onRequest({ request, env }) {
+  const { origin, allowed, cors, json } = replies(env, request, "POST, OPTIONS");
+  if (request.method === "OPTIONS") return new Response(null, { status: origin && allowed ? 204 : 403, headers: cors });
+  if (request.method !== "POST") return json(405, { error: "Use POST." });
+  if (!allowed) return json(403, { error: "Not allowed from this website." });
+  if (!env.ANTHROPIC_API_KEY) return json(503, { error: "The AI coach is not set up yet: add ANTHROPIC_API_KEY in Cloudflare." });
 
   let body;
-  try { body = await req.json(); } catch { return json(400, { error: "Bad request." }); }
+  try { body = await request.json(); } catch { return json(400, { error: "Bad request." }); }
   const msgs = Array.isArray(body.messages) ? body.messages.slice(-10) : [];
   const clean = msgs
     .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
@@ -52,6 +43,7 @@ export default async (req) => {
   clean[clean.length - 1] = { role: "user", content: `Map summary (JSON):\n${context}\n\nQuestion: ${clean[clean.length - 1].content}` };
 
   try {
+    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
     const response = await client.beta.messages.create({
       model: "claude-opus-5-5",
       max_tokens: 1500,
@@ -66,8 +58,8 @@ export default async (req) => {
     return json(200, { answer: text || "Sorry, I don't have an answer for that." });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return json(429, { error: "The AI coach is busy. Try again in a minute." });
-    if (e instanceof Anthropic.AuthenticationError) return json(503, { error: "The AI coach's API key is not valid. Check ANTHROPIC_API_KEY in Netlify." });
+    if (e instanceof Anthropic.AuthenticationError) return json(503, { error: "The AI coach's API key is not valid. Check ANTHROPIC_API_KEY in Cloudflare." });
     if (e instanceof Anthropic.APIConnectionError) return json(502, { error: "Could not reach the AI service. Try again." });
     return json(502, { error: "The AI coach had a problem answering. Try again." });
   }
-};
+}

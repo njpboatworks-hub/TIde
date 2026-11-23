@@ -2,9 +2,8 @@
   "name": "nockd-tide-guide",
   "private": true,
   "type": "module",
-  "description": "Netlify Function for the Nockd AI coach (the site itself is static files in deploy/sailiq-wind-site)",
+  "description": "Cloudflare Pages Functions for Gustiq (functions/api); the site itself is static files in deploy/sailiq-wind-site",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.8.0",
-    "@netlify/blobs": "11.1.6"
+    "@anthropic-ai/sdk": "^1.8.0"
   }
 }

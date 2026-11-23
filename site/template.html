@@ -4277,10 +4277,10 @@ async function askChat(q) {
   $("#chat-input").value = ""; $("#chat-send").disabled = true;
   CHAT.push({ role: "assistant", content: "Thinking…" }); renderChat();
   try {
-    const r = await fetch("/.netlify/functions/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+    const r = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: CHAT.slice(0, -1).slice(-10), context: raceContext() }) });
     const j = await r.json().catch(() => ({}));
-    CHAT[CHAT.length - 1].content = r.ok && j.answer ? j.answer : (j.error || "The AI coach is not set up on this website yet. (It needs the site published through the GitHub auto-update with an Anthropic API key added in Netlify.)");
+    CHAT[CHAT.length - 1].content = r.ok && j.answer ? j.answer : (j.error || "The AI coach is not set up on this website yet. (It needs the site published through the GitHub auto-update with an Anthropic API key added in Cloudflare.)");
   } catch (_) { CHAT[CHAT.length - 1].content = "Could not reach the AI coach. Check the internet connection and try again."; }
   $("#chat-send").disabled = false; renderChat();
 }
@@ -6095,9 +6095,9 @@ async function shareLink(hash, title, btn) {
   } catch (_) { /* the person closed the share sheet */ }
 }
 /* =================== Cruising: a map of everything on the water =================== */
-// Places: site/boating.json (NOAA charts + OpenStreetMap), community reports and added spots (Netlify function
-// "reports"), restaurants with Google ratings (Netlify function "places"), discharge rules (site/discharge.json).
-const FN = "/.netlify/functions/";
+// Places: site/boating.json (NOAA charts + OpenStreetMap), community reports and added spots (server function
+// "reports"), restaurants with Google ratings (server function "places"), discharge rules (site/discharge.json).
+const FN = "/api/";
 const SVG = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 const CR_ICON = {
   mooring: SVG('<circle cx="12" cy="9" r="5"/><path d="M12 14v6M8 20h8"/>'),
