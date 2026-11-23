@@ -1,4 +1,4 @@
-<title>Nockd Tide Guide</title>
+<title>Gustiq</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -719,7 +719,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .brand { gap: 10px; }
 .brand .logo { width: 40px; height: 40px; border-radius: 9px; flex: none; display: block; }
 .brand-text { display: grid; gap: 3px; }
-.brand .name { font: 700 24px/0.9 "Poppins", system-ui, sans-serif; letter-spacing: -.01em; text-transform: lowercase; color: var(--ink); }
+.brand .name { font: 700 24px/0.9 var(--f-display), system-ui, sans-serif; letter-spacing: -.01em; text-transform: lowercase; color: var(--ink); }
 .brand .name .d { color: #F27A48; }
 .brand .venue { font: 600 12px/1 var(--f-body); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 .tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
@@ -979,7 +979,7 @@ main.wide .panel { border-right: 0; }
   .legend { max-width: 210px; font-size: 11.5px; padding: 6px 30px 6px 8px; left: calc(8px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); max-height: 40%; }
   #field-readout, #tide-readout { display: none; }
 }
-/* ===== Nockd theme: chart-room navy, off-white paper, one signal orange. Sharp 1px rules, no rounded cards or shadows.
+/* ===== Gustiq theme: chart-room navy, off-white paper, one signal orange. Sharp 1px rules, no rounded cards or shadows.
    Only looks live here; every map, tide and wind feature above is unchanged. ===== */
 :root {
   --hdr: #071426; --hdr-ink: #F8F8F6; --hdr-mute: #8C9AAE; --hdr-line: #22344F;
@@ -1014,7 +1014,8 @@ body::before { background: var(--hdr); }
 .brand { padding-block: 12px; }
 .brand .logo { border-radius: 0; width: 38px; height: 38px; outline: 1px solid var(--hdr-line); }
 .brand .name { color: var(--hdr-ink); font-size: 25px; }
-.brand .name .d { color: var(--signal); }
+.brand .name .d { color: #0A1A30; background: var(--signal); padding: 0 4px; margin-left: 3px; border-radius: 3px; text-transform: none; font-size: .8em; line-height: 1.05; display: inline-block; vertical-align: 2px; }
+.brand-text { gap: 6px; }
 .brand .venue { font: 500 10.5px/1 var(--f-mono); color: var(--hdr-mute); letter-spacing: .08em; }
 .search input { background: transparent; color: var(--hdr-ink); border: 1px solid var(--hdr-line); border-radius: 0; font: 400 13.5px/1.2 var(--f-mono); padding: 9px 12px; }
 .search input::placeholder { color: var(--hdr-mute); }
@@ -1603,8 +1604,8 @@ body.gx #map { background: #0C1B2E !important; }
 
 <header class="top">
   <div class="brand">
-    <img class="logo" src="logo-mark.png" width="40" height="40" alt="Nockd">
-    <span class="brand-text"><span class="name">nock<span class="d">d</span></span><span class="venue" id="brand-venue">Lift / Header / Tide Guide</span></span>
+    <img class="logo" src="logo-mark.png" width="40" height="40" alt="Gustiq">
+    <span class="brand-text"><span class="name">gust<span class="d">IQ</span></span><span class="venue" id="brand-venue">Wind · Water · Racing · Cruising</span></span>
   </div>
   <div class="search" role="search">
     <input type="search" id="place-search" placeholder="Search a town, harbor or station" aria-label="Search places" autocomplete="off">
@@ -6176,7 +6177,7 @@ function spMark() { // highlight the column at the map's time
   wrap.querySelectorAll(`td[data-h="${best}"]`).forEach((td) => td.classList.add("cur"));
 }
 function spInit() {
-  $("#sp-share").addEventListener("click", (e) => { if (SP.spot) shareLink(`wind/${SP.spot.lat.toFixed(4)},${SP.spot.lon.toFixed(4)}`, `Nockd forecast: ${$("#sp-name").textContent}`, e.currentTarget); });
+  $("#sp-share").addEventListener("click", (e) => { if (SP.spot) shareLink(`wind/${SP.spot.lat.toFixed(4)},${SP.spot.lon.toFixed(4)}`, `Gustiq forecast: ${$("#sp-name").textContent}`, e.currentTarget); });
   $("#sp-wrap").addEventListener("click", (e) => { const td = e.target.closest("td[data-h]"); if (td) gxSetTime(+td.dataset.h); });
   $("#sp-geo").addEventListener("click", () => {
     if (!navigator.geolocation) return;
@@ -6352,7 +6353,7 @@ function showTab(name) {
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
   $("#liftmap-btn").hidden = name === "coast" || name === "cruise";
   document.body.classList.toggle("cruise", name === "cruise");
-  $("#brand-venue").textContent = "Lift / Header / Tide Guide";
+  $("#brand-venue").textContent = "Wind · Water · Racing · Cruising";
   const top = ["coast", "race", "debrief", "puffs"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === top));
   $("#racing-nav").hidden = top !== "racing";
@@ -6650,7 +6651,7 @@ async function loadComm() {
   try { const r = await fetch(FN + "reports"); if (!r.ok) throw 0; CRUISE.comm = await r.json(); CRUISE.commOk = true; }
   catch (_) { CRUISE.commOk = false; }
 }
-function crUserPlaces() { return (CRUISE.comm.spots || []).map((s) => Object.assign([s.type, s.lat, s.lon, s.name, s.note, "", "Added by a Nockd user", 0], { key: s.key, user: true, t: s.t })); }
+function crUserPlaces() { return (CRUISE.comm.spots || []).map((s) => Object.assign([s.type, s.lat, s.lon, s.name, s.note, "", "Added by a Gustiq user", 0], { key: s.key, user: true, t: s.t })); }
 function crAll() {
   const base = CRUISE.data ? CRUISE.data.p : [], user = crUserPlaces();
   const seen = new Set(), food = []; for (const list of CRUISE.food.values()) for (const f of list) if (!seen.has(f.key)) { seen.add(f.key); food.push(f); }
@@ -6822,7 +6823,7 @@ function crRenderDetail(p, reports, offline) {
     ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom ? `<div class="cr-rows cr-here">${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#cr-dir").addEventListener("click", () => routeStart([p[1], p[2]], crName(p)));
-  $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Nockd`, e.currentTarget));
+  $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Gustiq`, e.currentTarget));
   $("#cr-wx").addEventListener("click", () => { SP.series = null; SP.spot = { lat: p[1], lon: p[2], name: crName(p) }; store("spSpot", SP.spot); store("gxView", { lat: p[1], lng: p[2], z: 8 }); GX.started = false; location.hash = "#wind"; });
   $("#cr-detail").querySelectorAll("[data-rep]").forEach((b) => b.addEventListener("click", () => crReportForm(p, b.dataset.rep)));
 }

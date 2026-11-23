@@ -1,6 +1,6 @@
 {
   "appId": "com.njpboatworks.nockd",
-  "appName": "Nockd",
+  "appName": "Gustiq",
   "webDir": "www",
   "ios": { "contentInset": "never", "backgroundColor": "#0f2a45" }
 }

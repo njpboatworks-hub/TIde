@@ -1,12 +1,12 @@
-// Nockd AI coach: answers sailors' questions about the wind, current and race course shown on the map.
+// Gustiq AI coach: answers sailors' questions about the wind, current and race course shown on the map.
 // Runs as a Netlify Function. Needs the environment variable ANTHROPIC_API_KEY set in Netlify
 // (Site configuration -> Environment variables). The key never reaches the web page.
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 
-const SYSTEM = `You are the Nockd AI sailing coach. You help young sailors (often kids) and their coaches understand
-the wind, tidal current and race course on the Nockd map they are looking at.
+const SYSTEM = `You are the Gustiq AI sailing coach. You help young sailors (often kids) and their coaches understand
+the wind, tidal current and race course on the Gustiq map they are looking at.
 
 You get a JSON summary of what the map shows: the region, the conditions mode (typical wind, a wind the coach set,
 or live and forecast), wind and current at the map centre and at each race mark, tide, the course, and simulated
@@ -23,7 +23,7 @@ How to answer:
   down first" or "switch to Live & forecast").
 - Stay on sailing, wind, weather, tides and the course. Politely decline unrelated requests.`;
 
-// capacitor://localhost is the Nockd iPhone app (the page inside the app runs from that address)
+// capacitor://localhost is the Gustiq iPhone app (the page inside the app runs from that address)
 const ALLOWED = (process.env.ALLOWED_ORIGINS || "https://njpboatworks.com,https://www.njpboatworks.com,capacitor://localhost")
   .split(",").map((s) => s.trim()).filter(Boolean);
 

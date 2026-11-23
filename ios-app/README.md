@@ -1,6 +1,6 @@
-# Nockd iPhone app
+# Gustiq iPhone app
 
-This folder is the iPhone app. It is a Capacitor 8 app: a small native iOS app that shows the Nockd page.
+This folder is the iPhone app. It is a Capacitor 8 app: a small native iOS app that shows the Gustiq page.
 
 - **Inside the app:** the page itself, about 0.8 MB. That includes the page, Leaflet and Chart.js, the logo and the icon.
 - **Loaded from the website at runtime:** all forecast, tide and current data. It is about 250 MB and refreshed every
@@ -67,7 +67,7 @@ changes:
 
 - **Privacy policy URL:** `https://nockd.netlify.app/privacy.html`.
 - **App Privacy questions:**
-  - Nockd has no accounts, analytics or ads.
+  - Gustiq has no accounts, analytics or ads.
   - Location is used only on the phone, when you tap "Use my location".
   - AI coach questions are sent to the server and to Anthropic to get an answer.
   - Answer from what is true at the time you submit.
@@ -78,7 +78,7 @@ changes:
 ## Known risks
 
 - **Apple guideline 4.2 (minimum functionality).** Apple can reject apps that are "just a website".
-  - What helps Nockd: it is an interactive map tool, it uses location, and the page is built into the app.
+  - What helps Gustiq: it is an interactive map tool, it uses location, and the page is built into the app.
   - It is still a judgement call by the reviewer, and an approval is not guaranteed.
 - **Location prompts.** The first time someone taps "Use my location", iOS asks for permission using the text in
   `ios/App/App/Info.plist`. Some iOS versions may also ask a second time for the page; this has not been tested on a

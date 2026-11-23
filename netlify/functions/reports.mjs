@@ -1,4 +1,4 @@
-// Nockd community reports for the Cruising tab: "I stayed here" (with the date), "it's gone", short notes, and
+// Gustiq community reports for the Cruising tab: "I stayed here" (with the date), "it's gone", short notes, and
 // spots people add themselves. Anonymous; stored with Netlify Blobs on the same site (no extra service or key).
 //
 //   GET  /.netlify/functions/reports              -> { summary: { key: { last, n, gone, lastNote } }, spots: [...] }

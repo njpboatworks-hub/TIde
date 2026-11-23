@@ -1,7 +1,7 @@
 {
   "name": "nockd-ios",
   "private": true,
-  "description": "Nockd iPhone app: a Capacitor shell around the Nockd web page. The map data loads from the website.",
+  "description": "Gustiq iPhone app: a Capacitor shell around the Gustiq web page. The map data loads from the website.",
   "scripts": {
     "build": "cd .. && python3 -m scripts.build_app",
     "sync": "npm run build && npx cap sync ios",
