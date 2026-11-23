@@ -1591,7 +1591,7 @@ body.gx #map { background: #0C1B2E !important; }
 .pl-stage { position: relative; height: min(62vh, 640px); min-height: 320px; }
 .pl-wrap:fullscreen .pl-stage, .pl-wrap.pl-max .pl-stage { height: 64vh; }
 #pl-cv { width: 100%; height: 100%; display: block; border-radius: 4px; border: 1px solid var(--border); cursor: crosshair; }
-.pl-clock { position: absolute; right: 12px; top: 10px; font: 500 13px/1 var(--f-mono); color: var(--ink); background: rgba(10,26,48,.8); border: 1px solid var(--border); padding: 6px 9px; border-radius: 4px; pointer-events: none; }
+.pl-clock { position: absolute; right: 12px; bottom: 10px; font: 500 13px/1 var(--f-mono); color: var(--ink); background: rgba(10,26,48,.8); border: 1px solid var(--border); padding: 6px 9px; border-radius: 4px; pointer-events: none; }
 .pl-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
 .pl-row { position: relative; border: 1px solid var(--border); border-left: 3px solid var(--c); padding: 8px 12px 12px; background: var(--page); border-radius: 4px; overflow: hidden; }
 .pl-r1 { display: flex; align-items: baseline; gap: 8px; } .pl-r1 b { font: 600 17px/1.15 var(--f-display); color: var(--ink); }
@@ -1603,7 +1603,35 @@ body.gx #map { background: #0C1B2E !important; }
 .pl-ctl input[type=range] { width: 140px; }
 .pl-btns { display: flex; gap: 8px; margin-left: auto; } .pl-btns button { min-height: 0; padding: 8px 14px; }
 .pl-fine { font-size: 12px; color: var(--muted); margin: 0; }
+.pl-modes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+.pl-steer { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; background: rgba(10,26,48,.9); border: 1px solid var(--border); padding: 8px; border-radius: 6px; }
+.pl-steer button { min-height: 0; padding: 12px 18px; font-size: 18px; } .pl-steer span { font: 500 13px/1 var(--f-mono); min-width: 150px; text-align: center; }
+.pl-note { font-size: 14px; line-height: 1.5; } .pl-quiz { color: #FFD23F; }
+.pl-r3 { font: 400 12px/1.4 var(--f-mono); color: var(--muted); margin-top: 3px; }
+.pl-row.you { box-shadow: inset 0 0 0 1px #FFD23F; }
+.pl-pick { min-height: 0; padding: 3px 9px; font-size: 12px; margin-left: 6px; border: 1px solid var(--c) !important; background: transparent !important; color: var(--c) !important; }
+.pl-pick.on { background: var(--c) !important; color: #0A1A30 !important; }
+.pl-tag { font: 500 11px/1 var(--f-mono); color: #FFD23F; margin-left: 6px; }
+.pl-fleet { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; } .pl-fleet > span { font: 500 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+#pl-fleet { display: flex; gap: 6px; flex-wrap: wrap; }
+.pl-fc { min-height: 0; padding: 6px 11px; font-size: 12.5px; border: 1px solid var(--c) !important; background: transparent !important; color: var(--ink-2) !important; opacity: .55; }
+.pl-fc.on { opacity: 1; color: var(--ink) !important; box-shadow: inset 3px 0 0 var(--c); }
+.pl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 16px; width: 100%; }
+.pl-grid label { min-width: 0; } .pl-grid input[type=range] { width: 100%; }
+.pl-vmgw { width: 100%; display: grid; gap: 4px; font: 500 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+#pl-vmg { width: 100%; height: 110px; display: block; border: 1px solid var(--border); border-radius: 4px; background: var(--page); }
+#pl-prev.on { border-color: #FFD23F !important; color: #FFD23F !important; }
+#pl-rec.armed { border-color: #FF5A60 !important; color: #FF5A60 !important; } #pl-rec.on { background: #FF5A60 !important; color: #fff !important; }
+.pl-btns { flex-wrap: wrap; margin-left: 0 !important; }
 @media (max-width: 760px) { .pl-rows { grid-template-columns: 1fr; } .pl-btns { margin-left: 0; } .pl-wrap { padding: 12px; } }
+.bt-list { display: flex; flex-direction: column; gap: 8px; }
+.bt-row { display: grid; grid-template-columns: 22px 72px 1fr; gap: 10px; align-items: center; text-align: left; padding: 8px 10px; border: 1px solid var(--border) !important; border-left: 3px solid var(--c) !important; border-radius: 4px !important; background: var(--surface) !important; color: var(--ink) !important; min-height: 0; }
+.bt-n { font: 600 15px/1 var(--f-mono); color: var(--muted); } .bt-nr { font-size: 11px; color: var(--muted); text-align: center; }
+.bt-b { display: flex; flex-direction: column; gap: 3px; min-width: 0; } .bt-b b { font: 600 15px/1.2 var(--f-display); } .bt-b small { font-size: 12px; color: var(--ink-2); line-height: 1.35; } .bt-b i { font-style: normal; }
+.sh-cell { display: flex; gap: 10px; align-items: center; }
+.aw-alarm { background: #FF5A60; color: #fff; font: 700 20px/1.2 var(--f-display); padding: 14px; border-radius: 4px; text-align: center; animation: awb 0.7s infinite alternate; }
+@keyframes awb { to { background: #B3141C; } }
+.aw-r { display: grid; gap: 4px; font-size: 13px; color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -1933,17 +1961,28 @@ body.gx #map { background: #0C1B2E !important; }
           <div><div class="pl-kick" id="pl-kick">Downwind · 4 boats</div><h1 class="pl-big" id="pl-big">Puff lab</h1><p class="pl-sub" id="pl-sub"></p></div>
           <div class="pl-wind"><span>wind</span><svg viewBox="0 0 20 60" width="16" height="48"><path d="M10 2v50M3 44l7 12 7-12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="pl-windkt">10 kt</b></div>
         </div>
-        <div class="pl-stage"><canvas id="pl-cv"></canvas><div class="pl-clock" id="pl-clock">race clock 0:00</div></div>
+        <div class="pl-modes"><div class="seg" id="pl-mode" role="group" aria-label="Mode"><button type="button" data-v="race" class="active">Watch the fleet</button><button type="button" data-v="steer">You steer</button><button type="button" data-v="quiz">Predict the winner</button></div>
+          <div class="seg" id="pl-leg" role="group" aria-label="Leg"><button type="button" data-v="down" class="active">Downwind</button><button type="button" data-v="up">Upwind</button></div></div>
+        <div class="pl-stage"><canvas id="pl-cv"></canvas><div class="pl-clock" id="pl-clock">race clock 0:00</div>
+          <div class="pl-steer" id="pl-steer" hidden><button type="button" id="pl-left" aria-label="Steer left">◀</button><span id="pl-you-ang"></span><button type="button" id="pl-right" aria-label="Steer right">▶</button><button type="button" id="pl-gybe" class="primary">Gybe</button></div></div>
+        <div class="note info pl-note" id="pl-note" hidden></div><div class="note info" id="pl-msg" hidden></div>
         <div class="pl-rows" id="pl-rows"></div>
         <div class="pl-ctl">
-          <div class="seg" id="pl-leg" role="group" aria-label="Leg"><button type="button" data-v="down" class="active">Downwind</button><button type="button" data-v="up">Upwind</button></div>
-          <label>Wind <b id="pl-w-l">10 kt</b><input type="range" id="pl-w" min="4" max="24" step="1" value="10"></label>
-          <label>Puffiness <b id="pl-p-l">35%</b><input type="range" id="pl-p" min="0" max="70" step="5" value="35"></label>
-          <label>Puffs <b id="pl-n-l">9</b><input type="range" id="pl-n" min="0" max="20" step="1" value="9"></label>
-          <label>Speed<select id="pl-spd"><option value="20">20×</option><option value="40" selected>40×</option><option value="80">80×</option></select></label>
-          <div class="pl-btns"><button type="button" class="primary" id="pl-run">▶ Race</button><button type="button" id="pl-new">New puffs</button><button type="button" id="pl-full">Big screen</button></div>
+          <div class="pl-btns"><button type="button" class="primary" id="pl-run">▶ Race</button><button type="button" id="pl-new">New puffs</button><button type="button" id="pl-prev" title="Show where the puffs will be in 30 seconds">Puff preview</button><button type="button" id="pl-rec" title="Save the race as a video">● Record</button><button type="button" id="pl-full">Big screen</button></div>
+          <div class="pl-fleet"><span>Racing</span><div id="pl-fleet"></div></div>
+          <div class="pl-grid">
+            <label>Boat<select id="pl-cls"><option value="opti">Optimist</option><option value="ilca" selected>ILCA / Laser</option><option value="f420">420</option><option value="j70">J/70 keelboat</option></select></label>
+            <label>Wind <b id="pl-w-l">10 kt</b><input type="range" id="pl-w" min="4" max="24" step="1" value="10"></label>
+            <label>Puffiness <b id="pl-p-l">35%</b><input type="range" id="pl-p" min="0" max="70" step="5" value="35"></label>
+            <label>Puffs <b id="pl-n-l">9</b><input type="range" id="pl-n" min="0" max="20" step="1" value="9"></label>
+            <label>Wind shifts<select id="pl-shift"><option value="none">Steady direction</option><option value="osc">Oscillating (±10°)</option><option value="right">Persistent veer (right)</option><option value="left">Persistent back (left)</option></select></label>
+            <label>Current<select id="pl-cur"><option value="none">None</option><option value="with">With you</option><option value="against">Against you</option><option value="cross">Across the course</option></select></label>
+            <label id="pl-ckw" hidden>Current <b id="pl-ck-l">0.6 kt</b><input type="range" id="pl-ck" min="1" max="20" step="1" value="6"></label>
+            <label>Speed<select id="pl-spd"><option value="20">20×</option><option value="40" selected>40×</option><option value="80">80×</option></select></label>
+          </div>
+          <div class="pl-vmgw"><span>VMG for this boat and wind</span><canvas id="pl-vmg"></canvas></div>
         </div>
-        <p class="pl-fine">Tap the water to drop a puff. Every boat sails through the same puffs, so the only difference is how it is sailed. Illustrative speeds for a single-handed dinghy, flat water, no waves or tactics between boats: a teaching tool, not a prediction.</p>
+        <p class="pl-fine">Tap the water to drop a puff. Every boat sails through the same puffs, shifts and current, so the only difference is how it is sailed. Illustrative speeds made for teaching, not official polars; flat water, no waves, no tactics between boats.</p>
       </div>
     </div>
     <div class="tab" id="tab-kits" hidden>
@@ -6391,12 +6430,29 @@ function rerenderCurrent() {
 /* =================== Puff lab: a downwind / upwind teaching simulator for the big screen =================== */
 // Units: metres and seconds. North (screen up) is where the wind comes from. Every boat sails in the same puff field
 // (a function of time only), so the only difference between boats is technique.
-const PL = { off: 0, on: false, leg: "down", w: 10, puffy: 0.35, n: 9, spd: 40, seed: 7, puffs: [], boats: [], t: 0, run: false, raf: null, last: 0, L: 900 };
+const PL = { off: 0, on: false, leg: "down", w: 10, puffy: 0.35, n: 9, spd: 40, seed: 7, puffs: [], boats: [], t: 0, run: false, raf: null, last: 0, L: 900,
+  mode: "race", cls: "ilca", shifts: "none", shiftAmp: 10, cur: "none", curKt: 0.6, preview: false, rec: null, pick: null, off2: {},
+  fleet: { down: new Set(["lee", "ddw", "reach", "s"]), up: new Set(["left", "right", "shift", "puff"]) }, you: { off: 20, up: 43, side: -1 } };
 const PKT = 0.514444; // metres per second in a knot
+// boat classes: hull speed (kt), wind where it starts to plane (kt), upwind angle, light-air pace, seconds lost per tack or gybe
+const PL_CLASSES = {
+  opti: { name: "Optimist", hull: 3.6, plane: 99, tw: 46, k: 0.8, man: 5 },
+  ilca: { name: "ILCA / Laser", hull: 5.6, plane: 12, tw: 43, k: 1, man: 4 },
+  f420: { name: "420", hull: 6, plane: 11, tw: 42, k: 1.05, man: 4 },
+  j70: { name: "J/70 keelboat", hull: 7.2, plane: 15, tw: 40, k: 1.12, man: 6 },
+};
+const plCls = () => PL_CLASSES[PL.cls] || PL_CLASSES.ilca;
 function plRand(seed) { let x = seed >>> 0 || 1; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 4294967296); }
 function plMakePuffs() {
   const r = plRand(PL.seed), W = PL.L * 0.9; PL.puffs = [];
   for (let i = 0; i < PL.n; i++) PL.puffs.push({ x: (r() - 0.5) * W * 1.2, y0: -PL.L * (0.2 + r() * 1.6), R: 90 + r() * 140, k: (r() < 0.8 ? 1 : -0.6) * (0.6 + r() * 0.4), sh: (r() - 0.5) * 2 });
+}
+function plShift(T) { // the whole wind's direction at time T (degrees, + = veered to the right)
+  const a = PL.shiftAmp;
+  if (PL.shifts === "osc") return a * Math.sin((2 * Math.PI * T) / 240);
+  if (PL.shifts === "right") return Math.min(a * 1.5, (T / 60) * (a / 4));
+  if (PL.shifts === "left") return -Math.min(a * 1.5, (T / 60) * (a / 4));
+  return 0;
 }
 function plWind(x, y, t0) {
   const t = t0 + PL.off; // puffs keep rolling down the course before the start too // [speed m/s, direction the wind comes FROM in degrees, 0 = from the top]
@@ -6406,16 +6462,20 @@ function plWind(x, y, t0) {
     const dx = x - p.x, dy = y - py, d2 = (dx * dx + dy * dy) / (p.R * p.R); if (d2 > 6) continue;
     const g = Math.exp(-d2); add += g * p.k * PL.puffy * base; dir += g * Math.max(-1, Math.min(1, dx / p.R)) * 7 * Math.sign(p.k); // a puff fans out: wind bends away from its middle
   }
-  return [Math.max(0.5, base + add), Math.max(-12, Math.min(12, dir))]; // shifts of up to about 12 degrees
+  return [Math.max(0.5, base + add), Math.max(-12, Math.min(12, dir)) + plShift(t0)]; // puff shifts of up to about 12 degrees, plus the whole wind's shift
 }
-// boat speed (m/s) for a true wind angle (0 = head to wind, 180 = dead downwind) and wind speed: illustrative dinghy numbers
+function plCurrent() { // m/s, screen x (right) and y (down)
+  const v = PL.curKt * PKT;
+  return PL.cur === "with" ? [0, PL.leg === "down" ? v : -v] : PL.cur === "against" ? [0, PL.leg === "down" ? -v : v] : PL.cur === "cross" ? [v, 0] : [0, 0];
+}
+// boat speed (m/s) for a true wind angle (0 = head to wind, 180 = dead downwind) and wind speed: illustrative numbers per class
 function plSpeed(twa, ws) {
-  const kt = ws / PKT, a = Math.min(180, Math.max(0, twa));
-  const tab = [[0, 0], [35, 0.25], [43, 0.52], [55, 0.6], [75, 0.68], [95, 0.72], [115, 0.74], [135, 0.7], [150, 0.65], [165, 0.6], [180, 0.56]];
+  const C = plCls(), kt = ws / PKT, a = Math.min(180, Math.max(0, twa));
+  const tab = [[0, 0], [30, 0.12], [35, 0.25], [C.tw, 0.52], [55, 0.6], [75, 0.68], [95, 0.72], [115, 0.74], [135, 0.7], [150, 0.65], [165, 0.6], [180, 0.56]];
   let k = 1; while (k < tab.length - 1 && tab[k][0] < a) k++; const [a0, v0] = tab[k - 1], [a1, v1] = tab[k];
-  const f = v0 + ((v1 - v0) * (a - a0)) / (a1 - a0);
-  const planing = kt > 12 && a > 95 && a < 165 ? 1 + Math.min(0.5, (kt - 12) * 0.07) : 1, cap = 5.6 * PKT * planing; // hull speed, more when it planes
-  const v = ws * f; return cap * Math.tanh(v / cap);
+  const f = v0 + ((v1 - v0) * (a - a0)) / Math.max(1, a1 - a0);
+  const planing = kt > C.plane && a > 95 && a < 165 ? 1 + Math.min(0.5, (kt - C.plane) * 0.07) : 1, cap = C.hull * PKT * planing; // hull speed, more when it planes
+  const v = ws * f * C.k; return cap * Math.tanh(v / cap);
 }
 const PL_STYLES = {
   down: [
@@ -6431,29 +6491,40 @@ const PL_STYLES = {
     { id: "puff", name: "Sails to pressure", col: "#5BE09A", note: "heads for the next puff" },
   ],
 };
+const PL_YOU = { id: "you", name: "You", col: "#FFD23F", note: "steer with the buttons or arrow keys" };
 function plReset() {
-  plMakePuffs(); PL.t = 0;
+  plMakePuffs(); PL.t = 0; PL.result = null;
   const down = PL.leg === "down", start = down ? [0, -PL.L / 2] : [0, PL.L / 2], mark = down ? [0, PL.L / 2] : [0, -PL.L / 2];
   PL.mark = mark;
-  PL.boats = PL_STYLES[PL.leg].map((st, i) => ({ st, lay: false, fetch: false, tackAt: -99, x: start[0] + (i - 1.5) * 14, y: start[1], hdg: down ? 180 : 0, side: i % 2 ? 1 : -1, trail: [[start[0] + (i - 1.5) * 14, start[1]]], done: null, slow: 0, v: 0, vmg: 0, ws: 0, ang: 0 }));
-  plDrawRows(); plDraw();
+  const styles = PL_STYLES[PL.leg].filter((st) => PL.fleet[PL.leg].has(st.id));
+  if (PL.mode === "steer") styles.push(PL_YOU);
+  PL.you = { off: 20, up: plCls().tw, side: -1 };
+  const n = styles.length;
+  PL.boats = styles.map((st, i) => { const x0 = start[0] + (i - (n - 1) / 2) * 14;
+    return { st, lay: false, fetch: false, tackAt: -99, x: x0, y: start[1], hdg: down ? 180 : 0, side: i % 2 ? 1 : -1, trail: [[x0, start[1]]], done: null, slow: 0, v: 0, vmg: 0, ws: 0, ang: 0,
+      dist: 0, puffT: 0, wsum: 0, man: 0, dnf: false }; });
+  plDrawRows(); plDraw(); plVmgChart();
 }
 function plStep(dt) {
-  PL.t += dt; const down = PL.leg === "down";
+  PL.t += dt; const down = PL.leg === "down", C = plCls(), [cx, cy] = plCurrent();
   for (const b of PL.boats) {
     if (b.done != null) continue;
     const [ws, wd] = plWind(b.x, b.y, PL.t), toMark = Math.atan2(PL.mark[0] - b.x, -(PL.mark[1] - b.y)) * 180 / Math.PI; // bearing, 0 = up
     const windTo = 180 + wd; // where the wind blows toward
-    let off;
-    if (down) {
+    const sideWas = b.side;
+    if (b.st.id === "you") { // the person at the screen steers
+      if (down) { const off = Math.abs(PL.you.off); b.side = PL.you.side; b.hdg = windTo + b.side * off; b.ang = off; b.lee = PL.you.off < 0; }
+      else { b.side = PL.you.side; b.hdg = wd + b.side * PL.you.up; b.ang = PL.you.up; }
+      if (b.side !== sideWas) { b.slow = C.man; b.man++; }
+    } else if (down) {
       const st = b.st, puff = ws > PL.w * PKT * 1.08, lull = ws < PL.w * PKT * 0.95;
       const off = st.off === "s" ? (puff ? 15 : lull ? 32 : 22) : Math.abs(st.off), lee = st.off === -15 || (st.off === "s" && puff);
       const rel = ((toMark - windTo + 540) % 360) - 180; // the mark's angle off dead downwind
-      if (off >= 1 && Math.sign(rel) === -b.side && Math.abs(rel) > off - 1) { b.side *= -1; b.slow = 3; } // the mark is past the layline: gybe
+      if (off >= 1 && Math.sign(rel) === -b.side && Math.abs(rel) > off - 1) { b.side *= -1; b.slow = C.man * 0.75; b.man++; } // the mark is past the layline: gybe
       b.hdg = off < 1 || Math.abs(rel) > off + 1 ? toMark : windTo + b.side * off; b.ang = off < 1 ? Math.abs(rel) : off; b.lee = lee;
     } else {
-      const TW = 43, rel = ((toMark - wd + 540) % 360) - 180, st = b.st.id; // mark's angle off the wind direction
-      let side = b.side;
+      const TW = C.tw, rel = ((toMark - wd + 540) % 360) - 180, st = b.st.id; // mark's angle off the wind direction
+      let side = b.side; const onLay = b.lay || b.fetch; // already on a layline before this step
       if (st === "left" || st === "right") { // out to one side until the mark is on the layline, then commit
         side = st === "left" ? (b.lay || rel >= TW - 1 ? 1 : -1) : (b.lay || rel <= -(TW - 1) ? -1 : 1);
         if ((st === "left" && side === 1) || (st === "right" && side === -1)) b.lay = true;
@@ -6461,95 +6532,217 @@ function plStep(dt) {
       else { let best = side, bv = -1; for (const sd of [-1, 1]) { const h = (wd + sd * TW) * Math.PI / 180, [w2] = plWind(b.x + Math.sin(h) * 120, b.y - Math.cos(h) * 120, PL.t); const v = w2 * Math.cos((wd + sd * TW - toMark) * Math.PI / 180) * (sd === b.side ? 1.15 : 1); if (v > bv) { bv = v; best = sd; } } side = best; }
       if ((st === "shift" || st === "puff") && side !== b.side && PL.t - (b.tackAt || -99) < (st === "puff" ? 40 : 25)) side = b.side; // no tacking again too soon
       if (st === "shift" || st === "puff") { if (!b.fetch && Math.abs(rel) >= TW - 2) { side = Math.sign(rel); b.fetch = true; } else if (b.fetch) side = b.side; } // reached a layline: tack and commit
-      if ((b.fetch || b.lay) && Math.abs(rel) > TW + 8 && Math.sign(rel) !== side && PL.t - (b.tackAt || -99) > 15) side = Math.sign(rel); // clearly overstood: tack back for the mark
-      if (side !== b.side) { b.side = side; b.slow = 4; b.tackAt = PL.t; }
+      if (onLay) { // on the layline: sail the tack that points closest to the mark; tack again only for a clear gain (shifts, current)
+        const off = (sd) => Math.abs(((wd + sd * TW - toMark + 540) % 360) - 180), best = off(1) < off(-1) ? 1 : -1;
+        side = best !== b.side && off(b.side) - off(best) > 6 && PL.t - (b.tackAt || -99) > 12 ? best : b.side;
+      }
+      if (side !== b.side) { b.side = side; b.slow = C.man; b.tackAt = PL.t; b.man++; }
       b.hdg = wd + b.side * TW; b.ang = TW;
       const dm = Math.hypot(PL.mark[0] - b.x, PL.mark[1] - b.y);
-      if (dm < 70 && Math.abs(rel) >= 33) { b.hdg = toMark; b.ang = Math.min(90, Math.abs(rel)); } // close to the mark and nearly fetching: go straight in
+      if (Math.abs(rel) >= TW + 1 || (dm < 70 && Math.abs(rel) >= TW - 10)) { b.hdg = toMark; b.ang = Math.min(180, Math.abs(rel)); } // past the layline (or right at the mark): bear away and sail straight to it
     }
     let v = plSpeed(down ? 180 - b.ang : b.ang, ws); if (down && b.lee) v *= 1.05; // by the lee the sail still flows: a touch quicker this deep
     if (b.slow > 0) { v *= 0.45; b.slow -= dt; }
-    const h = b.hdg * Math.PI / 180; b.x += Math.sin(h) * v * dt; b.y -= Math.cos(h) * v * dt;
+    const h = b.hdg * Math.PI / 180, dx = Math.sin(h) * v * dt + cx * dt, dy = -Math.cos(h) * v * dt + cy * dt;
+    b.x += dx; b.y += dy; b.dist += Math.hypot(dx, dy);
     b.v = v; b.ws = ws; b.vmg = v * Math.cos(((b.hdg - (down ? windTo : wd)) * Math.PI) / 180);
+    b.wsum += ws * dt; if (ws > PL.w * PKT * 1.08) b.puffT += dt;
     if (PL.t % 2 < dt) b.trail.push([b.x, b.y]);
     if (Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]) < 22) { b.done = PL.t; b.trail.push([PL.mark[0], PL.mark[1]]); }
   }
+  // the person steering gets a cut-off: 50% longer than the slowest computer boat
+  const ai = PL.boats.filter((b) => b.st.id !== "you"), you = PL.boats.find((b) => b.st.id === "you");
+  if (you && you.done == null && ai.length && ai.every((b) => b.done != null) && PL.t > Math.max(...ai.map((b) => b.done)) * 1.5) { you.done = PL.t; you.dnf = true; }
+  if (!ai.length && you && you.done == null && PL.t > 3600) { you.done = PL.t; you.dnf = true; }
 }
 const plFmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+const plOrder = () => PL.boats.slice().sort((a, b) => (a.dnf - b.dnf) || (a.done ?? 1e9) - (b.done ?? 1e9) || Math.hypot(a.x - PL.mark[0], a.y - PL.mark[1]) - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]));
 function plDrawRows() {
-  const order = PL.boats.slice().sort((a, b) => (a.done ?? 1e9) - (b.done ?? 1e9) || Math.hypot(a.x - PL.mark[0], a.y - PL.mark[1]) - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]));
+  const order = plOrder(), fin = PL.boats.length && PL.boats.every((b) => b.done != null);
+  const kt = (x) => (x / PKT).toFixed(x / PKT < 10 ? 2 : 1);
   $("#pl-rows").innerHTML = PL.boats.map((b) => {
-    const pos = order.indexOf(b) + 1, prog = Math.max(0, Math.min(1, 1 - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]) / PL.L));
-    const kt = (x) => (x / PKT).toFixed(x / PKT < 10 ? 2 : 1), ang = Math.round(b.ang || 0);
-    return `<div class="pl-row" style="--c:${b.st.col}"><div class="pl-r1"><b>${b.st.name}</b><span>${esc(b.st.note)}</span><em>${b.done != null ? `${["1st", "2nd", "3rd", "4th"][pos - 1]} · ${plFmt(b.done)}` : PL.t > 0 ? `${Math.round(prog * 100)}%` : ""}</em></div>
-      <div class="pl-r2">VMG = ${kt(b.v)} × cos ${ang}° = ${kt(Math.max(0, b.vmg))} kt · wind ${kt(b.ws || PL.w * PKT)} kt</div><i style="width:${(b.done != null ? 1 : prog) * 100}%"></i></div>`;
+    const pos = order.indexOf(b) + 1, prog = Math.max(0, Math.min(1, 1 - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]) / PL.L)), ang = Math.round(b.ang || 0);
+    const place = b.dnf ? "DNF" : `${["1st", "2nd", "3rd", "4th", "5th", "6th"][pos - 1]} · ${plFmt(b.done)}`;
+    const stats = fin && b.done ? `<div class="pl-r3">${(b.dist / 1852).toFixed(2)} nm sailed · ${Math.round((b.puffT / b.done) * 100)}% in puffs · avg wind ${kt(b.wsum / b.done)} kt · ${b.man} ${PL.leg === "down" ? "gybe" : "tack"}${b.man === 1 ? "" : "s"}</div>` : "";
+    const pickBtn = PL.mode === "quiz" && PL.t === 0 && b.st.id !== "you" ? `<button type="button" class="pl-pick${PL.pick === b.st.id ? " on" : ""}" data-pick="${b.st.id}">${PL.pick === b.st.id ? "Your pick" : "Pick to win"}</button>` : PL.pick === b.st.id && PL.mode === "quiz" ? `<span class="pl-tag">your pick</span>` : "";
+    return `<div class="pl-row${b.st.id === "you" ? " you" : ""}" style="--c:${b.st.col}"><div class="pl-r1"><b>${b.st.name}</b><span>${esc(b.st.note)}</span>${pickBtn}<em>${b.done != null ? place : PL.t > 0 ? `${Math.round(prog * 100)}%` : ""}</em></div>
+      <div class="pl-r2">VMG = ${kt(b.v)} × cos ${ang}° = ${kt(Math.max(0, b.vmg))} kt · wind ${kt(b.ws || PL.w * PKT)} kt</div>${stats}<i style="width:${(b.done != null ? 1 : prog) * 100}%"></i></div>`;
   }).join("");
+  $("#pl-rows").querySelectorAll("[data-pick]").forEach((x) => x.addEventListener("click", () => { PL.pick = x.dataset.pick; plDrawRows(); }));
   const down = PL.leg === "down";
-  $("#pl-kick").textContent = `${down ? "Downwind" : "Upwind"} · ${PL.boats.length} boats`;
+  $("#pl-kick").textContent = `${down ? "Downwind" : "Upwind"} · ${plCls().name} · ${PL.boats.length} boats${PL.shifts !== "none" ? ` · ${{ osc: "oscillating shifts", right: "persistent veer", left: "persistent back" }[PL.shifts]}` : ""}${PL.cur !== "none" ? ` · ${PL.curKt} kt current ${PL.cur === "cross" ? "across" : PL.cur}` : ""}`;
   $("#pl-big").textContent = `${PL.w} kt, ${Math.round(PL.puffy * 100)}% puffs`; $("#pl-windkt").textContent = `${PL.w} kt`;
-  $("#pl-sub").textContent = PL.leg === "down"
+  $("#pl-sub").textContent = PL.mode === "steer" ? (down ? "You steer the yellow boat. ◀ ▶ change your angle, Gybe swaps sides. Beat the computer boats." : "You steer the yellow boat. ◀ ▶ pinch or foot, Tack swaps sides. Beat the computer boats.")
+    : PL.mode === "quiz" && PL.t === 0 ? "Who will win? Pick a boat, then press Race."
+    : PL.leg === "down"
     ? (PL.w < 8 ? "Light air: stay in the pressure and sail the angles that keep the boat moving." : PL.w < 13 ? "Medium: watch who goes deep in the puffs and who reaches through the lulls." : "Breeze: the boats that plane on the reach can beat the ones sailing straight at the mark.")
-    : (PL.w < 8 ? "Light air: pressure beats angle. Watch where the puffs come from." : "Upwind: who gains from the shifts, and who gains from the pressure?");
+    : (PL.shifts === "osc" ? "Oscillating shifts: the boat that tacks on the headers should gain." : PL.shifts !== "none" ? "Persistent shift: the side the wind is moving toward pays." : PL.w < 8 ? "Light air: pressure beats angle. Watch where the puffs come from." : "Upwind: who gains from the shifts, and who gains from the pressure?");
   $("#pl-clock").textContent = `race clock ${plFmt(PL.t)}`;
+  $("#pl-steer").hidden = !(PL.mode === "steer" && PL.run);
+  $("#pl-gybe").textContent = down ? "Gybe" : "Tack";
+  const you = PL.boats.find((b) => b.st.id === "you");
+  if (you) $("#pl-you-ang").textContent = down ? (PL.you.off < 0 ? `${-PL.you.off}° by the lee` : `${PL.you.off}° off downwind`) : `${PL.you.up}° to the wind`;
+  plCoachNote(fin);
+}
+function plCoachNote(fin) { // after the race: why the winner won, in numbers
+  const box = $("#pl-note"); if (!fin) { box.hidden = true; return; }
+  const ok = PL.boats.filter((b) => !b.dnf); if (!ok.length) { box.hidden = true; return; }
+  const order = plOrder(), w = order[0], others = ok.filter((b) => b !== w), avg = (f) => others.reduce((a, b) => a + f(b), 0) / Math.max(1, others.length);
+  const pct = (b) => b.puffT / b.done, wind = (b) => b.wsum / b.done, dist = (b) => b.dist;
+  const reasons = [];
+  if (others.length && pct(w) > avg(pct) + 0.06) reasons.push(`it spent ${Math.round(pct(w) * 100)}% of the race in puffs (the others ${Math.round(avg(pct) * 100)}%)`);
+  if (others.length && wind(w) > avg(wind) * 1.03) reasons.push(`it sailed in more wind: ${(wind(w) / PKT).toFixed(1)} kt on average against ${(avg(wind) / PKT).toFixed(1)} kt`);
+  if (others.length && dist(w) < avg(dist) * 0.97) reasons.push(`it sailed the shortest way: ${(dist(w) / 1852).toFixed(2)} nm against ${(avg(dist) / 1852).toFixed(2)} nm`);
+  if (others.length && w.man < avg((b) => b.man) - 1) reasons.push(`it did fewer ${PL.leg === "down" ? "gybes" : "tacks"} (${w.man})`);
+  if (!reasons.length) reasons.push("it kept the best balance of speed, angle and distance");
+  let quiz = "";
+  if (PL.mode === "quiz" && PL.pick && !PL.scored) {
+    PL.scored = true; const right = PL.pick === w.st.id, s = store("plScore") || { right: 0, total: 0 }; s.total++; if (right) s.right++; store("plScore", s);
+    PL.quizMsg = `${right ? "You called it!" : `Not this time: you picked ${PL_STYLES[PL.leg].find((x) => x.id === PL.pick).name}.`} Score ${s.right}/${s.total}.`;
+  }
+  if (PL.mode === "quiz" && PL.quizMsg) quiz = `<b class="pl-quiz">${esc(PL.quizMsg)}</b> `;
+  const you = PL.boats.find((b) => b.st.id === "you");
+  const youMsg = you ? (you.dnf ? " You ran out of time: keep the bow pointed at the mark side and avoid extra gybes." : ` You finished ${["1st", "2nd", "3rd", "4th", "5th", "6th"][order.indexOf(you)]}${you === w ? "!" : `, ${Math.round(you.done - w.done)} s behind.`}`) : "";
+  box.innerHTML = `${quiz}<b>Coach's note:</b> ${esc(w.st.name)} won because ${reasons.join(", and ")}.${esc(youMsg)}`; box.hidden = false;
 }
 function plDraw() {
   const cv = $("#pl-cv"); if (!cv) return; const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
-  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  if (!W || !H) return;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
   const sc = Math.min(W / (PL.L * 1.15), H / (PL.L * 1.12)), X = (x) => W / 2 + x * sc, Y = (y) => H / 2 + y * sc;
   c.fillStyle = "#0C1F36"; c.fillRect(0, 0, W, H);
-  // pressure: darker where the wind is stronger (drawn on a coarse grid, then softened)
+  // pressure: brighter where the wind is stronger (drawn on a coarse grid, then softened)
   const g = 22, off = document.createElement("canvas"); off.width = Math.ceil(W / g); off.height = Math.ceil(H / g); const oc = off.getContext("2d"), im = oc.createImageData(off.width, off.height), base = PL.w * PKT;
   for (let j = 0; j < off.height; j++) for (let i = 0; i < off.width; i++) {
     const [ws] = plWind((i * g + g / 2 - W / 2) / sc, (j * g + g / 2 - H / 2) / sc, PL.t), d = (ws - base) / (base * 0.6 + 0.01), k = (j * off.width + i) * 4;
     if (d > 0) { im.data[k] = 40; im.data[k + 1] = 150; im.data[k + 2] = 210; im.data[k + 3] = Math.min(190, d * 220); } else { im.data[k] = 2; im.data[k + 1] = 8; im.data[k + 2] = 18; im.data[k + 3] = Math.min(170, -d * 280); }
   }
   oc.putImageData(im, 0, 0); c.save(); c.filter = "blur(14px)"; c.imageSmoothingEnabled = true; c.drawImage(off, 0, 0, off.width * g, off.height * g); c.restore();
-  // wind streaks
-  c.strokeStyle = "rgba(201,214,230,.35)"; c.lineWidth = 1; const r = plRand(3);
-  for (let i = 0; i < 70; i++) { const x = r() * W, y = ((r() * H + (PL.t + PL.off) * base * sc * 1.2) % (H + 40)) - 20; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 10); c.stroke(); }
+  // puff preview: where the pressure will be in 30 seconds (dashed outlines)
+  if (PL.preview) {
+    const t2 = PL.t + 30 + PL.off, drift = base * 0.75, span = PL.L * 2.6; c.save(); c.setLineDash([5, 6]); c.lineWidth = 1.5;
+    for (const p of PL.puffs) { if (p.k <= 0) continue; const py = ((p.y0 + drift * t2 + PL.L * 1.1) % span + span) % span - PL.L * 1.1;
+      c.strokeStyle = "rgba(255,210,63,.7)"; c.beginPath(); c.arc(X(p.x), Y(py), p.R * sc * 0.9, 0, 7); c.stroke(); }
+    c.restore(); c.font = `500 11px ${css("--f-mono")}`; c.fillStyle = "rgba(255,210,63,.85)"; c.textAlign = "left"; c.fillText("dashed: puffs in 30 s", 10, H - 12);
+  }
+  // wind streaks, leaning with the wind's shift
+  const sh = plShift(PL.t) * Math.PI / 180; c.strokeStyle = "rgba(201,214,230,.35)"; c.lineWidth = 1; const r = plRand(3);
+  for (let i = 0; i < 70; i++) { const x = r() * W, y = ((r() * H + (PL.t + PL.off) * base * sc * 1.2) % (H + 40)) - 20; c.beginPath(); c.moveTo(x, y); c.lineTo(x - Math.sin(sh) * 10, y + Math.cos(sh) * 10); c.stroke(); }
+  // current arrows
+  const [cx, cy] = plCurrent();
+  if (cx || cy) { const a = Math.atan2(cx, cy); c.strokeStyle = "rgba(91,224,154,.55)"; c.lineWidth = 1.6;
+    for (let i = 0; i < 6; i++) for (let j = 0; j < 4; j++) { const x0 = W * (0.12 + i * 0.15), y0 = H * (0.18 + j * 0.22), L2 = 16;
+      c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + Math.sin(a) * L2, y0 + Math.cos(a) * L2); c.lineTo(x0 + Math.sin(a) * L2 - Math.sin(a - 0.5) * 6, y0 + Math.cos(a) * L2 - Math.cos(a - 0.5) * 6); c.stroke(); } }
   // course
-  const down = PL.leg === "down", top = [0, -PL.L / 2], bot = [0, PL.L / 2];
+  const top = [0, -PL.L / 2], bot = [0, PL.L / 2];
   c.strokeStyle = "rgba(201,214,230,.3)"; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(X(0), Y(top[1])); c.lineTo(X(0), Y(bot[1])); c.stroke(); c.setLineDash([]);
   c.font = `500 12px ${css("--f-mono")}`; c.fillStyle = "#8FA3BC"; c.textAlign = "center";
   c.fillText("windward mark", X(0), Y(top[1]) - 14); c.fillText("leeward mark", X(0), Y(bot[1]) + 22);
   for (const m of [top, bot]) { c.fillStyle = "#F0642D"; c.strokeStyle = "#0C1F36"; c.lineWidth = 2; c.beginPath(); c.arc(X(m[0]), Y(m[1]), 7, 0, 7); c.fill(); c.stroke(); }
+  // laylines for the person steering, upwind
+  const you = PL.boats.find((b) => b.st.id === "you");
+  if (you && PL.leg === "up" && PL.run) { const wd = plWind(PL.mark[0], PL.mark[1], PL.t)[1], tw = plCls().tw; c.strokeStyle = "rgba(255,210,63,.35)"; c.setLineDash([2, 5]);
+    for (const s of [-1, 1]) { const a = (wd + 180 + s * tw) * Math.PI / 180; c.beginPath(); c.moveTo(X(PL.mark[0]), Y(PL.mark[1])); c.lineTo(X(PL.mark[0] + Math.sin(a) * PL.L), Y(PL.mark[1] - Math.cos(a) * PL.L)); c.stroke(); } c.setLineDash([]); }
   // trails and boats
   for (const b of PL.boats) {
-    c.strokeStyle = b.st.col; c.lineWidth = 2.2; c.beginPath(); b.trail.concat([[b.x, b.y]]).forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke();
+    c.strokeStyle = b.st.col; c.lineWidth = b.st.id === "you" ? 3 : 2.2; c.beginPath(); b.trail.concat([[b.x, b.y]]).forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke();
     c.save(); c.translate(X(b.x), Y(b.y)); c.rotate((b.hdg * Math.PI) / 180); c.fillStyle = b.st.col;
+    const s = b.st.id === "you" ? 1.35 : 1; c.scale(s, s);
     c.strokeStyle = "#0C1F36"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -12); c.quadraticCurveTo(7, -2, 5, 8); c.lineTo(-5, 8); c.quadraticCurveTo(-7, -2, 0, -12); c.closePath(); c.fill(); c.stroke(); c.restore();
   }
+  // wind direction indicator when the wind shifts
+  if (PL.shifts !== "none") { const a = plShift(PL.t); c.save(); c.translate(W - 34, 52); c.rotate(a * Math.PI / 180); c.strokeStyle = "#F0642D"; c.lineWidth = 2.5; c.beginPath(); c.moveTo(0, -16); c.lineTo(0, 16); c.lineTo(-5, 9); c.moveTo(0, 16); c.lineTo(5, 9); c.stroke(); c.restore();
+    c.font = `500 11px ${css("--f-mono")}`; c.fillStyle = "#E9EEF5"; c.textAlign = "center"; c.fillText(`${a >= 0 ? "+" : ""}${Math.round(a)}°`, W - 34, 84); }
+}
+function plVmgChart() { // VMG against angle for this boat in this wind, best angle marked
+  const cv = $("#pl-vmg"); if (!cv) return; const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1); if (!W) return;
+  cv.width = W * dpr; cv.height = H * dpr; const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, W, H);
+  const down = PL.leg === "down", ws = PL.w * PKT, pts = [];
+  for (let a = down ? 0 : 30; a <= (down ? 60 : 70); a += 1) { const twa = down ? 180 - a : a; let v = plSpeed(twa, ws); if (down && a <= 15) v *= 1 + 0.05 * (a / 15); pts.push([a, v * Math.cos(a * Math.PI / 180) / PKT]); }
+  const max = Math.max(...pts.map((p) => p[1])), best = pts.find((p) => p[1] === max), x0 = pts[0][0], x1 = pts[pts.length - 1][0];
+  const X = (a) => 30 + ((a - x0) / (x1 - x0)) * (W - 44), Y = (v) => H - 22 - (v / (max * 1.15)) * (H - 36);
+  c.strokeStyle = "#22344F"; c.lineWidth = 1; c.beginPath(); c.moveTo(30, H - 22); c.lineTo(W - 10, H - 22); c.stroke();
+  c.strokeStyle = "#4FB3FF"; c.lineWidth = 2; c.beginPath(); pts.forEach(([a, v], i) => (i ? c.lineTo(X(a), Y(v)) : c.moveTo(X(a), Y(v)))); c.stroke();
+  c.fillStyle = "#F0642D"; c.beginPath(); c.arc(X(best[0]), Y(best[1]), 4, 0, 7); c.fill();
+  c.font = `500 10.5px ${css("--f-mono")}`; c.fillStyle = "#8FA3BC"; c.textAlign = "center";
+  for (let a = Math.ceil(x0 / 10) * 10; a <= x1; a += 10) c.fillText(`${a}°`, X(a), H - 8);
+  c.textAlign = "left"; c.fillStyle = "#E9EEF5"; c.fillText(`best VMG ${best[1].toFixed(2)} kt at ${best[0]}° ${down ? "off downwind" : "to the wind"}`, 32, 13);
 }
 function plLoop(ts) {
   if (!PL.on) return;
   const dt = Math.min(0.1, (ts - (PL.last || ts)) / 1000); PL.last = ts;
   if (!PL.run) PL.off += PL.spd * dt * 0.5; // between races the puffs keep drifting (at half speed)
-  if (PL.run) { const steps = Math.ceil(PL.spd * dt / 0.5); for (let i = 0; i < steps; i++) plStep((PL.spd * dt) / steps); if (PL.boats.every((b) => b.done != null)) { PL.run = false; $("#pl-run").textContent = "▶ Race again"; } plDrawRows(); }
+  if (PL.run) {
+    const spd = PL.mode === "steer" ? Math.min(PL.spd, 20) : PL.spd; // slower when a person is steering
+    const steps = Math.ceil(spd * dt / 0.5); for (let i = 0; i < steps; i++) plStep((spd * dt) / steps);
+    if (PL.boats.every((b) => b.done != null)) { PL.run = false; $("#pl-run").textContent = "▶ Race again"; plRecStop(); }
+    plDrawRows();
+  }
   plDraw(); PL.raf = requestAnimationFrame(plLoop);
+}
+/* record the race as a video clip (the canvas only) */
+function plRecStart() {
+  const cv = $("#pl-cv"); if (!cv.captureStream || typeof MediaRecorder === "undefined") { showMsg($("#pl-msg"), "This browser cannot record video. Try Chrome on a computer."); return false; }
+  const type = ["video/mp4;codecs=avc1", "video/webm;codecs=vp9", "video/webm"].find((t) => MediaRecorder.isTypeSupported(t)); if (!type) return false;
+  const rec = new MediaRecorder(cv.captureStream(30), { mimeType: type, videoBitsPerSecond: 6e6 }), chunks = [];
+  rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+  rec.onstop = () => { const blob = new Blob(chunks, { type }), a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `gustiq-puff-lab.${type.includes("mp4") ? "mp4" : "webm"}`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); $("#pl-rec").classList.remove("on"); };
+  rec.start(); PL.rec = rec; $("#pl-rec").classList.add("on"); return true;
+}
+function plRecStop() { if (PL.rec && PL.rec.state === "recording") PL.rec.stop(); PL.rec = null; }
+function plStartRace() {
+  if (PL.mode === "quiz" && !PL.pick) { showMsg($("#pl-msg"), "Pick the boat you think will win first."); return; }
+  showMsg($("#pl-msg"), "");
+  if (PL.boats.every((b) => b.done != null) || PL.t === 0) { const pf = PL.puffs.slice(); plReset(); PL.puffs = pf; PL.scored = false; PL.quizMsg = null; }
+  PL.run = true; PL.last = 0; $("#pl-run").textContent = "❚❚ Pause";
+  const st = $("#pl-cv").getBoundingClientRect(); if (st.top < 60 || st.bottom > innerHeight) $("#pl-cv").scrollIntoView({ behavior: "smooth", block: "center" }); // the course on screen
+  if ($("#pl-rec").classList.contains("armed")) { $("#pl-rec").classList.remove("armed"); plRecStart(); }
 }
 function plEnter() {
   PL.on = true;
   if (!PL.init) {
     PL.init = true;
-    const bind = (id, k, f, lab) => { const el = $(id); el.addEventListener("input", () => { PL[k] = f(+el.value); $(lab).textContent = el.value + (k === "w" ? " kt" : k === "puffy" ? "%" : ""); if (!PL.run) plReset(); }); };
-    bind("#pl-w", "w", (v) => v, "#pl-w-l"); bind("#pl-p", "puffy", (v) => v / 100, "#pl-p-l"); bind("#pl-n", "n", (v) => v, "#pl-n-l");
+    const reset = () => { PL.run = false; plRecStop(); $("#pl-run").textContent = "▶ Race"; plReset(); };
+    const bind = (id, k, f, lab, unit) => { const el = $(id); el.addEventListener("input", () => { PL[k] = f(+el.value); $(lab).textContent = el.value + unit; if (!PL.run) plReset(); else plVmgChart(); }); };
+    bind("#pl-w", "w", (v) => v, "#pl-w-l", " kt"); bind("#pl-p", "puffy", (v) => v / 100, "#pl-p-l", "%"); bind("#pl-n", "n", (v) => v, "#pl-n-l", "");
+    bind("#pl-ck", "curKt", (v) => v / 10, "#pl-ck-l", ""); $("#pl-ck").addEventListener("input", () => ($("#pl-ck-l").textContent = (+$("#pl-ck").value / 10).toFixed(1) + " kt"));
     $("#pl-spd").addEventListener("change", (e) => (PL.spd = +e.target.value));
-    document.querySelectorAll("#pl-leg button").forEach((b) => b.addEventListener("click", () => { PL.leg = b.dataset.v; document.querySelectorAll("#pl-leg button").forEach((x) => x.classList.toggle("active", x === b)); PL.run = false; $("#pl-run").textContent = "▶ Race"; plReset(); }));
-    $("#pl-run").addEventListener("click", () => { if (PL.run) { PL.run = false; $("#pl-run").textContent = "▶ Resume"; return; } if (PL.boats.every((b) => b.done != null) || PL.t === 0) { const s0 = PL.seed, pf = PL.puffs.slice(); plReset(); PL.puffs = pf; } PL.run = true; PL.last = 0; $("#pl-run").textContent = "❚❚ Pause"; });
-    $("#pl-new").addEventListener("click", () => { PL.seed = (PL.seed * 7 + 13) % 100000; PL.run = false; $("#pl-run").textContent = "▶ Race"; plReset(); });
-    $("#pl-full").addEventListener("click", () => { const el = $("#pl-wrap"); if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => el.classList.toggle("pl-max")); else el.classList.toggle("pl-max"); setTimeout(plDraw, 200); });
+    $("#pl-cls").addEventListener("change", (e) => { PL.cls = e.target.value; reset(); });
+    $("#pl-shift").addEventListener("change", (e) => { PL.shifts = e.target.value; reset(); });
+    $("#pl-cur").addEventListener("change", (e) => { PL.cur = e.target.value; $("#pl-ckw").hidden = PL.cur === "none"; reset(); });
+    const seg = (id, key) => document.querySelectorAll(`#${id} button`).forEach((b) => b.addEventListener("click", () => { PL[key] = b.dataset.v; document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle("active", x === b)); if (key === "mode") PL.pick = null; plFleetChips(); reset(); }));
+    seg("pl-leg", "leg"); seg("pl-mode", "mode");
+    $("#pl-run").addEventListener("click", () => { if (PL.run) { PL.run = false; $("#pl-run").textContent = "▶ Resume"; return; } plStartRace(); });
+    $("#pl-new").addEventListener("click", () => { PL.seed = (PL.seed * 7 + 13) % 100000; reset(); });
+    $("#pl-prev").addEventListener("click", (e) => { PL.preview = !PL.preview; e.currentTarget.classList.toggle("on", PL.preview); plDraw(); });
+    $("#pl-rec").addEventListener("click", (e) => { const b = e.currentTarget; if (PL.rec) { plRecStop(); return; } if (PL.run) { plRecStart(); return; } b.classList.toggle("armed"); showMsg($("#pl-msg"), b.classList.contains("armed") ? "Recording starts when you press Race and saves a video when the race ends." : ""); });
+    $("#pl-full").addEventListener("click", () => { const el = $("#pl-wrap"); if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => el.classList.toggle("pl-max")); else el.classList.toggle("pl-max"); setTimeout(() => { plDraw(); plVmgChart(); }, 200); });
+    // steering: buttons, arrow keys and space
+    const steer = (d) => { if (PL.leg === "down") PL.you.off = Math.max(-20, Math.min(60, PL.you.off + d * 5)); else PL.you.up = Math.max(plCls().tw - 6, Math.min(plCls().tw + 14, PL.you.up + d * 2)); plDrawRows(); };
+    $("#pl-left").addEventListener("click", () => steer(PL.leg === "down" ? -1 : -1)); $("#pl-right").addEventListener("click", () => steer(1));
+    $("#pl-gybe").addEventListener("click", () => { PL.you.side *= -1; });
+    addEventListener("keydown", (e) => { if (!PL.on || PL.mode !== "steer" || !PL.run) return; if (e.key === "ArrowLeft") { steer(-1); e.preventDefault(); } else if (e.key === "ArrowRight") { steer(1); e.preventDefault(); } else if (e.key === " ") { PL.you.side *= -1; e.preventDefault(); } });
     $("#pl-cv").addEventListener("click", (e) => { // drop a puff where the coach taps
       const cv = e.currentTarget, rc = cv.getBoundingClientRect(), W = cv.clientWidth, H = cv.clientHeight, sc = Math.min(W / (PL.L * 1.15), H / (PL.L * 1.12));
       const x = (e.clientX - rc.left - W / 2) / sc, y = (e.clientY - rc.top - H / 2) / sc, drift = PL.w * PKT * 0.75;
       PL.puffs.push({ x, y0: y - drift * (PL.t + PL.off), R: 150, k: 1, sh: 0 }); plDraw();
     });
-    addEventListener("resize", () => PL.on && plDraw());
-    plReset();
+    addEventListener("resize", () => { if (PL.on) { plDraw(); plVmgChart(); } });
+    plFleetChips(); plReset();
   }
   cancelAnimationFrame(PL.raf); PL.last = 0; PL.raf = requestAnimationFrame(plLoop);
+  setTimeout(plVmgChart, 50);
 }
-function plLeave() { PL.on = false; cancelAnimationFrame(PL.raf); }
+function plFleetChips() { // which techniques race
+  $("#pl-fleet").innerHTML = PL_STYLES[PL.leg].map((st) => `<button type="button" class="pl-fc${PL.fleet[PL.leg].has(st.id) ? " on" : ""}" data-f="${st.id}" style="--c:${st.col}">${st.name}</button>`).join("");
+  $("#pl-fleet").querySelectorAll("[data-f]").forEach((b) => b.addEventListener("click", () => {
+    const set = PL.fleet[PL.leg], id = b.dataset.f;
+    if (set.has(id)) { if (set.size > (PL.mode === "steer" ? 0 : 1)) set.delete(id); } else set.add(id);
+    plFleetChips(); PL.run = false; plRecStop(); $("#pl-run").textContent = "▶ Race"; plReset();
+  }));
+}
+function plLeave() { PL.on = false; cancelAnimationFrame(PL.raf); plRecStop(); }
 /* Share a link: the phone's share sheet when there is one, otherwise copy to the clipboard */
 async function shareLink(hash, title, btn) {
   const base = window.NOCKD_DATA || (location.origin + location.pathname);
@@ -6768,6 +6961,7 @@ async function crOpen(p) {
     if (CRUISE.sel === p) crRenderDetail(p, null);
   }
   if (!["food", "eat"].includes(p[0]) && p.mfc === undefined) { p.mfc = null; crMarineFcst(p).then((m) => { p.mfc = m; if (m && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
+  if (["anchorage", "mooring", "mooring_field"].includes(p[0]) && p.shelter === undefined) crShelter(p).then((sh) => { if (sh && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); });
   if (["anchorage", "mooring", "mooring_field"].includes(p[0]) && p.bottom === undefined) { p.bottom = null; sbNear(p[1], p[2], 800).then((l) => { p.bottom = sbSummary(l.slice(0, 15)) || false; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (p[0] !== "food" && p.here === undefined) { p.here = null; crHereNow(p).then((h) => { p.here = h; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (CR_TONIGHT_TYPES.has(p[0]) && p.tonight === undefined) { crTonight(p).then(() => { if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
@@ -6825,7 +7019,7 @@ function crRenderDetail(p, reports, offline) {
   }
   $("#cr-detail").innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
     <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : p[0] === "eat" ? ({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[x.amenity] || "Restaurant") + (x.cuisine ? ` · ${x.cuisine.split(";")[0].replace(/_/g, " ")}` : "") : crTypeName(p[0]))}</span></div></div>
-    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom ? `<div class="cr-rows cr-here">${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
+    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom || p.shelter ? `<div class="cr-rows cr-here">${p.shelter ? `<div class="cr-row"><span>Tonight</span><div class="sh-cell">${shelterRose(p.shelter.F, p.shelter.worst.dir)}<div><b style="color:${SH_COL[p.shelter.rate]}">${SH_NAME[p.shelter.rate]}</b><br>${esc(p.shelter.text)}</div></div></div>` : ""}${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#cr-dir").addEventListener("click", () => routeStart([p[1], p[2]], crName(p)));
   $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Gustiq`, e.currentTarget));
@@ -7544,10 +7738,133 @@ async function sbCheck(ll) { // tap on the water with Bottom type on
   L.popup({ maxWidth: 260, className: "cr-popup" }).setLatLng(ll).setContent(html).openOn(map);
 }
 
+
+/* ===== Shelter tonight: open water (fetch) around a spot in 16 directions, from the detailed shoreline, set against
+   tonight's forecast wind. The idea: an anchorage is only as good as the shelter it gives from the wind you will get. */
+const SHELTER = new Map();
+async function crFetch(lat, lon) { // km of open water in 16 directions (capped at 8)
+  const key = `${lat.toFixed(4)},${lon.toFixed(4)}`; if (SHELTER.has(key)) return SHELTER.get(key);
+  const pr = (async () => {
+    const idx = await routeIndex(), R = 8000, cell = 40, kx = 111320 * Math.cos(rad(lat)), ky = 111320;
+    const s0 = lat - R / ky, n0 = lat + R / ky, w0 = lon - R / kx, e0 = lon + R / kx, W = Math.ceil((2 * R) / cell), H = W;
+    const X = (lo) => ((lo - w0) * kx) / cell, Y = (la) => ((n0 - la) * ky) / cell;
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const ctx = cv.getContext("2d", { willReadFrequently: true }); ctx.fillStyle = "#000";
+    let any = false;
+    for (let la = Math.floor(s0); la <= Math.floor(n0); la++) for (let lo = Math.floor(w0); lo <= Math.floor(e0); lo++) {
+      const k = `${la}_${lo}`;
+      if (idx.land.has(k)) { any = true; ctx.fillRect(X(lo), Y(la + 1), kx / cell + 1, ky / cell + 1); continue; }
+      if (!idx.detail.has(k)) continue; const g = await routeTile(k); if (!g) continue; any = true;
+      const polys = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
+      ctx.beginPath(); for (const poly of polys) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath(); } ctx.fill("evenodd");
+    }
+    if (!any) return null; // no detailed shoreline here
+    const d = ctx.getImageData(0, 0, W, H).data, cx = W / 2, cy = H / 2, out = [];
+    for (let k = 0; k < 16; k++) { const a = rad(k * 22.5); let r = 2; // skip the first cells: the spot itself may sit on the shoreline
+      for (; r < W / 2; r++) { const x = Math.round(cx + Math.sin(a) * r), y = Math.round(cy - Math.cos(a) * r); if (d[(y * W + x) * 4 + 3] > 100) break; }
+      out.push(Math.min(8, (r * cell) / 1000)); }
+    return out;
+  })().catch(() => null);
+  SHELTER.set(key, pr); return pr;
+}
+const fetchToward = (F, dirFrom) => { const k = ((dirFrom % 360) + 360) % 360 / 22.5, i = Math.floor(k) % 16, f = k - Math.floor(k); return F[i] * (1 - f) + F[(i + 1) % 16] * f; };
+async function crShelter(p) { // {rate 0..2, worst: {kt, dir, km}, text}
+  if (p.shelter !== undefined) return p.shelter;
+  p.shelter = null;
+  const [F, T] = await Promise.all([crFetch(p[1], p[2]), crTonight(p)]);
+  if (!F || !T) return null;
+  let worst = null, score = 0;
+  T.ks.forEach((k, i) => { const kt = T.sp[i] * 1.943844, km = fetchToward(F, T.dirs[i]), e = kt < 6 ? 0 : kt * kt * Math.sqrt(km); // chop grows with wind squared and the root of fetch
+    if (!worst || e > worst.e) worst = { e, kt, dir: T.dirs[i], km }; score = Math.max(score, e); });
+  const rate = score < 250 ? 2 : score < 700 ? 1 : 0;
+  const open = Math.max(...F) >= 7.9; // open to the sea in at least one direction: offshore swell can reach it
+  const text = worst.kt < 6 ? "Light winds all night: no shelter needed." : `${rate === 2 ? "Sheltered" : rate === 1 ? "Some chop" : "Exposed"}: up to ${Math.round(worst.kt)} kt from ${compass(worst.dir)} over ${worst.km >= 8 ? "8+ km" : worst.km < 1 ? `${Math.round(worst.km * 1000)} m` : `${worst.km.toFixed(1)} km`} of open water`;
+  p.shelter = { rate, worst, text, F, open }; return p.shelter;
+}
+const SH_COL = ["#FF5A60", "#F5B83D", "#5BE09A"], SH_NAME = ["Exposed tonight", "Some chop tonight", "Sheltered tonight"];
+function shelterRose(F, dir) { // little compass rose: open water per direction, tonight's wind marked
+  const pts = F.map((km, k) => { const a = rad(k * 22.5), r = 6 + (Math.min(8, km) / 8) * 30; return `${(40 + Math.sin(a) * r).toFixed(1)},${(40 - Math.cos(a) * r).toFixed(1)}`; }).join(" ");
+  const a = rad(dir), x = 40 + Math.sin(a) * 36, y = 40 - Math.cos(a) * 36;
+  return `<svg viewBox="0 0 80 80" width="72" height="72" class="sh-rose"><circle cx="40" cy="40" r="36" fill="none" stroke="#22344F"/><circle cx="40" cy="40" r="21" fill="none" stroke="#22344F" stroke-dasharray="2 3"/><polygon points="${pts}" fill="rgba(79,179,255,.25)" stroke="#4FB3FF" stroke-width="1.2"/><path d="M${x.toFixed(1)} ${y.toFixed(1)}L40 40" stroke="#F0642D" stroke-width="2.5" stroke-linecap="round"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.5" fill="#F0642D"/><text x="40" y="9" text-anchor="middle" font-size="8" fill="#8FA3BC">N</text></svg>`;
+}
+/* "Where to anchor tonight": the anchorages and moorings in view, ranked by shelter, bottom and swell */
+async function bestTonight() {
+  crClose(); CRUISE.sel = { best: true }; $("#cr-main").hidden = true; const box = $("#cr-detail"); box.hidden = false;
+  const c = map.getCenter(), b = map.getBounds().pad(0.1), cl = Math.cos(rad(c.lat));
+  const cand = crAll().filter((q) => ["anchorage", "mooring_field", "mooring"].includes(q[0]) && b.contains([q[1], q[2]]))
+    .map((q) => [q, Math.hypot(q[1] - c.lat, (q[2] - c.lng) * cl)]).sort((a, z) => a[1] - z[1]).slice(0, 18).map((x) => x[0]);
+  const head = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
+    <div class="cr-dh"><span class="cr-ic big" style="--c:#5BE09A">${CR_ICON.anchorage}</span><div><h2>Where to anchor tonight</h2><span class="cr-type">Ranked by shelter from tonight's forecast wind, bottom type and swell</span></div></div>`;
+  if (!cand.length) { box.innerHTML = head + `<div class="cr-hint strong">No anchorages or moorings in view. Move the map over a harbor or zoom out a little.</div>`; $("#cr-back").addEventListener("click", crClose); return; }
+  box.innerHTML = head + `<div class="cr-hint">Checking ${cand.length} spots against tonight's forecast…</div>`; $("#cr-back").addEventListener("click", crClose);
+  const rows = await Promise.all(cand.map(async (q) => { const [sh, bot] = await Promise.all([crShelter(q), sbNear(q[1], q[2], 800).then((l) => sbSummary(l.slice(0, 15))).catch(() => null)]); q.bottom = bot || false; return { q, sh, bot }; }));
+  if (!(CRUISE.sel && CRUISE.sel.best)) return;
+  const score = (r) => (r.sh ? r.sh.rate * 10 - r.sh.worst.e / 100 : 5) + (r.bot ? r.bot.rate * 3 : 2) - (r.sh && r.sh.open && r.q.tonight && r.q.tonight.wmax > 1.2 ? 4 : 0);
+  rows.sort((a, z) => score(z) - score(a));
+  box.innerHTML = head + `<div class="bt-list">${rows.map((r, i) => {
+    const sh = r.sh, bot = r.bot, T = r.q.tonight, col = sh ? SH_COL[sh.rate] : "#8FA3BC";
+    return `<button type="button" class="bt-row" data-k="${esc(crKey(r.q))}" style="--c:${col}"><span class="bt-n">${i + 1}</span>${sh ? shelterRose(sh.F, sh.worst.dir) : `<span class="bt-nr">no shoreline data</span>`}
+      <span class="bt-b"><b>${esc(crName(r.q))}</b><small style="color:${col}">${sh ? esc(sh.text) : "Shelter unknown here"}</small>
+      <small>${bot ? `<i style="color:${SB_COL[bot.rate]}">${SB_NAME[bot.rate]}</i>: ${esc(bot.text.toLowerCase())}` : "Bottom not charted"}${T && T.wmax != null && sh && sh.open ? ` · offshore swell ${fmtWave(T.wmax)}` : ""}${T && T.swing > 60 ? ` · wind swings ${Math.round(T.swing)}°` : ""}</small></span></button>`; }).join("")}</div>
+    <p class="cr-fine">Rose: blue shows how much open water lies in each direction (outer ring 8 km); orange is where tonight's strongest wind comes from. Uses the GFS forecast for the next 18 hours and the charted shoreline; local effects, wakes and swell wrapping round headlands are not modelled. Check the chart and your own eyes.</p>`;
+  box.querySelectorAll(".bt-row").forEach((el) => el.addEventListener("click", () => { const q = crFind(el.dataset.k); if (q) crOpen(q); }));
+}
+/* Anchor watch: drag alarm from the phone's location (the page must stay open with the screen on) */
+const AW = { on: false, id: null, at: null, r: 40, layer: null, lock: null, ctx: null, alarm: false, last: null };
+function awPanel(msg) {
+  crClose(); CRUISE.sel = { aw: true }; $("#cr-main").hidden = true; const box = $("#cr-detail"); box.hidden = false;
+  const u = imperial() ? "ft" : "m", rIn = imperial() ? Math.round(AW.r * 3.28084) : AW.r;
+  const dist = AW.at && AW.last ? map.distance(AW.at, AW.last.ll) : null;
+  box.innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
+    <div class="cr-dh"><span class="cr-ic big" style="--c:${AW.alarm ? "#FF5A60" : "#5BE09A"}">${CR_ICON.anchorage}</span><div><h2>Anchor watch</h2><span class="cr-type">Sounds an alarm if the boat moves outside the circle</span></div></div>
+    ${AW.alarm ? `<div class="aw-alarm">DRAGGING? ${dist != null ? `${Math.round(imperial() ? dist * 3.28084 : dist)} ${u} from the anchor` : ""}</div>` : ""}
+    ${msg ? `<div class="cr-hint strong">${esc(msg)}</div>` : ""}
+    <div class="rt-sum"><div><b>${AW.on ? "On" : "Off"}</b><span>watch</span></div><div><b>${dist != null ? `${Math.round(imperial() ? dist * 3.28084 : dist)} ${u}` : "–"}</b><span>from anchor</span></div><div><b>${AW.last ? `±${Math.round(imperial() ? AW.last.acc * 3.28084 : AW.last.acc)} ${u}` : "–"}</b><span>GPS accuracy</span></div></div>
+    <label class="aw-r">Alarm radius <b>${rIn} ${u}</b><input type="range" id="aw-r" min="${imperial() ? 50 : 15}" max="${imperial() ? 700 : 200}" step="${imperial() ? 10 : 5}" value="${rIn}"></label>
+    <p class="cr-fine">Tip: rode length plus boat length, plus a little for GPS error. ${BOAT.len ? `Your boat is ${lenTxt(BOAT.len)}.` : ""}</p>
+    <div class="cr-form-b" style="justify-content:flex-start">${AW.on ? `<button type="button" id="aw-stop">Stop watch</button>${AW.alarm ? `<button type="button" class="primary" id="aw-ok">I'm OK, reset</button>` : ""}` : `<button type="button" class="primary" id="aw-start">Drop anchor here</button>`}<button type="button" id="aw-test">Test alarm</button></div>
+    <p class="cr-fine">Keep this page open with the screen on: phones pause web pages in the background, so this is not a substitute for a dedicated anchor alarm or a proper watch. Location stays on your device.</p>`;
+  $("#cr-back").addEventListener("click", crClose);
+  $("#aw-r").addEventListener("input", (e) => { AW.r = imperial() ? +e.target.value / 3.28084 : +e.target.value; awDraw(); e.target.previousElementSibling.textContent = `${e.target.value} ${u}`; });
+  const st = $("#aw-start"); if (st) st.addEventListener("click", awStart);
+  const sp = $("#aw-stop"); if (sp) sp.addEventListener("click", awStop);
+  const ok = $("#aw-ok"); if (ok) ok.addEventListener("click", () => { AW.alarm = false; awSound(false); awPanel(); });
+  $("#aw-test").addEventListener("click", () => { awSound(true); setTimeout(() => awSound(false), 1500); });
+}
+function awSound(on) {
+  try {
+    if (on) { if (!AW.ctx) AW.ctx = new (window.AudioContext || window.webkitAudioContext)(); if (AW.osc) return;
+      const o = AW.ctx.createOscillator(), g = AW.ctx.createGain(); o.type = "square"; o.frequency.value = 880; g.gain.value = 0.25; o.connect(g).connect(AW.ctx.destination); o.start();
+      AW.beep = setInterval(() => { o.frequency.value = o.frequency.value === 880 ? 660 : 880; }, 350); AW.osc = o; if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 400]); }
+    else { if (AW.osc) { AW.osc.stop(); AW.osc = null; clearInterval(AW.beep); } }
+  } catch (_) {}
+}
+function awDraw() {
+  if (AW.layer) { map.removeLayer(AW.layer); AW.layer = null; } if (!AW.at) return;
+  AW.layer = L.layerGroup([L.circle(AW.at, { radius: AW.r, color: AW.alarm ? "#FF5A60" : "#5BE09A", weight: 2, fillOpacity: 0.08, dashArray: "6 5", interactive: false }),
+    L.marker(AW.at, { icon: pinIcon("b", "⚓"), interactive: false })]).addTo(map);
+  if (AW.last) AW.layer.addLayer(L.circleMarker(AW.last.ll, { radius: 6, color: "#fff", weight: 2, fillColor: "#4FB3FF", fillOpacity: 1, interactive: false }));
+}
+async function awStart() {
+  if (!navigator.geolocation) { awPanel("This device cannot share its location."); return; }
+  if (AW.ctx === null) try { AW.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (_) {} // unlock sound on this tap
+  try { if (navigator.wakeLock) AW.lock = await navigator.wakeLock.request("screen"); } catch (_) {}
+  awPanel("Getting your position…");
+  AW.id = navigator.geolocation.watchPosition((g) => {
+    const ll = L.latLng(g.coords.latitude, g.coords.longitude); AW.last = { ll, acc: g.coords.accuracy };
+    if (!AW.at) { AW.at = ll; AW.on = true; map.setView(ll, Math.max(map.getZoom(), 17)); }
+    const d = map.distance(AW.at, ll);
+    if (d > AW.r + Math.min(30, g.coords.accuracy * 0.5) && !AW.alarm) { AW.alarm = true; awSound(true); }
+    awDraw(); if (CRUISE.sel && CRUISE.sel.aw) awPanel();
+  }, (e) => awPanel(e.code === 1 ? "Location is blocked. Allow location for this site in your settings." : "Could not get your position."), { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
+}
+function awStop() { if (AW.id != null) navigator.geolocation.clearWatch(AW.id); AW.id = null; AW.on = false; AW.at = null; AW.alarm = false; awSound(false); try { AW.lock && AW.lock.release(); } catch (_) {} awDraw(); awPanel(); }
+
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
   $("#cr-chips").innerHTML = `<div class="cr-grp"><span class="cr-gl">Plan</span><button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
     + `<button type="button" class="cr-chip act${boatSet() ? " set" : ""}" id="cr-boat">${CR_ICON.boat}<span>${boatSet() ? esc(BOAT.name || "My boat") : "Add my boat"}</span></button>`
+    + `<button type="button" class="cr-chip act" id="cr-best">${CR_ICON.anchorage}<span>Where to anchor tonight</span></button>`
+    + `<button type="button" class="cr-chip act${AW.on ? " set" : ""}" id="cr-aw">${SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M12 3v3M12 18v3"/>')}<span>${AW.on ? (AW.alarm ? "ANCHOR ALARM" : "Anchor watch on") : "Anchor watch"}</span></button>`
     + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button></div>`
     + `<div class="cr-grp"><span class="cr-gl">Show</span>` + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("") + `</div>`
     + `<div class="cr-grp"><span class="cr-gl">Layers</span><button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
@@ -7561,6 +7878,8 @@ function crChips() {
   $("#cr-sb").addEventListener("click", () => { SB.on = !SB.on; store("crSeabed", SB.on); if (SB.on && DZ.on) { DZ.on = false; store("crDz", false); dzDraw(); } crChips(); sbDraw(); if (SB.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in on a harbor to see the bottom type."); if (!SB.on) setLegend(null); });
   $("#cr-warn").addEventListener("click", () => { WARN.on = !WARN.on; store("crWarn", WARN.on); crChips(); warnDraw(); });
   $("#cr-boat").addEventListener("click", () => boatForm(false));
+  $("#cr-best").addEventListener("click", bestTonight);
+  $("#cr-aw").addEventListener("click", () => awPanel());
   $("#cr-addbtn").addEventListener("click", () => crAddMode(!CRUISE.adding));
 }
 async function enterCruise() {
