@@ -74,5 +74,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # first run only: create the project (fails harmlessly once it exists)
-          npx --yes wrangler@4.166.0 pages project create nockd --production-branch main || true
+          npx --yes wrangler@4.166.0 pages project create nockd --production-branch main > /dev/null 2>&1 || true
           npx --yes wrangler@4.166.0 pages deploy deploy/sailiq-wind-site --project-name nockd --branch main --commit-dirty=true --commit-message "Daily data refresh"
