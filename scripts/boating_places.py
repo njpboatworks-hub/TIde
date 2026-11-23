@@ -237,7 +237,17 @@ def osm_boxes():
     B |= {(la, lo, la + 2, lo + 2.5) for la in (20, 22, 24, 26) for lo in (-80.0, -77.5, -75.0, -72.5)}
     B |= {(la, lo, la + 2, lo + 2.5) for la in (12, 14, 16, 18) for lo in (-65.0, -62.5, -60.0)}
     B.add((32, -65.0, 34, -62.5))
-    return sorted(B)
+    out = sorted(B)
+    world = ROOT / "data" / "osm_world_squares.json"  # coastal squares of the world's main cruising grounds (built from Natural Earth land)
+    if world.exists():
+        order = ["Greater Antilles and Caribbean", "Gulf of Mexico, Yucatan, Central America", "Mediterranean", "Europe Atlantic and North Sea",
+                 "Canada Atlantic", "BC and SE Alaska", "Mexico Pacific and Baja", "Australia", "New Zealand", "Baltic", "Brazil and Argentina coast"]
+        W = json.loads(world.read_text()); have = set(out)
+        for name in order + [k for k in W if k not in order]:
+            for b in W.get(name, []):
+                b = tuple(b)
+                if b not in have: have.add(b); out.append(b)
+    return out
 
 
 CLUB_RE = re.compile(r"\b(yacht|sailing|boat|corinthian|rowing|canoe|boating)\s+club\b|\byacht\s+squadron\b|\bpower\s+squadron\b|\bsailing\s+(association|center|centre|school|foundation)\b|\bcommunity\s+sailing\b", re.I)
@@ -296,6 +306,8 @@ def square_age(box, cache=None):
         return float("inf")
     try:
         d = json.loads(gzip.decompress(f.read_bytes()))
+        if d.get("failed"):  # timed out before: try again only once it is the oldest in the queue
+            return time.time() - datetime.strptime(d["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc).timestamp()
         if d.get("v", 1) != OSM_V:
             return 1e12 - 1  # made by an older query: refetch, but after squares that were never fetched
         return time.time() - datetime.strptime(d["fetched"], "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc).timestamp()
@@ -309,7 +321,9 @@ def osm_fetch(part=0, parts=1, budget_s=2400, out_dir=None):
     <south>_<west>.json.gz, so a later run only needs the squares that are missing or old."""
     out_dir = out_dir or OSM_CACHE
     out_dir.mkdir(parents=True, exist_ok=True)
-    boxes = sorted(osm_boxes()[part::parts], key=lambda b: -square_age(b))
+    allb = osm_boxes()
+    rank = {b: i for i, b in enumerate(allb)}
+    boxes = sorted(allb[part::parts], key=lambda b: (-square_age(b), rank[b]))  # missing first, then in priority order, then oldest
     elements, ok, t0 = {}, 0, time.time()
     for k, (s_, w, n, e) in enumerate(boxes):
         if time.time() - t0 > budget_s:
@@ -323,6 +337,9 @@ def osm_fetch(part=0, parts=1, budget_s=2400, out_dir=None):
             if d:
                 break
             time.sleep(5)
+        if not d and not square_file((s_, w, n, e)).exists():  # never had data: note the failure so this square waits its turn next time
+            square_file((s_, w, n, e), out_dir).write_bytes(gzip.compress(json.dumps(
+                {"fetched": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ"), "v": OSM_V, "failed": True, "box": [s_, w, n, e], "elements": {}}).encode(), 9, mtime=0))
         if d:
             ok += 1
             els = {f"{el.get('type')}{el.get('id')}": el for el in d.get("elements", [])}
@@ -450,7 +467,9 @@ def load_osm_cache(cache=None):
     osm, n = {}, 0
     for f in sorted(cache.glob("*.json.gz")):
         try:
-            osm.update(json.loads(gzip.decompress(f.read_bytes()))["elements"]); n += 1
+            d = json.loads(gzip.decompress(f.read_bytes()))
+            if d.get("failed"): continue
+            osm.update(d["elements"]); n += 1
         except Exception as e:
             print(f"  skipped {f.name}: {e}", flush=True)
     print(f"  OpenStreetMap: {len(osm)} objects from {n} of {len(osm_boxes())} squares", flush=True)

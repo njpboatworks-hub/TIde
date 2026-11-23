@@ -718,7 +718,9 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 .cr-search { display: flex; align-items: center; gap: 10px; padding: 0 14px; height: 46px; border-radius: 23px; background: var(--surface); border: 1px solid var(--axis); color: var(--muted); }
 .cr-search:focus-within { border-color: var(--signal); }
 .cr-search input { flex: 1; border: 0 !important; background: transparent !important; padding: 0; min-height: 0; font-size: 15px; color: var(--ink); outline: none; }
-.cr-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -24px; padding: 0 24px 2px; }
+.cr-chips { display: flex; flex-direction: column; gap: 8px; }
+.cr-grp { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.cr-gl { flex: none; width: 52px; font: 500 10.5px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .cr-chips::-webkit-scrollbar { display: none; }
 .cr-chip { flex: none; display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px 0 11px; min-height: 0; border-radius: 18px !important; border: 1px solid var(--axis) !important;
   background: var(--surface) !important; color: var(--ink) !important; font: 500 13.5px/1 var(--f-body); white-space: nowrap; transition: background .15s, border-color .15s; }
@@ -813,7 +815,10 @@ body.cruise .legend { max-width: 250px; }
 .rules > summary::after { content: " ▾"; }
 .rules[open] > summary { margin-bottom: 8px; }
 @media (max-width: 900px) {
-  .cr-chips { margin: 0 -18px; padding: 0 18px 2px; }
+  /* phones: each group is one swipeable row, with a fade at the edge to show there is more */
+  .cr-grp { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -18px; padding: 0 18px 2px; -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .cr-grp::-webkit-scrollbar { display: none; }
+  .cr-gl { width: auto; margin-right: 2px; }
   body.cruise .legend { top: 8px; bottom: auto !important; left: 52px; max-width: 200px; max-height: 45%; }
   body.cruise .mapwrap { height: 60vh; }
 }
@@ -5233,7 +5238,7 @@ async function shoreMaskFor(z, px, py, CW, CH, stale) {
     else if (g) { const ps = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : []; m.beginPath(); for (const poly of ps) for (const r of poly) ring(r); m.fill("evenodd"); }
     m.restore();
   }
-  return { mask, dpr, Wp, Hp, detail: detail.map(([k]) => k), P, boxes: (ctx) => { for (const [k] of detail) { const [la, lo] = k.split("_").map(Number); const [a, b] = P(lo, la + 1), [c, d] = P(lo + 1, la); ctx.rect(a * dpr, b * dpr, (c - a) * dpr, (d - b) * dpr); } } };
+  return { mask, dpr, Wp, Hp, detail: detail.map(([k]) => k), P, boxes: (ctx, only) => { for (const [k] of detail) { if (only && !only.includes(k)) continue; const [la, lo] = k.split("_").map(Number); const [a, b] = P(lo, la + 1), [c, d] = P(lo + 1, la); ctx.rect(a * dpr, b * dpr, (c - a) * dpr, (d - b) * dpr); } } };
 }
 async function gxLandDraw() {
   if (!GX.on) return;
@@ -6221,7 +6226,7 @@ function crReportForm(p, kind) {
 function crAddMode(on) {
   CRUISE.adding = on; document.body.classList.toggle("cr-adding", on);
   const ab = $("#cr-addbtn"); if (ab) ab.classList.toggle("on", on);
-  if (on) { map.closePopup(); crClose(); $("#cr-list").insertAdjacentHTML("afterbegin", `<div class="cr-hint strong" id="cr-addhint">Tap the map where the spot is.</div>`); }
+  if (on) { map.closePopup(); crClose(); $("#cr-list").insertAdjacentHTML("afterbegin", `<div class="cr-hint strong" id="cr-addhint">Tap the map where the spot is.</div>`); mapIntoView(); }
   else { const h = $("#cr-addhint"); if (h) h.remove(); }
 }
 function crAddForm(ll) {
@@ -6569,9 +6574,12 @@ function routeStart(to, toName) {
   }
   routeNext();
 }
+function mapIntoView() { // phones: the map sits above the panel; bring it back on screen when it needs a tap
+  if (matchMedia("(max-width: 900px)").matches && scrollY > 40) window.scrollTo({ top: 0, behavior: "smooth" });
+}
 function routeNext() {
-  if (!ROUTE.from) { ROUTE.picking = "from"; routePanel("Tap the map or a place where you are starting from."); }
-  else if (!ROUTE.to) { ROUTE.picking = "to"; routePanel("Tap the map or a place where you are going."); }
+  if (!ROUTE.from) { ROUTE.picking = "from"; routePanel("Tap the map or a place where you are starting from."); mapIntoView(); }
+  else if (!ROUTE.to) { ROUTE.picking = "to"; routePanel("Tap the map or a place where you are going."); mapIntoView(); }
   else routeGo();
 }
 function routePanel(msg) {
@@ -6604,8 +6612,8 @@ function routePanel(msg) {
     </div>${msg ? `<div class="cr-hint strong">${esc(msg)}</div>` : ""}${ROUTE.picking === "from" && navigator.geolocation ? `<button type="button" class="rt-boat" id="rt-geo">Use my location</button>` : ""}
     <button type="button" class="rt-boat" id="rt-plot">${CR_ICON.route}<span> Plot my own route point by point</span></button>${body}`;
   $("#cr-back").addEventListener("click", crClose);
-  $("#rt-from").addEventListener("click", () => { ROUTE.picking = "from"; routePanel("Tap the map or a place where you are starting from."); });
-  $("#rt-to").addEventListener("click", () => { ROUTE.picking = "to"; routePanel("Tap the map or a place where you are going."); });
+  $("#rt-from").addEventListener("click", () => { ROUTE.picking = "from"; routePanel("Tap the map or a place where you are starting from."); mapIntoView(); });
+  $("#rt-to").addEventListener("click", () => { ROUTE.picking = "to"; routePanel("Tap the map or a place where you are going."); mapIntoView(); });
   $("#rt-swap").addEventListener("click", () => { [ROUTE.from, ROUTE.to] = [ROUTE.to, ROUTE.from]; routeNext(); });
   const rb = $("#rt-boat"); if (rb) rb.addEventListener("click", () => boatForm(true));
   $("#rt-plot").addEventListener("click", plotStart); routePins();
@@ -6655,7 +6663,7 @@ function routePins() { // start (green) and destination (orange) pins, draggable
 function plotStart() {
   routeClear(); ROUTE.picking = null; ROUTE.plotting = true; ROUTE.plot = ROUTE.plot || [];
   if (!ROUTE.plot.length && ROUTE.from) ROUTE.plot.push(ROUTE.from.latlng);
-  routePins(); plotDraw(); plotPanel();
+  routePins(); plotDraw(); plotPanel(); mapIntoView();
 }
 function plotStop() { ROUTE.plotting = false; if (ROUTE.plotLayer) { map.removeLayer(ROUTE.plotLayer); ROUTE.plotLayer = null; } }
 function plotAdd(ll) { ROUTE.plot.push(ll); plotDraw(); plotPanel(); }
@@ -6806,8 +6814,9 @@ async function cruiseWater() {
   L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py])); cv._tl = nw; cv._z = z;
   cv.width = LM.Wp; cv.height = LM.Hp; cv.style.width = CW + "px"; cv.style.height = CH + "px";
   const c = cv.getContext("2d"); c.fillStyle = `rgba(20,46,62,${a})`;
-  if (!LM.detail.length) { c.clearRect(0, 0, LM.Wp, LM.Hp); return; } // no detailed shoreline here (the Bahamas...): leave the photo alone
-  c.beginPath(); LM.boxes(c); c.fill();
+  const own = LM.detail.filter((k) => { const [la, lo] = k.split("_").map(Number), cy = la + 0.5, cx = lo + 0.5; return Object.values(REGIONS).some((r) => r.has(cy, cx)) && !foreignWaters(cy, cx); });
+  if (!own.length) { c.clearRect(0, 0, LM.Wp, LM.Hp); return; } // no detailed shoreline here (the Bahamas...): leave the photo alone
+  c.beginPath(); LM.boxes(c, own); c.fill();
   c.globalCompositeOperation = "destination-out"; c.drawImage(LM.mask, 0, 0); c.globalCompositeOperation = "source-over";
 }
 
@@ -6876,16 +6885,16 @@ async function sbCheck(ll) { // tap on the water with Bottom type on
 
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
-  $("#cr-chips").innerHTML = `<button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
+  $("#cr-chips").innerHTML = `<div class="cr-grp"><span class="cr-gl">Plan</span><button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
     + `<button type="button" class="cr-chip act${boatSet() ? " set" : ""}" id="cr-boat">${CR_ICON.boat}<span>${boatSet() ? esc(BOAT.name || "My boat") : "Add my boat"}</span></button>`
-    + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("")
-    + `<button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
+    + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button></div>`
+    + `<div class="cr-grp"><span class="cr-gl">Show</span>` + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("") + `</div>`
+    + `<div class="cr-grp"><span class="cr-gl">Layers</span><button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
     + `<button type="button" class="cr-chip tog${SB.on ? " on" : ""}" id="cr-sb" aria-pressed="${SB.on}">${SVG('<path d="M3 17c3 0 3-2 6-2s3 2 6 2 3-2 6-2M3 21h18M12 3v8M9 8l3 3 3-3"/>')}<span>Bottom type</span></button>`
     + `<button type="button" class="cr-chip tog${NAV.on ? " on" : ""}" id="cr-nav" aria-pressed="${NAV.on}">${CR_ICON.bridge}<span>Bridges & areas</span></button>`
-    + `<button type="button" class="cr-chip tog${DZ.on ? " on" : ""}" id="cr-dz" aria-pressed="${DZ.on}">${CR_ICON.discharge}<span>Discharge zones</span></button>`
-    + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button>`;
+    + `<button type="button" class="cr-chip tog${DZ.on ? " on" : ""}" id="cr-dz" aria-pressed="${DZ.on}">${CR_ICON.discharge}<span>Discharge zones</span></button></div>`;
   $("#cr-chips").querySelectorAll("[data-c]").forEach((b) => b.addEventListener("click", () => { CRUISE.cat = b.dataset.c; store("crCat", CRUISE.cat); crClose(); crChips(); crDraw(); crFood(); }));
-  $("#cr-dz").addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); crChips(); dzDraw(); });
+  $("#cr-dz").addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); crChips(); dzDraw(); if (DZ.on) mapIntoView(); });
   $("#cr-nav").addEventListener("click", () => { NAV.on = !NAV.on; store("crNav", NAV.on); crChips(); navDraw(); if (NAV.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in to see bridges and restricted areas."); });
   $("#cr-route").addEventListener("click", () => routeStart(null));
   $("#cr-sb").addEventListener("click", () => { SB.on = !SB.on; store("crSeabed", SB.on); if (SB.on && DZ.on) { DZ.on = false; store("crDz", false); dzDraw(); } crChips(); sbDraw(); if (SB.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in on a harbor to see the bottom type."); if (!SB.on) setLegend(null); });
