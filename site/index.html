@@ -1562,6 +1562,8 @@ body.gx-zoomed:not(.gx-light) .leaflet-tile-pane { opacity: .85; }
 body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacity .25s ease; }
 /* forecast: neutral water behind the colours */
 body.gx #map { background: #0C1B2E !important; }
+/* live radar: soften the speckle and the square pixels of the radar picture */
+.leaflet-radarPane-pane img { filter: blur(.6px) saturate(1.15); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -2623,6 +2625,7 @@ function computeDashes() {
   if (!heat) return;
   const size = map.getSize(), step = size.x < 600 ? 11 : 13, BINS = 9, mid = (BINS - 1) / 2;
   dashCell = step;
+  const mPerPx = map.distance(map.containerPointToLatLng([0, size.y / 2]), map.containerPointToLatLng([100, size.y / 2])) / 100;
   dashColors = Array.from({ length: BINS }, (_, k) => (k === mid ? (basemap !== "drawn" ? "#ffffff" : css("--ink-2")) : divergingColor(((k - mid) / mid) * 8, 8, css("--header"), css("--lift"))));
   for (let y = step / 2; y < size.y; y += step) for (let x = step / 2; x < size.x; x += step) {
     const jx = x + (Math.random() - 0.5) * step * 0.8, jy = y + (Math.random() - 0.5) * step * 0.8;
@@ -2632,7 +2635,9 @@ function computeDashes() {
     if (heat.COV) { const cv = heat.COV[Math.min(heat.gy - 1, Math.floor(jy / HEAT_STEP)) * heat.gx + Math.min(heat.gx - 1, Math.floor(jx / HEAT_STEP))]; if (cv < Math.random()) continue; }
     const th = rad((w.dir + 180) % 360);
     const bin = Math.abs(w.lift) < 1.5 ? mid : Math.round(Math.max(-1, Math.min(1, w.lift / 8)) * mid) + mid;
-    dashPts.push({ x: jx, y: jy, dx: Math.sin(th), dy: -Math.cos(th), spd: w.spd, len: Math.min(11, 4 + w.spd * 0.4), phase: Math.random(), bin });
+    // in the lee of land the wind is lighter: dashes there move clearly slower and are shorter, so wind shadows stand out
+    const sh = Math.min(1, landInfluenceAt(ll.lat, ll.lng, w.dir, jx, jy, mPerPx)), slow = Math.max(0.18, 1 - 0.8 * sh);
+    dashPts.push({ x: jx, y: jy, dx: Math.sin(th), dy: -Math.cos(th), spd: w.spd * slow, len: Math.min(11, 4 + w.spd * 0.4) * (0.55 + 0.45 * slow), phase: Math.random(), bin });
   }
 }
 function renderDashes(canvas, t) {
@@ -5235,6 +5240,7 @@ function windStops() {
   if (SET.windPal === "custom") { const c = SET.custom; return c.map((h, i) => [[0, 6, 12, 20, 30, 45][i], HEX(h)]); }
   return PALETTES[SET.windPal] || PALETTES.classic;
 }
+const GX_CUR_STOPS = [[0, [16, 42, 84]], [0.25, [28, 84, 150]], [0.5, [36, 140, 196]], [0.9, [50, 196, 150]], [1.4, [228, 208, 58]], [2.0, [240, 124, 42]], [3.2, [198, 30, 92]]];
 function curStops() {
   if (SET.curPal === "custom") { const c = SET.custom; return c.map((h, i) => [[0, 0.5, 1, 1.6, 2.3, 3.2][i], HEX(h)]); }
   return CUR_PALETTES[SET.curPal] || CUR_PALETTES.classic;
@@ -5410,7 +5416,10 @@ function gxSample(F, arr, lat, lon) { // bilinear sample of one array of a step 
     const i0 = ((i % S.w) + S.w) % S.w, i1 = (i0 + 1) % S.w, A = S[arr];
     const p = [A[j * S.w + i0], A[j * S.w + i1], A[(j + 1) * S.w + i0], A[(j + 1) * S.w + i1]], wt = [(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy];
     let s = 0, ws = 0; for (let q = 0; q < 4; q++) if (!Number.isNaN(p[q])) { s += p[q] * wt[q]; ws += wt[q]; }
-    return ws > 0.25 ? s / ws : NaN;
+    if (ws > 0.25) return s / ws;
+    if (ws > 0) return s / ws; // at the coast: the nearest ocean cells, so colours run right up to the shore (land covers the rest)
+    for (const [dj, di] of [[0, -1], [0, 2], [-1, 0], [2, 0], [-1, -1], [-1, 2], [2, -1], [2, 2]]) { const jj = Math.max(0, Math.min(S.h - 1, j + dj)), ii = (((i0 + di) % S.w) + S.w) % S.w, v = A[jj * S.w + ii]; if (!Number.isNaN(v)) return v; }
+    return NaN;
   };
   const a = one(F.a); if (F.w === 0) return a; const b = one(F.b); return a + (b - a) * F.w;
 }
@@ -5428,14 +5437,14 @@ function gxValue(F, lat, lon) { // value shown for the active layer, in base uni
 function gxColorFn() {
   const L = GX.layer;
   if (L === "wind" || L === "gust") { const lut = lutFrom(windStops(), 60); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 60 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
-  if (L === "current") { const lut = lutFrom(curStops(), 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
+  if (L === "current") { const lut = lutFrom(GX_CUR_STOPS, 3.2); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v * 1.943844) / 3.2 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "temp") { const st = [[0, [80, 40, 160]], [20, [50, 110, 220]], [35, [80, 190, 230]], [45, [120, 210, 140]], [55, [235, 220, 80]], [65, [245, 140, 50]], [80, [210, 40, 50]], [95, [120, 10, 40]]], lut = lutFrom(st, 95); return (v) => { const i = Math.max(0, Math.min(255, Math.round((v + 40) / 95 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; }; }
   if (L === "radar" && !GX.radarFcst) return () => null;
-  if (L === "radar") { const lut = lutFrom(RADAR_STOPS, 25); return (v) => (!(v >= 0.1) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(Math.sqrt(v / 25) * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 225]; })()); }
+  if (L === "radar") { const lut = lutFrom(RADAR_STOPS, 25); return (v) => (!(v >= 0.15) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(Math.sqrt(v / 25) * 255))), a = Math.min(1, (v - 0.15) / 0.8); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.round(a * a * (3 - 2 * a) * 230)]; })()); }
   if (L === "waves") { const lut = lutFrom(WAVE_STOPS, 9); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 9 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
   if (L === "sst") { const lut = lutFrom(SST_STOPS, 34); return (v) => (Number.isNaN(v) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round((v + 2) / 34 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], 255]; })()); }
-  if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (v < 0.1 ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.min(255, 120 + v * 60)]; })()); }
-  return (v) => (v < 5 ? null : [235, 240, 245, Math.min(230, v * 2.3)]); // cloud: white veil
+  if (L === "rain") { const st = [[0, [120, 180, 240]], [1, [40, 130, 230]], [3, [40, 190, 90]], [6, [240, 210, 40]], [12, [240, 90, 40]], [25, [200, 30, 160]]], lut = lutFrom(st, 25); return (v) => (!(v >= 0.05) ? null : (() => { const i = Math.max(0, Math.min(255, Math.round(v / 25 * 255))), a = Math.min(1, (v - 0.05) / 0.6); return [lut[i * 3], lut[i * 3 + 1], lut[i * 3 + 2], Math.round(a * a * (3 - 2 * a) * 225)]; })()); } // soft edges, no hard rim
+  return (v) => (v < 5 ? null : [238, 242, 246, Math.min(175, v * 1.9)]); // cloud: white veil, never fully opaque so the land shows through
 }
 // wave height colours, 0..9 m
 const WAVE_STOPS = [[0, [40, 70, 160]], [0.5, [40, 120, 200]], [1, [40, 170, 210]], [1.5, [60, 200, 170]], [2.5, [140, 210, 90]], [3.5, [240, 210, 60]], [5, [245, 130, 40]], [7, [215, 40, 60]], [9, [150, 20, 130]]];
@@ -5448,7 +5457,7 @@ function gxLegend() {
   if (!GX.on) return;
   const L = GX.layer; let grad, ends;
   if (L === "wind" || L === "gust") { grad = gradCss(windStops(), 60); const f = windNum(1 / 1.943844); ends = [0, 10, 20, 30, 45, 60].map((k) => Math.round(k * f)); ends = ends.map((x) => `${x}`); ends[ends.length - 1] += ` ${windUnit()}`; }
-  else if (L === "current") { grad = gradCss(curStops(), 3.2); const [u, f] = UNIT[SET.cur] || UNIT.kt; ends = [0, 1, 2, 3.2].map((k) => (k / 1.943844 * f).toFixed(1)); ends[3] += `+ ${u}`; }
+  else if (L === "current") { grad = gradCss(GX_CUR_STOPS, 3.2); const [u, f] = UNIT[SET.cur] || UNIT.kt; ends = [0, 1, 2, 3.2].map((k) => (k / 1.943844 * f).toFixed(1)); ends[3] += `+ ${u}`; }
   else if (L === "temp") { grad = "linear-gradient(90deg, rgb(80,40,160), rgb(50,110,220) 21%, rgb(80,190,230) 37%, rgb(120,210,140) 47%, rgb(235,220,80) 58%, rgb(245,140,50) 68%, rgb(210,40,50) 84%, rgb(120,10,40))"; ends = [-40, -20, 0, 20, 40, 55].map((c) => fmtTemp(c)); }
   else if (L === "sst") { grad = gradCss(SST_STOPS, 34); ends = [0, 10, 20, 30].map((c) => fmtTemp(c)); }
   else if (L === "rain") { grad = "linear-gradient(90deg, rgb(120,180,240), rgb(40,130,230) 4%, rgb(40,190,90) 12%, rgb(240,210,40) 24%, rgb(240,90,40) 48%, rgb(200,30,160))"; ends = [0.1, 1, 3, 6, 12, 25].map((m) => (SET.rain === "in" ? (m / 25.4).toFixed(2) : m)); ends[5] += SET.rain === "in" ? " in/h" : " mm/h"; }
@@ -5617,7 +5626,7 @@ function setNames(on) {
 // city names with the value of the layer shown (GeoNames towns, biggest first, spaced so they never overlap).
 const GXO = { on: false, renderer: null, group: null, coarse: null, fine: new Map(), cv: null, statesLab: null };
 // on the radar there are no weather colours under the lines, so they turn light to show the land
-const gxCoastStyle = () => ({ color: "#0E1620", weight: 1, opacity: 0, interactive: false }); const gxCoastStyleOld = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
+const gxCoastStyle = () => ({ color: "#0E1620", weight: 1, opacity: gxUnder() ? 0.75 : 0, interactive: false }); // over rain and cloud the coast is drawn on top const gxCoastStyleOld = () => (gxZoomed() && map.getZoom() >= 9 ? { color: "#C9D6E6", weight: 1.3, opacity: 0, interactive: false } : gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 1.3, opacity: 0.95, interactive: false } : { color: "#10161f", weight: 1.15, opacity: 0.9, interactive: false });
 const gxBorderStyle = () => ({ color: "#0E1620", weight: 0.9, opacity: 0.55, interactive: false }); const gxBorderStyleOld = () => (gxLightBase() || gxZoomed() ? { color: "#C9D6E6", weight: 0.9, opacity: 0.6, interactive: false } : { color: "#10161f", weight: 0.8, opacity: 0.6, interactive: false });
 const lonLat = (lines) => lines.map((l) => l.map(([x, y]) => [y, x]));
 async function gxOutlines(on) {
@@ -5831,7 +5840,7 @@ async function shoreMaskFor(z, px, py, CW, CH, stale) {
     else if (g) { const ps = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : []; m.beginPath(); for (const poly of ps) for (const r of poly) ring(r); m.fill("evenodd"); }
     m.restore();
   }
-  return { mask, dpr, Wp, Hp };
+  return { mask, dpr, Wp, Hp, detail: detail.map(([k]) => k), P, boxes: (ctx) => { for (const [k] of detail) { const [la, lo] = k.split("_").map(Number); const [a, b] = P(lo, la + 1), [c, d] = P(lo + 1, la); ctx.rect(a * dpr, b * dpr, (c - a) * dpr, (d - b) * dpr); } } };
 }
 async function gxLandDraw() {
   if (!GX.on) return;
@@ -5843,6 +5852,7 @@ async function gxLandDraw() {
     map.on("zoom", () => { if (GX.on && !map._animatingZoom) { zoomCanvas(GXL.cv, map.getCenter(), map.getZoom()); zoomCanvas(GXL.bv, map.getCenter(), map.getZoom()); } });
     map.on("moveend", () => GX.on && gxLandSoon());
   }
+  map.getPane("gxLandPane").style.zIndex = gxUnder() ? 415 : 425;
   const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.5), py = Math.round(size.y * 0.5);
   const CW = size.x + 2 * px, CH = size.y + 2 * py;
   const nw = map.containerPointToLatLng([-px, -py]);
@@ -5883,7 +5893,7 @@ async function gxLandBackdrop(seq) {
   const pxm = size.x * 0.5, pym = size.y * 0.5; c.globalCompositeOperation = "destination-out"; c.fillRect((bx - pxm) * sc, (by - pym) * sc, (size.x + 2 * pxm) * sc, (size.y + 2 * pym) * sc);
 }
 // light veil over coloured layers; on layers that leave land empty (radar, rain...) a solid grey land
-const gxLandVeil = () => (gxLightBase() ? "rgba(120,132,146,.55)" : "rgba(232,236,241,.38)");
+const gxLandVeil = () => (GX.layer === "cloud" ? "rgba(58,74,64,.95)" : gxUnder() ? "rgba(120,132,146,.55)" : gxLightBase() ? "rgb(88,100,114)" : "rgba(232,236,241,.38)");
 /* Live radar: NOAA NEXRAD composite tiles from Iowa Environmental Mesonet (frames every 5 min for the last hour) */
 const RADAR = { layers: new Map(), frame: 0, timer: null };
 const RADAR_STOPS = [[0, [100, 200, 240]], [5.5, [40, 160, 70]], [11.25, [250, 230, 40]], [15.5, [240, 120, 30]], [19.5, [220, 20, 30]], [25, [200, 40, 200]]]; // same colours as the radar key, on a square-root scale of 0 to 25 mm/h
@@ -5911,6 +5921,7 @@ function radarPlay() {
   RADAR.timer = setInterval(() => { radarShow(k); k = k > 0 ? k - 1 : 11; }, 700);
 }
 const gxZoomed = () => false; // (satellite under the forecast was replaced by the drawn land veil) // zoomed in: satellite under the colours, with place names
+const gxUnder = () => ["radar", "rain", "cloud"].includes(GX.layer); // weather that falls over land too: drawn above the land
 const gxLightBase = () => ["radar", "rain", "current", "sst", "waves", "cloud"].includes(GX.layer); // layers that leave land uncoloured
 function gxRadarBase(on) { // radar mode: dim satellite land underneath, light outlines, faint wind lines
   const zoomed = gxZoomed(); document.body.classList.toggle("gx-zoomed", zoomed);
@@ -5919,7 +5930,7 @@ function gxRadarBase(on) { // radar mode: dim satellite land underneath, light o
   document.body.classList.toggle("gx-light", on);
   document.body.classList.toggle("gx-radar", on && ["radar", "rain", "cloud"].includes(GX.layer)); // wind lines faint where they are not the point
   if (baseLayer && GX.on && map.hasLayer(baseLayer)) map.removeLayer(baseLayer);
-  if (GX.on) gxLandSoon();
+  if (GX.on) { gxLandSoon(); const lp = map.getPane("gxLandPane"); if (lp) lp.style.zIndex = gxUnder() ? 415 : 425; } // rain, clouds and radar over the land; the veil over the colours elsewhere
   const restyle = (g) => g && g.eachLayer((l) => (l.eachLayer ? restyle(l) : l.setStyle && l.setStyle(l.options.weight < 1 ? gxBorderStyle() : gxCoastStyle())));
   restyle(GXO.group); if (GXO.coarse && !GXO.group?.hasLayer(GXO.coarse)) restyle(GXO.coarse);
   for (const l of GXO.fine.values()) if (l) restyle(l);
@@ -5955,7 +5966,10 @@ async function gxProbe(ll, cp) {
   const box = $("#gx-probe"); if (!GX.meta) return;
   const lat = ll.lat, lon = ll.lng;
   const pair = async (src) => { const pr = gxPair(src, GX.t); if (!pr) return null; const [a, b] = await Promise.all([gxStep(src, pr[0]), gxStep(src, pr[1])]); return { a, b, w: pr[2] }; };
-  const [W, X, C, Sst, Wv] = await Promise.all([pair("w"), pair("x"), pair("c"), pair("s"), pair("v")]).catch(() => [null, null, null, null, null]);
+  // only what the chosen layer is about
+  const Ly = GX.layer, want = { wind: ["w"], gust: ["w"], current: ["c"], waves: ["v"], sst: ["s"], temp: ["x"], rain: ["x"], radar: ["x"], cloud: ["x"] }[Ly] || ["w"];
+  const get = (k) => (want.includes(k) ? pair(k) : Promise.resolve(null));
+  const [W, X, C, Sst, Wv] = await Promise.all([get("w"), get("x"), get("c"), get("s"), get("v")]).catch(() => [null, null, null, null, null]);
   const rows = [];
   if (W) { const u = gxSample(W, "A", lat, lon), v = gxSample(W, "B", lat, lon), g = gxSample(W, "C", lat, lon), sp = Math.hypot(u, v), dir = (deg(Math.atan2(-u, -v)) + 360) % 360;
     rows.push(`<div><b>Wind</b> ${fmtWindMs(sp)} from ${compass(dir)} (${Math.round(dir)}°), gusts ${fmtWindMs(g)}</div>`); }
@@ -5964,7 +5978,10 @@ async function gxProbe(ll, cp) {
     if (Number.isFinite(h)) rows.push(`<div><b>Waves</b> ${fmtWave(h)} · ${Math.round(tp)} s${Number.isFinite(dr) ? ` from ${compass(dr)}` : ""}</div>`); }
   if (Sst) { const t = gxSample(Sst, "A", lat, lon); if (Number.isFinite(t)) rows.push(`<div><b>Water</b> ${fmtTemp(t)}</div>`); }
   if (X) { const t = gxSample(X, "A", lat, lon), r = gxSample(X, "B", lat, lon), c = gxSample(X, "C", lat, lon);
-    rows.push(`<div><b>Air</b> ${fmtTemp(t)} · ${r < 0.1 ? "dry" : `rain ${fmtRain(r, true)}`} · cloud ${Math.round(c)}%</div>`); }
+    if (Ly === "temp") rows.push(`<div><b>Air</b> ${fmtTemp(t)}</div>`);
+    else if (Ly === "cloud") rows.push(`<div><b>Cloud</b> ${Math.round(c)}%</div>`);
+    else rows.push(`<div><b>${Ly === "radar" ? "Forecast rain" : "Rain"}</b> ${r < 0.1 ? "none" : fmtRain(r, true)}</div>`); }
+  if (!rows.length && ["current", "waves", "sst"].includes(Ly)) rows.push(`<div>No ${Ly === "sst" ? "water temperature" : Ly} data here (on land or too close to shore)</div>`);
   if (!rows.length) { box.hidden = true; return; }
   box.innerHTML = `<div class="gp-h">${lat.toFixed(2)}°, ${(((lon + 180) % 360 + 360) % 360 - 180).toFixed(2)}° · ${gxTimeLabel(GX.t)}</div>${rows.join("")}${activeTab === "weather" ? `<div class="gp-f">Tap to get the 16-day forecast here</div>` : ""}`;
   const size = map.getSize(); box.hidden = false;
@@ -6286,6 +6303,7 @@ function showTab(name) {
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === top));
   $("#racing-nav").hidden = top !== "racing";
   $("#race-bar").hidden = !race; document.body.classList.toggle("race-on", race);
+  setTimeout(() => { if (typeof cruiseWaterSoon === "function") cruiseWaterSoon(); }, 60);
   document.querySelectorAll("#racing-nav a").forEach((a) => a.classList.toggle("active", a.dataset.sub === (overlay || name)));
   document.querySelectorAll(".tab").forEach((t) => (t.hidden = !(t.id === `tab-${name}` || (overlay && t.id === `tab-${overlay}`))));
   if (race) setTimeout(enterRace, 0);
@@ -7111,22 +7129,25 @@ async function crHereNow(p) {
 const CWV = { cv: null, seq: 0, t: null };
 function cruiseWaterSoon() { clearTimeout(CWV.t); CWV.t = setTimeout(cruiseWater, 40); }
 async function cruiseWater() {
-  const z = map.getZoom(), a = z < 14.5 ? 0.96 : z < 15.5 ? 0.6 : 0, on = CRUISE.on && basemap === "satellite" && a > 0;
+  const racing = activeTab === "coast" && !GX.on, z = map.getZoom(), a = z < 9 ? 0 : racing ? 0.97 : z < 14.5 ? 0.96 : z < 15.5 ? 0.6 : 0, on = (CRUISE.on || racing) && basemap === "satellite" && a > 0;
   if (!CWV.cv) {
     if (!map.getPane("waterPane")) { map.createPane("waterPane").style.zIndex = 250; map.getPane("waterPane").style.pointerEvents = "none"; }
     CWV.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("waterPane"));
-    map.on("zoomanim", (e) => CRUISE.on && zoomCanvas(CWV.cv, e.center, e.zoom));
+    map.on("zoomanim", (e) => (CRUISE.on || activeTab === "coast") && zoomCanvas(CWV.cv, e.center, e.zoom));
     map.on("zoom", () => { if (CRUISE.on && !map._animatingZoom) zoomCanvas(CWV.cv, map.getCenter(), map.getZoom()); });
+    map.on("moveend", () => { if (activeTab === "coast") cruiseWaterSoon(); }); // Racing on satellite: even water under the wind shading too
   }
   const seq = ++CWV.seq;
   if (!on) { CWV.cv.style.display = "none"; return; }
   const size = map.getSize(), px = Math.round(size.x * 0.25), py = Math.round(size.y * 0.25), CW = size.x + 2 * px, CH = size.y + 2 * py;
   const nw = map.containerPointToLatLng([-px, -py]);
-  const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== CWV.seq || !CRUISE.on); if (!LM) return;
+  const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== CWV.seq || !(CRUISE.on || (activeTab === "coast" && !GX.on))); if (!LM) return;
   const cv = CWV.cv; cv.style.display = "";
   L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py])); cv._tl = nw; cv._z = z;
   cv.width = LM.Wp; cv.height = LM.Hp; cv.style.width = CW + "px"; cv.style.height = CH + "px";
-  const c = cv.getContext("2d"); c.fillStyle = `rgba(20,46,62,${a})`; c.fillRect(0, 0, LM.Wp, LM.Hp);
+  const c = cv.getContext("2d"); c.fillStyle = `rgba(20,46,62,${a})`;
+  if (!LM.detail.length) { c.clearRect(0, 0, LM.Wp, LM.Hp); return; } // no detailed shoreline here (the Bahamas...): leave the photo alone
+  c.beginPath(); LM.boxes(c); c.fill();
   c.globalCompositeOperation = "destination-out"; c.drawImage(LM.mask, 0, 0); c.globalCompositeOperation = "source-over";
 }
 /* ---- chips, search, enter / leave ---- */
