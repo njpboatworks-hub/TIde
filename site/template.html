@@ -963,7 +963,10 @@ body.gx #map { background: #0C1B2E !important; }
 .cb-note span { color: var(--muted); }
 .cb-rlist { display: grid; gap: 4px; padding: 0 10px; font-size: 13.5px; } .cb-rlist:not(:empty) { padding: 8px 10px; border-top: 1px solid var(--rule); background: var(--surface); }
 .cb-rlist div { display: flex; gap: 8px; align-items: baseline; } .cb-rn { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 50%; background: #0F2A45; color: #fff; font: 700 11px/1 var(--f-mono); border: 1px solid var(--rule); }
-.cb-steps { display: flex; gap: 6px; flex-wrap: wrap; } .cb-step { min-width: 38px; padding: 7px 0; font: 600 13px/1 var(--f-mono); }
+.cb-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.cb-always { margin-top: 4px; color: var(--muted); font-size: 12.5px; } .cb-rlist i { color: var(--muted); }
+.cb-phone { display: none; margin: 0 0 10px; padding: 9px 12px; border-left: 3px solid #F27A48; background: rgba(242,122,72,.12); font-size: 14px; }
+@media (max-width: 760px) { .cb-phone { display: block; } } .cb-step { min-width: 38px; padding: 7px 0; font: 600 13px/1 var(--f-mono); }
 .pl-wrap.pl-max, .pl-wrap:fullscreen { position: fixed; inset: 0; z-index: 3000; max-width: none; border-radius: 0; overflow: auto; background: var(--page); }
 .pl-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 .pl-kick { font: 500 11.5px/1 var(--f-mono); letter-spacing: .1em; color: var(--signal); text-transform: uppercase; }
@@ -1375,6 +1378,7 @@ body.gx #map { background: #0C1B2E !important; }
         <p class="pl-sub">Move boats and marks, steer each boat, trim its sail, and save steps to play back for your sailors.</p></div>
         <div class="cb-hbtns"><select id="cb-scen" aria-label="Start from a scenario"><option value="">Start from…</option><option value="start">The start</option><option value="ps">Port–starboard crossing</option><option value="mark">Windward mark rounding</option><option value="gate">Leeward gate</option><option value="clear">Empty board</option></select>
           <button type="button" id="cb-big">Big screen</button></div></div>
+      <p class="cb-phone">Works best on a tablet, laptop or the clubhouse big screen. On a phone, turn it sideways or tap Big screen.</p>
       <div class="cb-board" id="cb-board">
         <svg id="cb-svg" viewBox="0 0 1000 680" role="img" aria-label="Coaching board with boats, marks and wind"></svg>
         <div class="cb-rlist" id="cb-rlist"></div>
@@ -1396,7 +1400,7 @@ body.gx #map { background: #0C1B2E !important; }
         </div>
         <div class="cb-card"><h3>Steps</h3><div class="cb-btns"><button type="button" class="primary" id="cb-save">Save step</button><button type="button" id="cb-play">▶ Play</button><button type="button" id="cb-clearsteps">Clear steps</button></div>
           <div class="cb-steps" id="cb-steps"></div><div class="note info" id="cb-msg" hidden></div>
-          <p class="hint">Right-of-way helper is simplified: it covers rules 10, 11 and 12 only, not mark-room, tacking or proper course. Sail angles are rules of thumb. Check the Racing Rules of Sailing.</p></div>
+          <p class="hint">The right-of-way helper is a teaching aid based on the Racing Rules of Sailing, Part 2 (rules 10 to 18). It reads the board as it is now, so it can't know who got there first or how an overlap began, and it leaves out exceptions (such as rule 18's for starting marks and rule 19 obstructions). The rulebook and the judges decide. Sail angles are rules of thumb.</p></div>
       </div>
     </div>
     <div class="tab" id="tab-kits" hidden>
@@ -5928,21 +5932,36 @@ function cbArrow(cx, cy, dir, col, label, r = 38) { // dir: where it comes FROM 
     <g transform="rotate(${dir})"><line x1="0" y1="${-r}" x2="0" y2="${r - 10}" stroke="${col}" stroke-width="5" stroke-linecap="round"/><path d="M-11 ${r - 16} L0 ${r + 2} L11 ${r - 16}Z" fill="${col}"/></g>
     <text y="${r + 26}" text-anchor="middle" class="cb-dlab">${label}</text></g>`;
 }
+// Simplified Racing Rules of Sailing (Part 2) for two boats near each other. Order: mark-room (18) when both are in the
+// zone, then tacking (13), then opposite tacks (10), then same tack overlapped (11) or not overlapped (12).
 function cbRules() {
-  const boats = CB.st.items.filter((i) => i.k === "boat"), out = [];
+  const boats = CB.st.items.filter((i) => i.k === "boat"), marks = CB.st.items.filter((i) => i.k === "mark" || i.k === "rc"), out = [];
+  const ZONE = CB_LEN * 3, tacking = (b) => cbTWA(b) < 35;
+  const along = (P, Q) => (Q.x - P.x) * Math.sin(P.h * Math.PI / 180) - (Q.y - P.y) * Math.cos(P.h * Math.PI / 180); // how far Q is ahead of P
+  // leeward side = the side the sail is on: port side on starboard tack, starboard side on port tack
+  const leeDir = (P) => { const h = P.h * Math.PI / 180, sgn = cbTack(P) === "starboard" ? -1 : 1; return [Math.cos(h) * sgn, Math.sin(h) * sgn]; };
+  const aLeeward = (A, B) => { const la = leeDir(A), lb = leeDir(B), dx = A.x - B.x, dy = A.y - B.y; return dx * (la[0] + lb[0]) + dy * (la[1] + lb[1]) > 0; };
   for (let i = 0; i < boats.length; i++) for (let j = i + 1; j < boats.length; j++) {
     const A = boats[i], B = boats[j], d = Math.hypot(B.x - A.x, B.y - A.y);
-    if (d > CB_LEN * 2.6 || cbTWA(A) < 35 || cbTWA(B) < 35) continue;
-    let row, rule;
-    if (cbTack(A) !== cbTack(B)) { row = cbTack(A) === "starboard" ? A : B; rule = "Rule 10: port gives way to starboard"; }
-    else {
-      const along = (P, Q) => (Q.x - P.x) * Math.sin(P.h * Math.PI / 180) - (Q.y - P.y) * Math.cos(P.h * Math.PI / 180); // how far Q is ahead of P
-      const ab = along(A, B), ba = along(B, A);
-      if (ab > CB_LEN) { row = B; rule = "Rule 12: clear astern keeps clear"; }
-      else if (ba > CB_LEN) { row = A; rule = "Rule 12: clear astern keeps clear"; }
-      else { const w = CB.st.wind * Math.PI / 180, down = (P) => -(P.x * Math.sin(w) - P.y * Math.cos(w)); row = down(A) > down(B) ? A : B; rule = "Rule 11: windward keeps clear"; }
+    if (d > CB_LEN * 2.6) continue;
+    const ab = along(A, B), ba = along(B, A), overlapped = ab <= CB_LEN && ba <= CB_LEN;
+    const clearAhead = ab > CB_LEN ? B : ba > CB_LEN ? A : null;
+    let row = null, rule = "", room = null, roomRule = "", notes = [];
+    // right of way
+    if (tacking(A) && tacking(B)) { row = null; rule = "Rule 13: both are tacking; the one on the other's port side (or astern) keeps clear"; }
+    else if (tacking(A) || tacking(B)) { row = tacking(A) ? B : A; rule = "Rule 13: a boat that is tacking (past head to wind, not yet close-hauled) keeps clear"; }
+    else if (cbTack(A) !== cbTack(B)) { row = cbTack(A) === "starboard" ? A : B; rule = "Rule 10: port gives way to starboard"; }
+    else if (!overlapped) { row = clearAhead; rule = "Rule 12: the boat clear astern keeps clear"; }
+    else { row = aLeeward(A, B) ? A : B; rule = "Rule 11: windward keeps clear"; notes.push("Rule 17: if the leeward boat came from clear astern within two lengths, she may not sail above her proper course"); }
+    // mark-room: both boats in the zone (three lengths) of the same mark
+    const m = marks.map((k) => [k, Math.min(Math.hypot(A.x - k.x, A.y - k.y), Math.hypot(B.x - k.x, B.y - k.y)), Math.max(Math.hypot(A.x - k.x, A.y - k.y), Math.hypot(B.x - k.x, B.y - k.y))]).sort((a, b) => a[1] - b[1])[0];
+    if (m && m[2] <= ZONE && !(tacking(A) || tacking(B))) {
+      const beating = cbTWA(A) < 90 && cbTWA(B) < 90;
+      if (cbTack(A) !== cbTack(B) && beating) notes.push("Rule 18 does not apply: opposite tacks on a beat to windward, so rule 10 decides");
+      else if (overlapped) { const dA = Math.hypot(A.x - m[0].x, A.y - m[0].y), dB = Math.hypot(B.x - m[0].x, B.y - m[0].y); room = dA < dB ? A : B; roomRule = "Rule 18.2: the inside overlapped boat gets mark-room"; }
+      else if (clearAhead) { room = clearAhead; roomRule = "Rule 18.2: the boat clear ahead when she reached the zone gets mark-room"; }
     }
-    out.push({ A, B, row, rule });
+    if (row || room) out.push({ A, B, row, rule, room, roomRule, notes });
   }
   return out;
 }
@@ -5958,13 +5977,14 @@ function cbRender(noPanel) {
   for (const d of S.draw) h += `<path d="${d.d}" fill="none" stroke="${d.c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
   const RL = CB.rules ? cbRules() : [];
   RL.forEach((r, i) => {
-    const mx = (r.A.x + r.B.x) / 2, my = (r.A.y + r.B.y) / 2, col = CB_COLS[r.row.c % CB_COLS.length][1];
+    const mx = (r.A.x + r.B.x) / 2, my = (r.A.y + r.B.y) / 2, col = CB_COLS[(r.room || r.row).c % CB_COLS.length][1];
     h += `<line x1="${r.A.x}" y1="${r.A.y}" x2="${r.B.x}" y2="${r.B.y}" stroke="#E04848" stroke-width="1.5" stroke-dasharray="3 4"/>
       <g transform="translate(${mx} ${my})"><circle r="11" fill="#0F2A45" stroke="${col}" stroke-width="3"/><text y="4.5" text-anchor="middle" class="cb-rl">${i + 1}</text></g>`;
   });
   const rlBox = $("#cb-rlist");
-  if (rlBox) rlBox.innerHTML = RL.length ? RL.map((r, i) => { const w = CB_COLS[r.row.c % CB_COLS.length], o = CB_COLS[(r.row === r.A ? r.B : r.A).c % CB_COLS.length];
-    return `<div><b class="cb-rn">${i + 1}</b><span><b style="color:${w[1]}">${w[0]}</b> has right of way over <b style="color:${o[1]}">${o[0]}</b>. ${r.rule}.</span></div>`; }).join("") : "";
+  const nm = (b) => { const c = CB_COLS[b.c % CB_COLS.length]; return `<b style="color:${c[1]}">${c[0]}</b>`; }, other = (r, b) => (b === r.A ? r.B : r.A);
+  if (rlBox) rlBox.innerHTML = RL.length ? RL.map((r, i) => `<div><b class="cb-rn">${i + 1}</b><span>${r.row ? `${nm(r.row)} has right of way over ${nm(other(r, r.row))}. ${r.rule}.` : `${r.rule}.`}${r.room ? ` ${nm(r.room)} gets mark-room from ${nm(other(r, r.room))}. ${r.roomRule}.` : ""}${r.notes.map((n) => ` <i>${n}.</i>`).join("")}</span></div>`).join("")
+    + `<div class="cb-always">Always: avoid contact if reasonably possible (rule 14); a boat that just gained right of way must first give room to keep clear (rule 15); a right-of-way boat changing course must give room to keep clear (rule 16).</div>` : "";
   for (const it of S.items) {
     if (it.k === "mark") h += `<g class="cb-it" data-id="${it.id}" transform="translate(${it.x} ${it.y})"><circle r="17" fill="${it.col}" stroke="#0F2A45" stroke-width="2"/>${it.n ? `<text y="6" text-anchor="middle" class="cb-mn">${it.n}</text>` : ""}${CB.sel === it.id ? `<circle r="24" fill="none" stroke="#F27A48" stroke-width="2" stroke-dasharray="5 4"/>` : ""}</g>`;
     if (it.k === "rc") h += `<g class="cb-it" data-id="rc" transform="translate(${it.x} ${it.y})"><rect x="-30" y="-14" width="60" height="28" rx="8" fill="#FFFFFF" stroke="#0F2A45" stroke-width="2"/><text y="5" text-anchor="middle" class="cb-rc">RC</text>${CB.sel === "rc" ? `<rect x="-36" y="-20" width="72" height="40" rx="10" fill="none" stroke="#F27A48" stroke-width="2" stroke-dasharray="5 4"/>` : ""}</g>`;
