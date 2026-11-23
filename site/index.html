@@ -1628,6 +1628,8 @@ body.gx #map { background: #0C1B2E !important; }
 .bt-row { display: grid; grid-template-columns: 22px 72px 1fr; gap: 10px; align-items: center; text-align: left; padding: 8px 10px; border: 1px solid var(--border) !important; border-left: 3px solid var(--c) !important; border-radius: 4px !important; background: var(--surface) !important; color: var(--ink) !important; min-height: 0; }
 .bt-n { font: 600 15px/1 var(--f-mono); color: var(--muted); } .bt-nr { font-size: 11px; color: var(--muted); text-align: center; }
 .bt-b { display: flex; flex-direction: column; gap: 3px; min-width: 0; } .bt-b b { font: 600 15px/1.2 var(--f-display); } .bt-b small { font-size: 12px; color: var(--ink-2); line-height: 1.35; } .bt-b i { font-style: normal; }
+.dp-ok { color: #5BE09A; } .dp-warn { color: #F5B83D; } .dp-no { color: #FF5A60; }
+.cr-here small { display: block; }
 .sh-cell { display: flex; gap: 10px; align-items: center; }
 .aw-alarm { background: #FF5A60; color: #fff; font: 700 20px/1.2 var(--f-display); padding: 14px; border-radius: 4px; text-align: center; animation: awb 0.7s infinite alternate; }
 @keyframes awb { to { background: #B3141C; } }
@@ -6961,6 +6963,7 @@ async function crOpen(p) {
     if (CRUISE.sel === p) crRenderDetail(p, null);
   }
   if (!["food", "eat"].includes(p[0]) && p.mfc === undefined) { p.mfc = null; crMarineFcst(p).then((m) => { p.mfc = m; if (m && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
+  if (["anchorage", "mooring", "mooring_field", "marina", "fuel", "pumpout", "dinghy", "ramp"].includes(p[0]) && p.depth === undefined) crDepth(p).then((d) => { if (d && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); });
   if (["anchorage", "mooring", "mooring_field"].includes(p[0]) && p.shelter === undefined) crShelter(p).then((sh) => { if (sh && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); });
   if (["anchorage", "mooring", "mooring_field"].includes(p[0]) && p.bottom === undefined) { p.bottom = null; sbNear(p[1], p[2], 800).then((l) => { p.bottom = sbSummary(l.slice(0, 15)) || false; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (p[0] !== "food" && p.here === undefined) { p.here = null; crHereNow(p).then((h) => { p.here = h; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
@@ -7019,7 +7022,7 @@ function crRenderDetail(p, reports, offline) {
   }
   $("#cr-detail").innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
     <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : p[0] === "eat" ? ({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[x.amenity] || "Restaurant") + (x.cuisine ? ` · ${x.cuisine.split(";")[0].replace(/_/g, " ")}` : "") : crTypeName(p[0]))}</span></div></div>
-    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom || p.shelter ? `<div class="cr-rows cr-here">${p.shelter ? `<div class="cr-row"><span>Tonight</span><div class="sh-cell">${shelterRose(p.shelter.F, p.shelter.worst.dir)}<div><b style="color:${SH_COL[p.shelter.rate]}">${SH_NAME[p.shelter.rate]}</b><br>${esc(p.shelter.text)}</div></div></div>` : ""}${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
+    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom || p.shelter || p.depth ? `<div class="cr-rows cr-here">${p.shelter ? `<div class="cr-row"><span>Tonight</span><div class="sh-cell">${shelterRose(p.shelter.F, p.shelter.worst.dir)}<div><b style="color:${SH_COL[p.shelter.rate]}">${SH_NAME[p.shelter.rate]}</b><br>${esc(p.shelter.text)}</div></div></div>` : ""}${p.depth ? `<div class="cr-row"><span>Depth</span><div>${crDepthHtml(p.depth)}</div></div>` : ""}${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#cr-dir").addEventListener("click", () => routeStart([p[1], p[2]], crName(p)));
   $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Gustiq`, e.currentTarget));
@@ -7858,6 +7861,37 @@ async function awStart() {
   }, (e) => awPanel(e.code === 1 ? "Location is blocked. Allow location for this site in your settings." : "Could not get your position."), { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 }
 function awStop() { if (AW.id != null) navigator.geolocation.clearWatch(AW.id); AW.id = null; AW.on = false; AW.at = null; AW.alarm = false; awSound(false); try { AW.lock && AW.lock.release(); } catch (_) {} awDraw(); awPanel(); }
+
+
+/* Depth at a place (NOAA coastal relief / CUDEM grid, ~55 m near shore), checked against my boat's draft and the tide */
+async function depthFor(lat, lon) {
+  if (!DEPTH) return null; // loaded at start-up (US waters only)
+  const a = Math.floor(lat * 4), o = Math.floor(lon * 4), B = DEPTH.block, ca = Math.floor(lat / B) * B, co = Math.floor(lon / B) * B, jobs = [];
+  if (DEPTH.fine.has(`${a}_${o}`) && !depthTiles.get(`f_${a}_${o}`)) jobs.push([`f_${a}_${o}`, (a + 1) / 4, o / 4, DEPTH.res]);
+  if (DEPTH.coarse.has(`${ca}_${co}`) && !depthTiles.get(`c_${ca}_${co}`)) jobs.push([`c_${ca}_${co}`, ca + B, co, DEPTH.cres]);
+  await Promise.all(jobs.map(async ([k, l1, l0, r]) => { try { depthTiles.set(k, await loadDepthTile(k, l1, l0, r)); } catch (_) {} }));
+  // the typical (median) depth of the water cells within ~70 m: the spot itself may sit on the grid's shore line,
+  // and the median avoids promising the depth of a nearby channel
+  const ws = [], cl = Math.cos(rad(lat));
+  for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const d = depthAt(lat + dy * 0.00028, lon + (dx * 0.00028) / cl); if (d && !d.land && d.h > 0) ws.push(d); }
+  if (!ws.length) return null; ws.sort((a, b) => a.h - b.h); return ws[Math.floor((ws.length - 1) / 2)];
+}
+async function crDepth(p) {
+  if (p.depth !== undefined) return p.depth;
+  p.depth = null;
+  const d = await depthFor(p[1], p[2]).catch(() => null); if (!d || !(d.h > 0)) return null;
+  let range = null; try { const T = await spTideFor(p[1], p[2]); if (T) { const now = T.minAt(Date.now()), ev = T.ev.filter(([t]) => t > now - 360 && t < now + 1500).map(([, h]) => h / 100); if (ev.length > 1) range = { r: Math.max(...ev) - Math.min(...ev), unit: T.unit }; } } catch (_) {}
+  const rangeM = range ? (range.unit === "ft" ? range.r / 3.28084 : range.r) : null, low = rangeM != null ? d.h - rangeM / 2 : null;
+  p.depth = { h: d.h, low, fine: d.fine }; return p.depth;
+}
+function crDepthHtml(D) {
+  const L1 = (m) => imperial() ? `${Math.max(0, Math.round(m * 3.28084))} ft` : `${Math.max(0, m).toFixed(1)} m`;
+  let verdict = "";
+  if (BOAT.draft) { const c = (D.low ?? D.h) - BOAT.draft, cls = c < 0.3 ? "no" : c < 1 ? "warn" : "ok";
+    verdict = `<br><b class="dp-${cls}">${cls === "no" ? "Too shallow" : cls === "warn" ? "Tight" : "OK"} for your ${lenTxt(BOAT.draft)} draft${D.low != null ? " at low tide" : ""}: about ${L1(c)} under the keel</b>`; }
+  else verdict = `<br><small>Add your boat's draft (Add my boat) to check it.</small>`;
+  return `About ${L1(D.h)} at mid-tide${D.low != null ? `, ${L1(D.low)} at low tide today` : ""}${verdict}<small>NOAA survey grid (${D.fine ? "about 55 m" : "about 275 m"} cells), not a chart sounding. Check the chart.</small>`;
+}
 
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
