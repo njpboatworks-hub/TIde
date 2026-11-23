@@ -6173,19 +6173,34 @@ function crStatus(p) { // community state for a place: {cls, text} or null
 }
 function crStars(r) { if (r == null) return ""; const f = Math.round(r * 2) / 2; let h = ""; for (let i = 1; i <= 5; i++) h += `<i class="${f >= i ? "f" : f >= i - 0.5 ? "h" : ""}"></i>`; return `<span class="cr-stars" aria-label="${r} stars">${h}</span>`; }
 
-async function loadCruise() {
-  if (CRUISE.data) return CRUISE.data;
-  const r = await fetch("boating.json"); if (!r.ok) throw new Error("The cruising places have not been built yet.");
-  const d = await r.json();
-  d.p.forEach((p, i) => { p.i = i; });
-  const named = d.p.filter((q) => q[3] && q[0] !== "wreck" && q[0] !== "reef");
-  for (const p of d.p) { // unnamed services take the name of the place they are at
+// Places come in 5-degree squares (boating/{lat}_{lon}.json); only the squares on screen are loaded.
+function crNearNames(list) { // unnamed services take the name of the place they are at
+  const named = list.filter((q) => q[3] && q[0] !== "wreck" && q[0] !== "reef");
+  for (const p of list) {
     if (p[3] || p[0] === "wreck" || p[0] === "reef") continue; const cl = Math.cos(p[1] * Math.PI / 180); let best = null, bd = 0.4;
     for (const q of named) { if (Math.abs(q[1] - p[1]) > 0.01) continue; const dk = Math.hypot((q[1] - p[1]) * 111.3, (q[2] - p[2]) * 111.3 * cl); if (dk < bd) { bd = dk; best = q; } }
     if (best) p.nearName = best[3];
   }
-  CRUISE.data = d; return d;
 }
+async function loadCruise() {
+  if (CRUISE.data) return CRUISE.data;
+  const r = await fetch("boating/index.json");
+  if (r.ok) { const j = await r.json(); CRUISE.data = { types: j.types, built: j.built, p: [], size: j.size || 5, tiles: new Set(Object.keys(j.tiles)), loaded: new Map() }; return CRUISE.data; }
+  const r2 = await fetch("boating.json"); if (!r2.ok) throw new Error("The cruising places have not been built yet."); // older builds: one file
+  const d = await r2.json(); crNearNames(d.p); d.tiles = null; CRUISE.data = d; return d;
+}
+async function crTiles(bounds) { // load the squares covering these bounds (and a margin); true when new places arrived
+  const d = CRUISE.data; if (!d || !d.tiles) return false;
+  const S = d.size, b = bounds.pad(0.3), want = [];
+  for (let la = Math.floor(b.getSouth() / S) * S; la <= b.getNorth(); la += S) for (let lo = Math.floor(b.getWest() / S) * S; lo <= b.getEast(); lo += S) {
+    const k = `${la}_${(((lo + 180) % 360) + 360) % 360 - 180}`; if (d.tiles.has(k) && !d.loaded.has(k)) want.push(k); }
+  if (!want.length || want.length > 16) return false;
+  for (const k of want) d.loaded.set(k, fetch(`boating/${k}.json`).then((r) => (r.ok ? r.json() : [])).catch(() => []));
+  const got = await Promise.all(want.map((k) => d.loaded.get(k)));
+  got.forEach((list) => { crNearNames(list); d.p.push(...list); });
+  CRUISE.landGrid = null; return got.some((l) => l.length);
+}
+async function crTilesAt(lat, lon) { const d = CRUISE.data; if (d && d.tiles) await crTiles(L.latLngBounds([lat - 0.01, lon - 0.01], [lat + 0.01, lon + 0.01])); }
 async function loadComm() {
   try { const r = await fetch(FN + "reports"); if (!r.ok) throw 0; CRUISE.comm = await r.json(); CRUISE.commOk = true; }
   catch (_) { CRUISE.commOk = false; }
@@ -7298,6 +7313,7 @@ async function enterCruise() {
   CRUISE.on = true;
   if (layers.land && map.hasLayer(layers.land)) { map.removeLayer(layers.land); CRUISE.hidLand = true; } // the Newport debrief shoreline
   try { await loadCruise(); } catch (e) { showMsg($("#cr-msg"), e.message); return; }
+  if (PENDING_LINK && PENDING_LINK.tab === "cruise") { const m = PENDING_LINK.arg.match(/:(-?[\d.]+),(-?[\d.]+)$/); if (m) { await crTilesAt(+m[1], +m[2]); map.setView([+m[1], +m[2]], Math.max(map.getZoom(), 13), { animate: false }); } }
   if (!CRUISE.on) return;
   crChips();
   if (!CRUISE.started) {
@@ -7306,6 +7322,7 @@ async function enterCruise() {
     loadComm().then(() => crDraw());
   }
   crDraw(); dzDraw(); crFood(); cruiseWaterSoon(); sbDraw();
+  crTiles(map.getBounds()).then((n) => { if (n && CRUISE.on) crDraw(); });
   navLoad().then(() => { if (CRUISE.on) { crDraw(); navDraw(); } });
   warnLoad().then(() => { if (!CRUISE.on) return; warnDraw(); if (CRUISE.sel && CRUISE.sel[1] != null && !CRUISE.sel.route) crRenderDetail(CRUISE.sel, CRUISE.sel.lastReports ?? null); });
   if (PENDING_LINK && PENDING_LINK.tab === "cruise") {
@@ -7382,7 +7399,8 @@ function initCruise() {
   let qt = null;
   $("#cr-q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { CRUISE.q = e.target.value.trim(); if (CRUISE.sel) crClose(); else crDraw(); }, 150); });
   $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-card"); if (b) { const p = crFind(b.dataset.k); if (p) crOpen(p); } });
-  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); cruiseWaterSoon(); sbDraw(); });
+  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); cruiseWaterSoon(); sbDraw();
+    crTiles(map.getBounds()).then((n) => { if (n && CRUISE.on) crDraw(); }); });
   map.on("click", (e) => { if (!CRUISE.on) return; if (ROUTE.plotting) { plotAdd(e.latlng); return; } if (ROUTE.picking) { routePick(e.latlng); return; } if (CRUISE.adding) { crAddForm(e.latlng); return; } if (SB.on) { sbCheck(e.latlng); return; } if (DZ.on) dzCheck(e.latlng); });
 }
 

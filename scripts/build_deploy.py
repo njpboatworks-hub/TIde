@@ -11,7 +11,7 @@ from pathlib import Path
 from backend.config import ROOT
 
 SITE, OUT = ROOT / "site", ROOT / "deploy" / "sailiq-wind-site"
-FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-gustiq-32.png", "icon-gustiq-192.png", "apple-touch-icon-gustiq.png", "icon-gustiq-512.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "boating.json", "discharge.json", "nav.json", "marinezones.json"]
+FILES = ["index.html", "config.js", "data.json", "coast.json", "live.json", "tides.json", "places.json", "logo-mark.png", "coach-kit.jpg", "favicon.ico", "favicon-gustiq-32.png", "icon-gustiq-192.png", "apple-touch-icon-gustiq.png", "icon-gustiq-512.png", "terrain.png", "terrain.json", "world.json", "surge.json", "states.json", "privacy.html", "discharge.json", "nav.json", "marinezones.json"]
 
 CONFIG = """// SailIQ Wind settings for your own website.
 window.SAILIQ_CONFIG = {
@@ -43,6 +43,26 @@ HEAD = """<!doctype html>
 """
 
 
+TILE = 5  # degrees: the Cruising tab loads only the squares on screen
+
+
+def split_places():
+    """site/boating.json (every place, worldwide) -> boating/index.json + boating/{lat}_{lon}.json 5-degree squares."""
+    import json, math
+    src = SITE / "boating.json"
+    if not src.exists():
+        print("note: site/boating.json not built yet"); return
+    d = json.loads(src.read_text()); tiles = {}
+    for p in d["p"]:
+        k = f"{math.floor(p[1] / TILE) * TILE}_{math.floor(p[2] / TILE) * TILE}"
+        tiles.setdefault(k, []).append(p)
+    out = OUT / "boating"; out.mkdir(parents=True, exist_ok=True)
+    for k, v in tiles.items():
+        (out / f"{k}.json").write_text(json.dumps(v, separators=(",", ":")))
+    (out / "index.json").write_text(json.dumps({"built": d.get("built"), "types": d["types"], "size": TILE, "tiles": {k: len(v) for k, v in tiles.items()}}, separators=(",", ":")))
+    print(f"places: {len(d['p'])} in {len(tiles)} squares")
+
+
 def main():
     if OUT.exists():
         shutil.rmtree(OUT)
@@ -59,6 +79,7 @@ def main():
     for sub in ("iberia", "west", "lakes", "hawaii", "depth", "global", "world", "seabed"):   # other regions and the water-depth tiles
         if (SITE / sub).exists():
             shutil.copytree(SITE / sub, OUT / sub)
+    split_places()
     shutil.copy(ROOT / "deploy" / "DEPLOY.md", OUT / "DEPLOY.md")
     zip_path = shutil.make_archive(str(OUT), "zip", OUT.parent, OUT.name)
     size = sum(p.stat().st_size for p in OUT.rglob("*") if p.is_file())
