@@ -1189,7 +1189,7 @@ body.gx #map { background: #071426; }
 
 .panel { padding: 32px 32px 48px max(24px, env(safe-area-inset-left, 0px)); }
 .panel > .tab, .panel > #loading { max-width: 640px; }
-.panel > #tab-kits { max-width: 1100px; }
+.panel > #tab-kits, .panel > #tab-puffs { max-width: 1180px; margin-inline: auto; }
 h1 { font-size: 32px; letter-spacing: -.03em; margin-bottom: 8px; }
 .tab > h1:first-child, .tab > h1:first-of-type { border-bottom: 0; padding-bottom: 0; max-width: none; }
 h2 { font-size: 18px; border-top: 1px solid var(--border); padding-top: 22px; margin-top: 30px; }
@@ -1573,6 +1573,31 @@ body.gx #map { background: #0C1B2E !important; }
 .pl-leg { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-left: 3px solid #F5B83D; background: var(--surface); border-radius: 0 8px 8px 0; font-size: 13px; }
 .pl-leg span { color: var(--ink-2); font-size: 12px; } .pl-leg.bad { border-color: #FF5A60; } .pl-leg em { color: #FF8A8F; font-style: normal; font-size: 12px; }
 #rt-plot { display: flex; align-items: center; gap: 6px; } #rt-plot svg { width: 16px; height: 16px; color: #F5B83D; }
+/* Puff lab (site theme: navy, orange signal, Space Grotesk / IBM Plex) */
+.pl-wrap { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; padding: 18px 20px 14px; display: flex; flex-direction: column; gap: 12px; max-width: 1100px; width: 100%; margin: 0 auto; box-sizing: border-box; }
+#tab-puffs { width: 100%; }
+.pl-wrap.pl-max, .pl-wrap:fullscreen { position: fixed; inset: 0; z-index: 3000; max-width: none; border-radius: 0; overflow: auto; background: var(--page); }
+.pl-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.pl-kick { font: 500 11.5px/1 var(--f-mono); letter-spacing: .1em; color: var(--signal); text-transform: uppercase; }
+.pl-big { font: 600 clamp(26px, 4.5vw, 44px)/1.05 var(--f-display); margin: 6px 0 4px; color: var(--ink); letter-spacing: -.01em; }
+.pl-sub { font: 400 15px/1.4 var(--f-body); margin: 0; color: var(--ink-2); }
+.pl-wind { display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--ink-2); font: 500 11px/1 var(--f-mono); text-transform: uppercase; letter-spacing: .08em; } .pl-wind svg { color: var(--signal); } .pl-wind b { font: 600 18px/1 var(--f-display); color: var(--ink); text-transform: none; letter-spacing: 0; }
+.pl-stage { position: relative; height: min(62vh, 640px); min-height: 320px; }
+.pl-wrap:fullscreen .pl-stage, .pl-wrap.pl-max .pl-stage { height: 64vh; }
+#pl-cv { width: 100%; height: 100%; display: block; border-radius: 4px; border: 1px solid var(--border); cursor: crosshair; }
+.pl-clock { position: absolute; right: 12px; top: 10px; font: 500 13px/1 var(--f-mono); color: var(--ink); background: rgba(10,26,48,.8); border: 1px solid var(--border); padding: 6px 9px; border-radius: 4px; pointer-events: none; }
+.pl-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.pl-row { position: relative; border: 1px solid var(--border); border-left: 3px solid var(--c); padding: 8px 12px 12px; background: var(--page); border-radius: 4px; overflow: hidden; }
+.pl-r1 { display: flex; align-items: baseline; gap: 8px; } .pl-r1 b { font: 600 17px/1.15 var(--f-display); color: var(--ink); }
+.pl-r1 span { color: var(--muted); font-size: 12.5px; } .pl-r1 em { margin-left: auto; font: 600 15px/1 var(--f-mono); color: var(--c); font-style: normal; white-space: nowrap; }
+.pl-r2 { font: 400 12.5px/1.45 var(--f-mono); color: var(--ink-2); margin-top: 3px; }
+.pl-row i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c); transition: width .2s linear; }
+.pl-ctl { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; border-top: 1px solid var(--border); padding-top: 12px; }
+.pl-ctl label { display: grid; gap: 4px; font-size: 12px; color: var(--ink-2); min-width: 120px; } .pl-ctl label b { color: var(--ink); font-family: var(--f-mono); }
+.pl-ctl input[type=range] { width: 140px; }
+.pl-btns { display: flex; gap: 8px; margin-left: auto; } .pl-btns button { min-height: 0; padding: 8px 14px; }
+.pl-fine { font-size: 12px; color: var(--muted); margin: 0; }
+@media (max-width: 760px) { .pl-rows { grid-template-columns: 1fr; } .pl-btns { margin-left: 0; } .pl-wrap { padding: 12px; } }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -1603,7 +1628,7 @@ body.gx #map { background: #0C1B2E !important; }
 <main>
   <section class="panel">
     <nav class="subnav" id="racing-nav" aria-label="Racing" hidden>
-      <a href="#coast" data-sub="coast">Conditions</a><a href="#race" data-sub="race">Race course</a><a href="#debrief" data-sub="debrief">Coach debrief</a>
+      <a href="#coast" data-sub="coast">Conditions</a><a href="#race" data-sub="race">Race course</a><a href="#debrief" data-sub="debrief">Coach debrief</a><a href="#puffs" data-sub="puffs">Puff lab</a>
     </nav>
     <div id="loading" class="note info">Loading six years of Newport wind history…</div>
 
@@ -1896,6 +1921,25 @@ body.gx #map { background: #0C1B2E !important; }
       <div id="cr-detail" hidden></div>
     </div>
 
+    <div class="tab" id="tab-puffs" hidden>
+      <div class="pl-wrap" id="pl-wrap">
+        <div class="pl-top">
+          <div><div class="pl-kick" id="pl-kick">Downwind · 4 boats</div><h1 class="pl-big" id="pl-big">Puff lab</h1><p class="pl-sub" id="pl-sub"></p></div>
+          <div class="pl-wind"><span>wind</span><svg viewBox="0 0 20 60" width="16" height="48"><path d="M10 2v50M3 44l7 12 7-12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><b id="pl-windkt">10 kt</b></div>
+        </div>
+        <div class="pl-stage"><canvas id="pl-cv"></canvas><div class="pl-clock" id="pl-clock">race clock 0:00</div></div>
+        <div class="pl-rows" id="pl-rows"></div>
+        <div class="pl-ctl">
+          <div class="seg" id="pl-leg" role="group" aria-label="Leg"><button type="button" data-v="down" class="active">Downwind</button><button type="button" data-v="up">Upwind</button></div>
+          <label>Wind <b id="pl-w-l">10 kt</b><input type="range" id="pl-w" min="4" max="24" step="1" value="10"></label>
+          <label>Puffiness <b id="pl-p-l">35%</b><input type="range" id="pl-p" min="0" max="70" step="5" value="35"></label>
+          <label>Puffs <b id="pl-n-l">9</b><input type="range" id="pl-n" min="0" max="20" step="1" value="9"></label>
+          <label>Speed<select id="pl-spd"><option value="20">20×</option><option value="40" selected>40×</option><option value="80">80×</option></select></label>
+          <div class="pl-btns"><button type="button" class="primary" id="pl-run">▶ Race</button><button type="button" id="pl-new">New puffs</button><button type="button" id="pl-full">Big screen</button></div>
+        </div>
+        <p class="pl-fine">Tap the water to drop a puff. Every boat sails through the same puffs, so the only difference is how it is sailed. Illustrative speeds for a single-handed dinghy, flat water, no waves or tactics between boats: a teaching tool, not a prediction.</p>
+      </div>
+    </div>
     <div class="tab" id="tab-kits" hidden>
       <div class="kits-hero">
         <img src="logo-mark.png" width="72" height="72" alt="">
@@ -6293,22 +6337,23 @@ function showTab(name) {
   if (name && name.includes("/")) { const i = name.indexOf("/"); PENDING_LINK = { tab: name.slice(0, i), arg: decodeURIComponent(name.slice(i + 1)) }; name = name.slice(0, i); }
   if (name === "weather") { location.replace("#wind"); return; } // old Forecast tab and Day Planner were merged away; keep old links working
   if (name === "plan") { location.replace("#coast"); return; }
-  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather", "cruise"].includes(name)) name = "wind";
+  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather", "cruise", "puffs"].includes(name)) name = "wind";
   if (CRUISE.on && name !== "cruise") leaveCruise();
   const global = name === "wind" || name === "weather";
   if (GX.on && !global) leaveGlobal();
   const overlay = name === "race" || name === "plan" ? name : null, race = overlay === "race"; if (overlay) name = "coast";
   planMode = overlay === "plan"; if (!planMode) drawPlanPin();
   if (raceMode && !race) leaveRace();
-  document.querySelector("main").classList.toggle("wide", name === "kits");
-  if (name !== "kits") map.invalidateSize({ animate: false });  // the map may have been hidden
+  document.querySelector("main").classList.toggle("wide", name === "kits" || name === "puffs");
+  if (name === "puffs") setTimeout(plEnter, 0); else plLeave();
+  if (name !== "kits" && name !== "puffs") map.invalidateSize({ animate: false });  // the map may have been hidden
   const wasCoast = activeTab === "coast";
   activeTab = name;
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
   $("#liftmap-btn").hidden = name === "coast" || name === "cruise";
   document.body.classList.toggle("cruise", name === "cruise");
   $("#brand-venue").textContent = "Lift / Header / Tide Guide";
-  const top = ["coast", "race", "debrief"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
+  const top = ["coast", "race", "debrief", "puffs"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === top));
   $("#racing-nav").hidden = top !== "racing";
   $("#race-bar").hidden = !race; document.body.classList.toggle("race-on", race);
@@ -6336,6 +6381,169 @@ function rerenderCurrent() {
   if (activeTab === "coast") { drawCoastStations(); refreshArrows(); return; }
   if (liftOn) drawLiftMap(); else if (activeTab === "debrief") drawTrack(); else refreshArrows();
 }
+
+/* =================== Puff lab: a downwind / upwind teaching simulator for the big screen =================== */
+// Units: metres and seconds. North (screen up) is where the wind comes from. Every boat sails in the same puff field
+// (a function of time only), so the only difference between boats is technique.
+const PL = { off: 0, on: false, leg: "down", w: 10, puffy: 0.35, n: 9, spd: 40, seed: 7, puffs: [], boats: [], t: 0, run: false, raf: null, last: 0, L: 900 };
+const PKT = 0.514444; // metres per second in a knot
+function plRand(seed) { let x = seed >>> 0 || 1; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 4294967296); }
+function plMakePuffs() {
+  const r = plRand(PL.seed), W = PL.L * 0.9; PL.puffs = [];
+  for (let i = 0; i < PL.n; i++) PL.puffs.push({ x: (r() - 0.5) * W * 1.2, y0: -PL.L * (0.2 + r() * 1.6), R: 90 + r() * 140, k: (r() < 0.8 ? 1 : -0.6) * (0.6 + r() * 0.4), sh: (r() - 0.5) * 2 });
+}
+function plWind(x, y, t0) {
+  const t = t0 + PL.off; // puffs keep rolling down the course before the start too // [speed m/s, direction the wind comes FROM in degrees, 0 = from the top]
+  const base = PL.w * PKT, drift = base * 0.75; let add = 0, dir = 0;
+  for (const p of PL.puffs) {
+    const span = PL.L * 2.6, py = ((p.y0 + drift * t + PL.L * 1.1) % span + span) % span - PL.L * 1.1; // puffs roll down the course and come round again
+    const dx = x - p.x, dy = y - py, d2 = (dx * dx + dy * dy) / (p.R * p.R); if (d2 > 6) continue;
+    const g = Math.exp(-d2); add += g * p.k * PL.puffy * base; dir += g * Math.max(-1, Math.min(1, dx / p.R)) * 7 * Math.sign(p.k); // a puff fans out: wind bends away from its middle
+  }
+  return [Math.max(0.5, base + add), Math.max(-12, Math.min(12, dir))]; // shifts of up to about 12 degrees
+}
+// boat speed (m/s) for a true wind angle (0 = head to wind, 180 = dead downwind) and wind speed: illustrative dinghy numbers
+function plSpeed(twa, ws) {
+  const kt = ws / PKT, a = Math.min(180, Math.max(0, twa));
+  const tab = [[0, 0], [35, 0.25], [43, 0.52], [55, 0.6], [75, 0.68], [95, 0.72], [115, 0.74], [135, 0.7], [150, 0.65], [165, 0.6], [180, 0.56]];
+  let k = 1; while (k < tab.length - 1 && tab[k][0] < a) k++; const [a0, v0] = tab[k - 1], [a1, v1] = tab[k];
+  const f = v0 + ((v1 - v0) * (a - a0)) / (a1 - a0);
+  const planing = kt > 12 && a > 95 && a < 165 ? 1 + Math.min(0.5, (kt - 12) * 0.07) : 1, cap = 5.6 * PKT * planing; // hull speed, more when it planes
+  const v = ws * f; return cap * Math.tanh(v / cap);
+}
+const PL_STYLES = {
+  down: [
+    { id: "lee", name: "By the lee", col: "#4FB3FF", note: "15° by the lee", off: -15 },
+    { id: "ddw", name: "Dead downwind", col: "#E9EEF5", note: "straight at it", off: 0 },
+    { id: "reach", name: "Broad reach", col: "#F0642D", note: "40° off downwind", off: 40 },
+    { id: "s", name: "S-turn", col: "#5BE09A", note: "deep in puffs, up in lulls", off: "s" },
+  ],
+  up: [
+    { id: "left", name: "Bangs the left", col: "#4FB3FF", note: "one tack to the layline" },
+    { id: "right", name: "Bangs the right", col: "#F0642D", note: "one tack to the layline" },
+    { id: "shift", name: "Tacks on headers", col: "#E9EEF5", note: "stays on the lifted tack" },
+    { id: "puff", name: "Sails to pressure", col: "#5BE09A", note: "heads for the next puff" },
+  ],
+};
+function plReset() {
+  plMakePuffs(); PL.t = 0;
+  const down = PL.leg === "down", start = down ? [0, -PL.L / 2] : [0, PL.L / 2], mark = down ? [0, PL.L / 2] : [0, -PL.L / 2];
+  PL.mark = mark;
+  PL.boats = PL_STYLES[PL.leg].map((st, i) => ({ st, lay: false, fetch: false, tackAt: -99, x: start[0] + (i - 1.5) * 14, y: start[1], hdg: down ? 180 : 0, side: i % 2 ? 1 : -1, trail: [[start[0] + (i - 1.5) * 14, start[1]]], done: null, slow: 0, v: 0, vmg: 0, ws: 0, ang: 0 }));
+  plDrawRows(); plDraw();
+}
+function plStep(dt) {
+  PL.t += dt; const down = PL.leg === "down";
+  for (const b of PL.boats) {
+    if (b.done != null) continue;
+    const [ws, wd] = plWind(b.x, b.y, PL.t), toMark = Math.atan2(PL.mark[0] - b.x, -(PL.mark[1] - b.y)) * 180 / Math.PI; // bearing, 0 = up
+    const windTo = 180 + wd; // where the wind blows toward
+    let off;
+    if (down) {
+      const st = b.st, puff = ws > PL.w * PKT * 1.08, lull = ws < PL.w * PKT * 0.95;
+      const off = st.off === "s" ? (puff ? 15 : lull ? 32 : 22) : Math.abs(st.off), lee = st.off === -15 || (st.off === "s" && puff);
+      const rel = ((toMark - windTo + 540) % 360) - 180; // the mark's angle off dead downwind
+      if (off >= 1 && Math.sign(rel) === -b.side && Math.abs(rel) > off - 1) { b.side *= -1; b.slow = 3; } // the mark is past the layline: gybe
+      b.hdg = off < 1 || Math.abs(rel) > off + 1 ? toMark : windTo + b.side * off; b.ang = off < 1 ? Math.abs(rel) : off; b.lee = lee;
+    } else {
+      const TW = 43, rel = ((toMark - wd + 540) % 360) - 180, st = b.st.id; // mark's angle off the wind direction
+      let side = b.side;
+      if (st === "left" || st === "right") { // out to one side until the mark is on the layline, then commit
+        side = st === "left" ? (b.lay || rel >= TW - 1 ? 1 : -1) : (b.lay || rel <= -(TW - 1) ? -1 : 1);
+        if ((st === "left" && side === 1) || (st === "right" && side === -1)) b.lay = true;
+      } else if (st === "shift") { if (wd * b.side > 4) side = -b.side; } // headed by 4 degrees or more: tack onto the lift
+      else { let best = side, bv = -1; for (const sd of [-1, 1]) { const h = (wd + sd * TW) * Math.PI / 180, [w2] = plWind(b.x + Math.sin(h) * 120, b.y - Math.cos(h) * 120, PL.t); const v = w2 * Math.cos((wd + sd * TW - toMark) * Math.PI / 180) * (sd === b.side ? 1.15 : 1); if (v > bv) { bv = v; best = sd; } } side = best; }
+      if ((st === "shift" || st === "puff") && side !== b.side && PL.t - (b.tackAt || -99) < (st === "puff" ? 40 : 25)) side = b.side; // no tacking again too soon
+      if (st === "shift" || st === "puff") { if (!b.fetch && Math.abs(rel) >= TW - 2) { side = Math.sign(rel); b.fetch = true; } else if (b.fetch) side = b.side; } // reached a layline: tack and commit
+      if ((b.fetch || b.lay) && Math.abs(rel) > TW + 8 && Math.sign(rel) !== side && PL.t - (b.tackAt || -99) > 15) side = Math.sign(rel); // clearly overstood: tack back for the mark
+      if (side !== b.side) { b.side = side; b.slow = 4; b.tackAt = PL.t; }
+      b.hdg = wd + b.side * TW; b.ang = TW;
+      const dm = Math.hypot(PL.mark[0] - b.x, PL.mark[1] - b.y);
+      if (dm < 70 && Math.abs(rel) >= 33) { b.hdg = toMark; b.ang = Math.min(90, Math.abs(rel)); } // close to the mark and nearly fetching: go straight in
+    }
+    let v = plSpeed(down ? 180 - b.ang : b.ang, ws); if (down && b.lee) v *= 1.05; // by the lee the sail still flows: a touch quicker this deep
+    if (b.slow > 0) { v *= 0.45; b.slow -= dt; }
+    const h = b.hdg * Math.PI / 180; b.x += Math.sin(h) * v * dt; b.y -= Math.cos(h) * v * dt;
+    b.v = v; b.ws = ws; b.vmg = v * Math.cos(((b.hdg - (down ? windTo : wd)) * Math.PI) / 180);
+    if (PL.t % 2 < dt) b.trail.push([b.x, b.y]);
+    if (Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]) < 22) { b.done = PL.t; b.trail.push([PL.mark[0], PL.mark[1]]); }
+  }
+}
+const plFmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+function plDrawRows() {
+  const order = PL.boats.slice().sort((a, b) => (a.done ?? 1e9) - (b.done ?? 1e9) || Math.hypot(a.x - PL.mark[0], a.y - PL.mark[1]) - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]));
+  $("#pl-rows").innerHTML = PL.boats.map((b) => {
+    const pos = order.indexOf(b) + 1, prog = Math.max(0, Math.min(1, 1 - Math.hypot(b.x - PL.mark[0], b.y - PL.mark[1]) / PL.L));
+    const kt = (x) => (x / PKT).toFixed(x / PKT < 10 ? 2 : 1), ang = Math.round(b.ang || 0);
+    return `<div class="pl-row" style="--c:${b.st.col}"><div class="pl-r1"><b>${b.st.name}</b><span>${esc(b.st.note)}</span><em>${b.done != null ? `${["1st", "2nd", "3rd", "4th"][pos - 1]} · ${plFmt(b.done)}` : PL.t > 0 ? `${Math.round(prog * 100)}%` : ""}</em></div>
+      <div class="pl-r2">VMG = ${kt(b.v)} × cos ${ang}° = ${kt(Math.max(0, b.vmg))} kt · wind ${kt(b.ws || PL.w * PKT)} kt</div><i style="width:${(b.done != null ? 1 : prog) * 100}%"></i></div>`;
+  }).join("");
+  const down = PL.leg === "down";
+  $("#pl-kick").textContent = `${down ? "Downwind" : "Upwind"} · ${PL.boats.length} boats`;
+  $("#pl-big").textContent = `${PL.w} kt, ${Math.round(PL.puffy * 100)}% puffs`; $("#pl-windkt").textContent = `${PL.w} kt`;
+  $("#pl-sub").textContent = PL.leg === "down"
+    ? (PL.w < 8 ? "Light air: stay in the pressure and sail the angles that keep the boat moving." : PL.w < 13 ? "Medium: watch who goes deep in the puffs and who reaches through the lulls." : "Breeze: the boats that plane on the reach can beat the ones sailing straight at the mark.")
+    : (PL.w < 8 ? "Light air: pressure beats angle. Watch where the puffs come from." : "Upwind: who gains from the shifts, and who gains from the pressure?");
+  $("#pl-clock").textContent = `race clock ${plFmt(PL.t)}`;
+}
+function plDraw() {
+  const cv = $("#pl-cv"); if (!cv) return; const W = cv.clientWidth, H = cv.clientHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const sc = Math.min(W / (PL.L * 1.15), H / (PL.L * 1.12)), X = (x) => W / 2 + x * sc, Y = (y) => H / 2 + y * sc;
+  c.fillStyle = "#0C1F36"; c.fillRect(0, 0, W, H);
+  // pressure: darker where the wind is stronger (drawn on a coarse grid, then softened)
+  const g = 22, off = document.createElement("canvas"); off.width = Math.ceil(W / g); off.height = Math.ceil(H / g); const oc = off.getContext("2d"), im = oc.createImageData(off.width, off.height), base = PL.w * PKT;
+  for (let j = 0; j < off.height; j++) for (let i = 0; i < off.width; i++) {
+    const [ws] = plWind((i * g + g / 2 - W / 2) / sc, (j * g + g / 2 - H / 2) / sc, PL.t), d = (ws - base) / (base * 0.6 + 0.01), k = (j * off.width + i) * 4;
+    if (d > 0) { im.data[k] = 40; im.data[k + 1] = 150; im.data[k + 2] = 210; im.data[k + 3] = Math.min(190, d * 220); } else { im.data[k] = 2; im.data[k + 1] = 8; im.data[k + 2] = 18; im.data[k + 3] = Math.min(170, -d * 280); }
+  }
+  oc.putImageData(im, 0, 0); c.save(); c.filter = "blur(14px)"; c.imageSmoothingEnabled = true; c.drawImage(off, 0, 0, off.width * g, off.height * g); c.restore();
+  // wind streaks
+  c.strokeStyle = "rgba(201,214,230,.35)"; c.lineWidth = 1; const r = plRand(3);
+  for (let i = 0; i < 70; i++) { const x = r() * W, y = ((r() * H + (PL.t + PL.off) * base * sc * 1.2) % (H + 40)) - 20; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 10); c.stroke(); }
+  // course
+  const down = PL.leg === "down", top = [0, -PL.L / 2], bot = [0, PL.L / 2];
+  c.strokeStyle = "rgba(201,214,230,.3)"; c.setLineDash([3, 4]); c.beginPath(); c.moveTo(X(0), Y(top[1])); c.lineTo(X(0), Y(bot[1])); c.stroke(); c.setLineDash([]);
+  c.font = `500 12px ${css("--f-mono")}`; c.fillStyle = "#8FA3BC"; c.textAlign = "center";
+  c.fillText("windward mark", X(0), Y(top[1]) - 14); c.fillText("leeward mark", X(0), Y(bot[1]) + 22);
+  for (const m of [top, bot]) { c.fillStyle = "#F0642D"; c.strokeStyle = "#0C1F36"; c.lineWidth = 2; c.beginPath(); c.arc(X(m[0]), Y(m[1]), 7, 0, 7); c.fill(); c.stroke(); }
+  // trails and boats
+  for (const b of PL.boats) {
+    c.strokeStyle = b.st.col; c.lineWidth = 2.2; c.beginPath(); b.trail.concat([[b.x, b.y]]).forEach(([x, y], i) => (i ? c.lineTo(X(x), Y(y)) : c.moveTo(X(x), Y(y)))); c.stroke();
+    c.save(); c.translate(X(b.x), Y(b.y)); c.rotate((b.hdg * Math.PI) / 180); c.fillStyle = b.st.col;
+    c.strokeStyle = "#0C1F36"; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -12); c.quadraticCurveTo(7, -2, 5, 8); c.lineTo(-5, 8); c.quadraticCurveTo(-7, -2, 0, -12); c.closePath(); c.fill(); c.stroke(); c.restore();
+  }
+}
+function plLoop(ts) {
+  if (!PL.on) return;
+  const dt = Math.min(0.1, (ts - (PL.last || ts)) / 1000); PL.last = ts;
+  if (!PL.run) PL.off += PL.spd * dt * 0.5; // between races the puffs keep drifting (at half speed)
+  if (PL.run) { const steps = Math.ceil(PL.spd * dt / 0.5); for (let i = 0; i < steps; i++) plStep((PL.spd * dt) / steps); if (PL.boats.every((b) => b.done != null)) { PL.run = false; $("#pl-run").textContent = "▶ Race again"; } plDrawRows(); }
+  plDraw(); PL.raf = requestAnimationFrame(plLoop);
+}
+function plEnter() {
+  PL.on = true;
+  if (!PL.init) {
+    PL.init = true;
+    const bind = (id, k, f, lab) => { const el = $(id); el.addEventListener("input", () => { PL[k] = f(+el.value); $(lab).textContent = el.value + (k === "w" ? " kt" : k === "puffy" ? "%" : ""); if (!PL.run) plReset(); }); };
+    bind("#pl-w", "w", (v) => v, "#pl-w-l"); bind("#pl-p", "puffy", (v) => v / 100, "#pl-p-l"); bind("#pl-n", "n", (v) => v, "#pl-n-l");
+    $("#pl-spd").addEventListener("change", (e) => (PL.spd = +e.target.value));
+    document.querySelectorAll("#pl-leg button").forEach((b) => b.addEventListener("click", () => { PL.leg = b.dataset.v; document.querySelectorAll("#pl-leg button").forEach((x) => x.classList.toggle("active", x === b)); PL.run = false; $("#pl-run").textContent = "▶ Race"; plReset(); }));
+    $("#pl-run").addEventListener("click", () => { if (PL.run) { PL.run = false; $("#pl-run").textContent = "▶ Resume"; return; } if (PL.boats.every((b) => b.done != null) || PL.t === 0) { const s0 = PL.seed, pf = PL.puffs.slice(); plReset(); PL.puffs = pf; } PL.run = true; PL.last = 0; $("#pl-run").textContent = "❚❚ Pause"; });
+    $("#pl-new").addEventListener("click", () => { PL.seed = (PL.seed * 7 + 13) % 100000; PL.run = false; $("#pl-run").textContent = "▶ Race"; plReset(); });
+    $("#pl-full").addEventListener("click", () => { const el = $("#pl-wrap"); if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen().catch(() => el.classList.toggle("pl-max")); else el.classList.toggle("pl-max"); setTimeout(plDraw, 200); });
+    $("#pl-cv").addEventListener("click", (e) => { // drop a puff where the coach taps
+      const cv = e.currentTarget, rc = cv.getBoundingClientRect(), W = cv.clientWidth, H = cv.clientHeight, sc = Math.min(W / (PL.L * 1.15), H / (PL.L * 1.12));
+      const x = (e.clientX - rc.left - W / 2) / sc, y = (e.clientY - rc.top - H / 2) / sc, drift = PL.w * PKT * 0.75;
+      PL.puffs.push({ x, y0: y - drift * (PL.t + PL.off), R: 150, k: 1, sh: 0 }); plDraw();
+    });
+    addEventListener("resize", () => PL.on && plDraw());
+    plReset();
+  }
+  cancelAnimationFrame(PL.raf); PL.last = 0; PL.raf = requestAnimationFrame(plLoop);
+}
+function plLeave() { PL.on = false; cancelAnimationFrame(PL.raf); }
 /* Share a link: the phone's share sheet when there is one, otherwise copy to the clipboard */
 async function shareLink(hash, title, btn) {
   const base = window.NOCKD_DATA || (location.origin + location.pathname);
