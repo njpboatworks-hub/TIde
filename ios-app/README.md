@@ -36,7 +36,7 @@ npx cap sync ios
 npx cap open ios
 ```
 
-The app loads its data from `https://nockd.netlify.app/` (saved in `ios-app/data-host.txt`). To change it, run
+The app loads its data from `https://nockd.pages.dev/` (saved in `ios-app/data-host.txt`). To change it, run
 `python3 -m scripts.build_app --data https://NEW-ADDRESS/` once.
 
 ## In Xcode
@@ -65,7 +65,7 @@ changes:
 
 ## Things App Store Connect will ask for
 
-- **Privacy policy URL:** `https://nockd.netlify.app/privacy.html`.
+- **Privacy policy URL:** `https://nockd.pages.dev/privacy.html`.
 - **App Privacy questions:**
   - Nockd has no accounts, analytics or ads.
   - Location is used only on the phone, when you tap "Use my location".

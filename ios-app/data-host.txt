@@ -1,1 +1,1 @@
-https://nockd.netlify.app/
+https://nockd.pages.dev/
