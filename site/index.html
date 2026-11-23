@@ -4600,6 +4600,9 @@ function courseOnWater() { // every mark, both ends of the line, and points alon
 }
 function placeCourse(lat, lon) {
   if (RACE.type === "custom") { RACE.center = { lat, lon }; buildCourse(); fitCourse(); return; }
+  // the land check reads the coastline drawn on screen, so zoom in to the spot first when the map is zoomed far out
+  if (map.getZoom() < 12) map.setView([lat, lon], 13, { animate: false });
+  buildLandMask(); // make sure the land check matches the view right now, not the last redraw
   // try the spot asked for, then rings around it, until the whole course is on open water
   const step = Math.max(150, RACE.lenNm * 1852 / 8), cl = Math.cos(rad(lat)); let found = null;
   RACE._dry = true;
