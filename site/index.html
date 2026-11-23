@@ -856,6 +856,22 @@ body.gx .legend { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-hei
 .leg-chev { width: 0; height: 0; margin: 1px 0 0 2px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 10px solid var(--c); filter: drop-shadow(0 0 1px #0b1d33); }
 .leg-lab { transform: translate(-50%, -50%); white-space: nowrap; background: rgba(15,42,69,.85); color: #fff; padding: 2px 6px; border-radius: 6px; font: 600 11px/1.3 var(--f-body); width: max-content; }
 .leg-lab.big { font-size: 18px; padding: 4px 10px; }
+.bias-lab { transform: translate(-50%, 14px); white-space: nowrap; width: max-content; background: #F4F1EA; color: #0F2A45; padding: 2px 7px; border-radius: 6px; font: 700 11px/1.3 var(--f-body); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.bias-lab.fav { background: #5BE09A; }
+.bias-lab.big { font-size: 17px; padding: 4px 10px; }
+.lay-lab { transform: translate(-50%, -50%); white-space: nowrap; width: max-content; color: #fff; font: 600 10.5px/1 var(--f-body); text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+.lay-lab.big { font-size: 15px; }
+#brief { position: fixed; inset: 0; z-index: 4000; background: rgba(7,20,38,.6); display: flex; align-items: flex-start; justify-content: center; overflow: auto; padding: 24px 12px; }
+#brief[hidden] { display: none; }
+#brief .sheet { background: #fff; color: #111; width: min(760px, 100%); padding: 28px 30px; border-radius: 6px; font: 400 14px/1.45 var(--f-body); }
+#brief h2 { margin: 0 0 2px; font: 800 24px/1.15 var(--f-body); color: #0F2A45; } #brief h3 { margin: 18px 0 6px; font: 700 15px/1.2 var(--f-body); color: #0F2A45; text-transform: uppercase; letter-spacing: .06em; }
+#brief .sub { color: #555; margin: 0 0 10px; } #brief table { border-collapse: collapse; width: 100%; } #brief td { border-top: 1px solid #ddd; padding: 5px 6px; vertical-align: top; } #brief td:first-child { width: 34%; color: #444; font-weight: 600; }
+#brief .lines div { border-bottom: 1px solid #bbb; height: 28px; } #brief .q { font-weight: 600; margin-top: 10px; }
+#brief .btns { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 10px; }
+#brief table { table-layout: fixed; } #brief td { white-space: normal !important; overflow-wrap: anywhere; }
+#brief .btns button { background: #fff; color: #0F2A45; border: 1px solid #0F2A45; padding: 8px 16px; font: 700 14px/1 var(--f-body); cursor: pointer; } #brief .btns button.primary { background: #F27A48; border-color: #F27A48; color: #071426; }
+@media (max-width: 560px) { #brief .sheet { padding: 18px 16px; font-size: 13.5px; } #brief td:first-child { width: 38%; } } #brief small { color: #666; display: block; margin-top: 14px; }
+@media print { body > *:not(#brief) { display: none !important; } #brief { position: static; background: none; padding: 0; display: block; } #brief .btns { display: none; } #brief .sheet { width: auto; padding: 0; } }
 .sim-num { position: absolute; left: 14px; top: -6px; font: 700 10px/1 var(--f-body); color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }
 .sim-boat { width: 0; height: 0; margin: 1px 0 0 3px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 16px solid var(--c); filter: drop-shadow(0 0 1px #fff) drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .chat #chat-log { max-height: 280px; overflow-y: auto; display: grid; gap: 6px; margin-bottom: 8px; }
@@ -1379,6 +1395,7 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 .cr-search:focus-within { border-color: var(--signal); }
 .cr-search input { flex: 1; border: 0 !important; background: transparent !important; padding: 0; min-height: 0; font-size: 15px; color: var(--ink); outline: none; }
 .cr-chips { display: flex; flex-direction: column; gap: 8px; }
+.cr-niche { font-style: normal; font: 700 10px/1 var(--f-mono); letter-spacing: .06em; text-transform: uppercase; background: #F27A48; color: #071426; padding: 2px 5px; border-radius: 3px; margin-right: 2px; }
 .cr-grp { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
 .cr-gl { flex: none; width: 52px; font: 500 10.5px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .cr-chips::-webkit-scrollbar { display: none; }
@@ -1839,6 +1856,7 @@ body.gx #map { background: #0C1B2E !important; }
         <label for="race-line">Start line: <b id="race-line-label"></b><input type="range" id="race-line" min="40" max="500" step="10" value="150"></label>
         <label for="race-axis">Course axis: <b id="race-axis-label"></b><input type="range" id="race-axis" min="0" max="355" step="5" value="0"></label>
         <label class="check" for="race-auto"><input type="checkbox" id="race-auto" checked> Square the course to the wind at the course</label>
+        <label class="check" for="race-coach"><input type="checkbox" id="race-coach" checked> Show start-line bias and laylines</label>
         <div class="btnrow">
           <button type="button" id="race-here" class="primary">Put the course here</button>
           <button type="button" id="race-place">Tap to place the start</button>
@@ -1866,7 +1884,7 @@ body.gx #map { background: #0C1B2E !important; }
         <div id="race-results" class="table-wrap"></div>
         <p class="hint" style="margin:0">Boats use the wind at the start time and the tidal current as it changes during the race. Boat speeds are approximate tables made for this planner, not official class polars. Mark rounding, starts and boat-on-boat tactics are not modelled.</p>
       </div>
-      <button type="button" id="race-board" style="margin-top:10px">Big screen (smartboard)</button>
+      <div class="btnrow" style="margin-top:10px"><button type="button" id="race-board">Big screen (smartboard)</button><button type="button" id="race-brief">Coach's briefing (print)</button></div>
       <h2>Ask the AI coach</h2>
       <div class="chat">
         <div id="chat-log" aria-live="polite"></div>
@@ -2084,6 +2102,7 @@ body.gx #map { background: #0C1B2E !important; }
     </div>
   </section>
 </main>
+<div id="brief" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
@@ -4471,6 +4490,23 @@ const RACE = { type: "wl", laps: 2, lenNm: 0.8, lineM: 150, gateM: 80, offsetM: 
                boat: "ilca", center: null, marks: null, seq: [], strategies: ["best", "left", "right", "shifts"], speed: 60, fleet: 6 };
 const MARK_STYLE = { rc: "RC", pin: "Pin", m: "" };
 const KT = 0.514444;
+// hull lengths (m) for "boat lengths" on the start line
+const BOAT_LEN = { opti: 2.34, ilca: 4.06, b420: 4.2, b29er: 4.4, m15: 4.6, keel: 6.9 };
+// Which end of the start line is upwind (favored), by how many degrees off square and how many boat lengths
+function lineBias() {
+  const M = RACE.marks, w = windAtCourse(); if (!M || !w) return null;
+  const dist = distM(M.pin, M.rc); if (dist < 10) return null;
+  const up = Math.cos(rad(brgOf(M.pin, M.rc) - w.dir)) * dist; // how far the committee end sits upwind of the pin
+  const degOff = deg(Math.asin(Math.min(1, Math.abs(up) / dist))), lens = Math.abs(up) / (BOAT_LEN[RACE.boat] || 4.5);
+  return { end: degOff < 3 ? null : up > 0 ? "rc" : "pin", deg: degOff, lens, m: Math.abs(up), wind: w };
+}
+function biasText(b) {
+  if (!b) return "";
+  if (!b.end) return "Start line is about square to the wind (within 3°).";
+  return `${b.end === "rc" ? "Committee boat" : "Pin"} end favored by ${Math.round(b.deg)}°, about ${b.lens < 1.5 ? "1 boat length" : Math.round(b.lens) + " boat lengths"} (${Math.round(b.m)} m) further upwind.`;
+}
+// close-hauled angle for the chosen boat in this wind (from the planner's speed tables)
+function tackTWA() { const w = windAtCourse(), B = BOATS[RACE.boat]; return w && B ? interpTws(B.beatTWA, w.spd, B.tws) : null; }
 function dest(p, brg, m) { const b = rad(brg); return { lat: p.lat + (m * Math.cos(b)) / 110540, lon: p.lon + (m * Math.sin(b)) / (111320 * Math.cos(rad(p.lat))) }; }
 function distM(a, b) { const dy = (b.lat - a.lat) * 110540, dx = (b.lon - a.lon) * 111320 * Math.cos(rad((a.lat + b.lat) / 2)); return Math.hypot(dx, dy); }
 function brgOf(a, b) { const dy = (b.lat - a.lat) * 110540, dx = (b.lon - a.lon) * 111320 * Math.cos(rad((a.lat + b.lat) / 2)); return (deg(Math.atan2(dx, dy)) + 360) % 360; }
@@ -4547,6 +4583,7 @@ function drawCourse() {
   if (!raceMode || !RACE.marks) return;
   const M = RACE.marks, pts = legPoints(), big = document.body.classList.contains("board");
   raceLayer.addLayer(L.polyline([[M.rc.lat, M.rc.lon], [M.pin.lat, M.pin.lon]], { pane: "racePane", color: "#ffffff", weight: big ? 5 : 3, opacity: 0.95 }));
+  if (RACE.coach !== false) drawCoachMarks(M, big);
   // Each distinct leg is drawn once, shifted a little to the right of its direction of travel: an upwind leg and the
   // downwind leg back down the same line sit side by side, like boats leaving the marks to port. Laps show as "×2".
   const legs = new Map();
@@ -4582,6 +4619,24 @@ function drawCourse() {
     mk.on("drag", (e) => { const p = e.target.getLatLng(); m.lat = p.lat; m.lon = p.lng; drawCourseLines(); });
     mk.on("dragend", () => { raceSave(); drawCourse(); renderRacePanel(); });
     raceLayer.addLayer(mk);
+  }
+}
+// Coaching marks: start-line bias at the favored end, and laylines into the windward mark (no current allowed for)
+function drawCoachMarks(M, big) {
+  const b = lineBias(), twa = tackTWA(), m1 = M["1"];
+  if (b) {
+    const at = b.end ? M[b.end] : { lat: (M.rc.lat + M.pin.lat) / 2, lon: (M.rc.lon + M.pin.lon) / 2 };
+    const txt = b.end ? `${b.end === "rc" ? "Boat" : "Pin"} end +${Math.round(b.deg)}° · ${b.lens < 1.5 ? "1 length" : Math.round(b.lens) + " lengths"}` : "Line square";
+    raceLayer.addLayer(L.marker([at.lat, at.lon], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="bias-lab${big ? " big" : ""}${b.end ? " fav" : ""}">${txt}</div>`, iconSize: [0, 0] }) }));
+  }
+  if (m1 && b && twa) {
+    const len = Math.max(300, RACE.lenNm * 1852 * 0.75), W = b.wind.dir;
+    for (const [hd, name] of [[W - twa, "Starboard layline"], [W + twa, "Port layline"]]) {
+      const far = dest(m1, hd + 180, len);
+      raceLayer.addLayer(L.polyline([[m1.lat, m1.lon], [far.lat, far.lon]], { pane: "racePane", color: "#ffffff", weight: big ? 2.5 : 1.6, opacity: 0.75, dashArray: "2 7", interactive: false }));
+      const lab = dest(m1, hd + 180, len * 0.92);
+      raceLayer.addLayer(L.marker([lab.lat, lab.lon], { pane: "racePane", interactive: false, icon: L.divIcon({ className: "race-ico", html: `<div class="lay-lab${big ? " big" : ""}">${name}</div>`, iconSize: [0, 0] }) }));
+    }
   }
 }
 function drawCourseLines() { clearTimeout(drawCourseLines._t); drawCourseLines._t = setTimeout(drawCourse, 60); }
@@ -4836,7 +4891,7 @@ function renderRacePanel() {
   const pts = legPoints(); let tot = 0; for (let i = 1; i < pts.length; i++) tot += distM(pts[i - 1], pts[i]);
   const w = windAtCourse();
   $("#race-summary").innerHTML = `${pts.length - 1} legs, ${(tot / 1852).toFixed(2)} nm sailed in total. Start line ${Math.round(distM(M.rc, M.pin))} m.` +
-    (w ? ` Wind at the course: ${Math.round(w.dir)}° at ${wKt(w.spd, 1)}; course axis ${RACE.axis}°${Math.abs(wrap180(w.dir - RACE.axis)) > 5 ? ` (${Math.round(Math.abs(wrap180(w.dir - RACE.axis)))}° off the wind)` : ""}.` : "");
+    (w ? ` Wind at the course: ${Math.round(w.dir)}° at ${wKt(w.spd, 1)}; course axis ${RACE.axis}°${Math.abs(wrap180(w.dir - RACE.axis)) > 5 ? ` (${Math.round(Math.abs(wrap180(w.dir - RACE.axis)))}° off the wind)` : ""}. ${biasText(lineBias())}` : "");
 }
 let racePlacing = false;
 function initRace() {
@@ -4885,6 +4940,9 @@ function initRace() {
   });
   document.querySelectorAll("#race-strats input").forEach((el) => { el.checked = RACE.strategies.includes(el.value); el.addEventListener("change", () => { RACE.strategies = [...document.querySelectorAll("#race-strats input:checked")].map((x) => x.value); raceSave(); }); });
   $("#race-board").addEventListener("click", toggleBoard);
+  $("#race-coach").checked = RACE.coach !== false;
+  $("#race-coach").addEventListener("change", (e) => { RACE.coach = e.target.checked; raceSave(); drawCourse(); });
+  $("#race-brief").addEventListener("click", openBriefing);
   document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && document.body.classList.contains("board")) toggleBoard(); });
   map.on("zoomend", () => { if (raceMode && RACE.marks) drawCourse(); }); // leg offsets are in screen pixels
   map.on("moveend", () => store("lastView", { lat: map.getCenter().lat, lng: map.getCenter().lng, z: map.getZoom(), r: REGION.id }));
@@ -4929,6 +4987,45 @@ function raceContext() {
     if (RACE.sim) ctx.simulation = RACE.sim.res.map((r) => ({ boat: `${r.num} (${STRATS[r.sid].name})`, finish_min: r.total == null ? null : +(r.total / 60).toFixed(1), first_leg_min: r.legs[0] ? +(r.legs[0] / 60).toFixed(1) : null }));
   }
   return ctx;
+}
+/* ----- Coach's briefing: one printable page with the conditions, the course, the start and the simulation ----- */
+function openBriefing() {
+  const box = $("#brief"), w = windAtCourse(), b = lineBias(), twa = tackTWA(), M = RACE.marks;
+  const ctx = raceContext(), near = RACE.center && typeof planNearestName === "function" ? planNearestName(RACE.center.lat, RACE.center.lon) : null;
+  const rows = [];
+  const row = (k, v) => v && rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`);
+  row("Where", esc(near ? `Near ${near.replace(/,\s*(north|south|east|west)[a-z ]* of$/i, "").replace(/,\s*$/, "")} (${ctx.region})` : ctx.region));
+  row("Conditions", esc(`${ctx.mode}${ctx.when ? ", " + ctx.when : ""}`));
+  if (w) row("Wind at the course", `From ${Math.round(w.dir)}° (${compass(w.dir)}) at ${wKt(w.spd, 1)}`);
+  const cur = ctx.course && ctx.course.marks && Object.values(ctx.course.marks).find((m) => m.current) ;
+  if (cur) row("Current near the marks", `${cur.current.kt} kt toward ${cur.current.toward}° (${compass(cur.current.toward)}). Check how it changes during the race.`);
+  if (ctx.tide_here) row("Tide", `${ctx.tide_here.height} ${ctx.tide_here.units}, ${ctx.tide_here.rising ? "rising" : "falling"}`);
+  if (M) {
+    row("Course", esc(`${ctx.course.type}, ${RACE.laps === 1 ? "once around" : RACE.laps + " laps"}, marks to ${RACE.rounding}, ${BOATS[RACE.boat].name}`));
+    row("Legs", ctx.course.legs.map((l, i) => `${i + 1}. to ${esc(l.to)}: ${l.nm} nm at ${String(l.bearing).padStart(3, "0")}°`).join("<br>"));
+    row("Start line", esc(biasText(b) || "Wind not available"));
+    if (twa && w) row("Laylines (no current)", `Close-hauled about ${Math.round(twa)}° off the wind: starboard tack heading ${String(Math.round((w.dir - twa + 360) % 360)).padStart(3, "0")}°, port tack ${String(Math.round((w.dir + twa) % 360)).padStart(3, "0")}°`);
+  }
+  if (RACE.sim) {
+    const ok = RACE.sim.res.filter((r) => r.total != null).sort((a, c) => a.total - c.total);
+    if (ok[0]) row("Simulated race", `Fastest: ${esc(STRATS[ok[0].sid].name)} in ${fmtDur(ok[0].total)}. ${raceSideNote().replace(/<[^>]+>/g, "")}`);
+  }
+  const when = new Date().toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  const lines = (n) => `<div class="lines">${"<div></div>".repeat(n)}</div>`;
+  box.innerHTML = `<div class="sheet"><div class="btns"><button type="button" class="primary" id="brief-print">Print</button><button type="button" id="brief-close">Close</button></div>
+    <h2>Race briefing</h2><p class="sub">Made with Nockd · ${esc(when)}</p>
+    ${M ? "" : `<p><b>Lay a course first</b> (Race planning → Put the course here) to add the course, start line and laylines.</p>`}
+    <table>${rows.join("")}</table>
+    <h3>Game plan</h3>
+    <div class="q">Which side of the first beat, and why?</div>${lines(2)}
+    <div class="q">Where on the start line? Which end, and how will you get there?</div>${lines(2)}
+    <div class="q">What to watch for (puffs, shifts, current, traffic)</div>${lines(2)}
+    <div class="q">Notes</div>${lines(3)}
+    <small>Wind and current are model estimates and the race is a simulation with approximate boat speeds. Laylines leave out current. Always check what you see on the water.</small></div>`;
+  box.hidden = false;
+  $("#brief-print").addEventListener("click", () => window.print());
+  $("#brief-close").addEventListener("click", () => { box.hidden = true; });
+  box.addEventListener("click", (e) => { if (e.target === box) box.hidden = true; }, { once: true });
 }
 function renderChat() {
   $("#chat-log").innerHTML = CHAT.map((m) => `<div class="msg ${m.role}">${esc(m.content).replace(/\n/g, "<br>")}</div>`).join("");
@@ -6779,7 +6876,21 @@ const CR_ICON = {
   bridge: SVG('<path d="M2 9h20M4 9v10M20 9v10M4 15c3-4 13-4 16 0"/>'),
   cg: SVG('<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M12 8v8M8 12h8"/>'),
   discharge: SVG('<path d="M4 4l16 16M12 3s5 6 5 10c0 1-.3 2-.8 2.8M7.3 9.7C7.1 10.5 7 11.3 7 12a5 5 0 0 0 7.8 4.1"/>'),
+  eye: SVG('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+  star: SVG('<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>'),
+  s_light: SVG('<path d="M9 21l1.5-12h3L15 21zM8 21h8M10 9h4V6h-4zM12 3v3M6 5l-3-1M18 5l3-1M6 8H3M18 8h3"/>'),
+  s_fort: SVG('<path d="M4 21V9h3V6h3v3h4V6h3v3h3v12zM10 21v-4h4v4M4 9V5M20 9V5"/>'),
+  s_falls: SVG('<path d="M4 3h16M7 3v8c0 3-2 4-2 7M12 3v14M17 3v8c0 3 2 4 2 7M3 21c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/>'),
+  s_museum: SVG('<path d="M3 9l9-6 9 6M5 9v9M9 9v9M15 9v9M19 9v9M3 21h18M3 18h18"/>'),
+  s_wreck: SVG('<path d="M3 17l3-6h9l4-3-1 9z"/><path d="M8 11l1-5M12 11l2-6M2 21c2-1 4-1 6 0s4 1 6 0 4-1 6 0"/>'),
+  s_arch: SVG('<path d="M3 21V11a9 9 0 0 1 18 0v10h-5v-9a4 4 0 0 0-8 0v9z"/>'),
+  s_cave: SVG('<path d="M2 20l4-11 4-4 5 2 4 5 3 8zM9 20c0-3 1.5-6 3.5-6s3.5 3 3.5 6"/>'),
+  s_spring: SVG('<path d="M4 18c2-1 4-1 6 0s4 1 6 0 4-1 6 0M8 13c-1-2 1-3 0-5M12 13c-1-2 1-3 0-5M16 13c-1-2 1-3 0-5"/>'),
+  s_ruins: SVG('<path d="M3 21h18M5 21V9h3v12M10 21V5h3v4M15 21v-8h3v8M10 13h3"/>'),
 };
+// things to see: the niche ones get a badge
+const SIGHT_TYPES = ["s_light", "s_fort", "s_falls", "s_view", "s_museum", "s_wreck", "s_ship", "s_arch", "s_cave", "s_spring", "s_blowhole", "s_ruins"];
+const NICHE = new Set(["s_wreck", "s_ship", "s_arch", "s_cave", "s_spring", "s_blowhole", "s_ruins"]);
 // chips: what each one shows (place types)
 const CR_CATS = [
   { id: "all", label: "Everything", icon: null, types: ["mooring", "mooring_field", "anchorage", "marina", "pumpout", "fuel", "club", "ramp", "fishing", "reef", "boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other", "food", "eat", "cg"] },
@@ -6793,6 +6904,15 @@ const CR_CATS = [
   { id: "ramps", label: "Ramps", icon: "ramp", types: ["ramp"] },
   { id: "fish", label: "Fishing", icon: "fishing", types: ["fishing", "reef", "wreck"] },
   { id: "svc", label: "Services", icon: "services", types: ["boatyard", "chandler", "water", "showers", "laundry", "toilets", "provisions", "dinghy", "other"] },
+  { id: "sights", label: "All sights", icon: "eye", group: "see", types: SIGHT_TYPES },
+  { id: "niche", label: "Niche finds", icon: "star", group: "see", types: [...NICHE] },
+  { id: "lights", label: "Lighthouses", icon: "s_light", group: "see", types: ["s_light"] },
+  { id: "forts", label: "Forts & castles", icon: "s_fort", group: "see", types: ["s_fort", "s_ruins"] },
+  { id: "views", label: "Viewpoints", icon: "eye", group: "see", types: ["s_view"] },
+  { id: "falls", label: "Waterfalls & hot springs", icon: "s_falls", group: "see", types: ["s_falls", "s_spring"] },
+  { id: "wrecks", label: "Wrecks & ships", icon: "s_wreck", group: "see", types: ["s_wreck", "s_ship"] },
+  { id: "rocks", label: "Arches, caves & blowholes", icon: "s_arch", group: "see", types: ["s_arch", "s_cave", "s_blowhole"] },
+  { id: "museums", label: "Maritime museums", icon: "s_museum", group: "see", types: ["s_museum", "s_ship"] },
 ];
 const CR_STYLE = { // icon + colour per place type
   mooring: ["mooring", "#2BC4B4"], mooring_field: ["mooring", "#2BC4B4"], anchorage: ["anchorage", "#3BA4F5"], marina: ["marina", "#F0642D"],
@@ -6800,8 +6920,12 @@ const CR_STYLE = { // icon + colour per place type
   fishing: ["fishing", "#4FD1E8"], reef: ["fishing", "#4FD1E8"], wreck: ["fishing", "#7F93AD"], boatyard: ["services", "#C9A27A"], chandler: ["services", "#D7B66B"],
   water: ["services", "#5BC0F8"], showers: ["services", "#9EC3E6"], laundry: ["services", "#9EC3E6"], toilets: ["services", "#9EC3E6"],
   provisions: ["services", "#E7A3C0"], dinghy: ["mooring", "#CFE8FF"], other: ["services", "#A7B3C2"], cg: ["cg", "#FF5A60"],
+  s_light: ["s_light", "#FFE27A"], s_fort: ["s_fort", "#D9B38C"], s_falls: ["s_falls", "#7FD8FF"], s_view: ["eye", "#C6F27A"], s_museum: ["s_museum", "#E9C8FF"],
+  s_wreck: ["s_wreck", "#B8C7D9"], s_ship: ["s_wreck", "#9AD0FF"], s_arch: ["s_arch", "#F2B57A"], s_cave: ["s_cave", "#C9A27A"], s_spring: ["s_spring", "#FF9F7A"],
+  s_blowhole: ["s_spring", "#7FE0D0"], s_ruins: ["s_ruins", "#D8CBB0"],
 };
-const CR_TYPE_NAMES = { eat: "Restaurant", cg: "Coast Guard station", food: "Restaurant", reef: "Artificial reef", wreck: "Wreck", fishing: "Fishing spot", mooring_field: "Mooring field", mooring: "Mooring", dinghy: "Dinghy landing" };
+const CR_TYPE_NAMES = { s_light: "Lighthouse", s_fort: "Fort or castle", s_falls: "Waterfall", s_view: "Viewpoint", s_museum: "Maritime museum", s_wreck: "Historic wreck",
+  s_ship: "Museum ship", s_arch: "Natural arch", s_cave: "Sea cave", s_spring: "Hot spring", s_blowhole: "Blowhole", s_ruins: "Ruins", eat: "Restaurant", cg: "Coast Guard station", food: "Restaurant", reef: "Artificial reef", wreck: "Wreck", fishing: "Fishing spot", mooring_field: "Mooring field", mooring: "Mooring", dinghy: "Dinghy landing" };
 const REP_STAY = ["stayed", "I stayed here", "When did you stay here?", "Optional: ball condition, holding, price, who to call…", "Stayed"];
 const REP_GONE = ["gone", "It's gone", "When did you notice it was gone?", "Optional: what you saw", "Reported gone"];
 const REP_NOTE = (ph) => ["note", "Add note", "Add a note for other boaters", ph, "Note"];
@@ -6954,16 +7078,18 @@ function crList(items) {
     if (!anyFood && map.getZoom() < 13) note = `<div class="cr-hint">Zoom in on a harbor to see restaurants.</div>`;
     else if (!anyFood && CRUISE.foodErr) note = `<div class="cr-hint">No waterfront restaurants listed here yet.</div>`;
   }
-  $("#cr-count").textContent = items.length ? `${items.length.toLocaleString()} ${CRUISE.cat === "all" ? "places" : cat.label.toLowerCase()} in view` : "";
+  $("#cr-count").textContent = items.length ? `${items.length.toLocaleString()} ${CRUISE.cat === "all" ? "places" : CRUISE.cat === "sights" ? "sights" : CRUISE.cat === "niche" ? "niche finds" : cat.label.toLowerCase()} in view` : "";
   $("#cr-list").innerHTML = note + (near.length ? near.map(([p, d]) => {
     const st = crStatus(p), [ic, col] = CR_STYLE[p[0]] || CR_STYLE.other;
     const walk = p[0] === "food" || p[0] === "eat" ? crWalkText(crWalk(p)) : "";
     const sub = p[0] === "food" ? `${p.rating != null ? `${p.rating.toFixed(1)} ${crStars(p.rating)} (${p.count.toLocaleString()})` : "No rating"}${walk ? ` · ${walk}` : p.kind ? ` · ${esc(p.kind)}` : ""}`
-      : p[0] === "eat" ? `${esc(({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[(p[7] || {}).amenity]) || "Restaurant")}${walk ? ` · ${walk}` : ""}` : esc(crTypeName(p[0]));
+      : p[0] === "eat" ? `${esc(({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[(p[7] || {}).amenity]) || "Restaurant")}${walk ? ` · ${walk}` : ""}`
+      : p[0].startsWith("s_") ? `${NICHE.has(p[0]) ? `<i class="cr-niche">Niche</i> ` : ""}${esc(crTypeName(p[0]))}${(() => { const w = crWalkText(crWalk(p)); return w ? ` · ${w}` : ""; })()}` : esc(crTypeName(p[0]));
     return `<button type="button" class="cr-card" data-k="${esc(crKey(p))}"><span class="cr-ic" style="--c:${col}">${CR_ICON[ic]}</span>
       <span class="cr-body"><b>${esc(crName(p))}</b><small>${sub}</small>${st ? `<em class="${st.cls}">${esc(st.text)}</em>` : ""}</span>
       <span class="cr-dist">${d < 10 ? d.toFixed(1) : Math.round(d)}<small>nm</small></span></button>`;
-  }).join("") : `<div class="cr-empty">Nothing here yet. Zoom out, try another category, or <a href="#" id="cr-add2">add a spot</a>.</div>`);
+  }).join("") : cat && cat.group === "see" ? `<div class="cr-empty">No ${esc(cat.label.toLowerCase())} listed in view yet. Sights are being added area by area over the next few days; zoom out or try another one.</div>`
+    : `<div class="cr-empty">Nothing here yet. Zoom out, try another category, or <a href="#" id="cr-add2">add a spot</a>.</div>`);
   const a2 = $("#cr-add2"); if (a2) a2.addEventListener("click", (e) => { e.preventDefault(); crAddMode(true); });
 }
 function crFind(k) { return crAll().find((p) => crKey(p) === k); }
@@ -7007,10 +7133,18 @@ function crRenderDetail(p, reports, offline) {
   } else {
     if (p[4]) row("Notes", esc(p[4]));
     if (p[0] === "eat") { row("Walk", esc(crWalkText(crWalk(p), true))); row("Outdoor seating", x.outdoor_seating === "yes" ? "Yes" : ""); }
-    if (!["eat", "club", "cg"].includes(p[0])) row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
+    if (!["eat", "club", "cg"].includes(p[0]) && !(p[0].startsWith("s_") && !p[5])) row("Cost", p[5] === "free" ? "Free" : p[5] === "paid" ? `Paid${x.charge ? ` · ${esc(x.charge)}` : ""}` : "Not listed");
     const ph = x.phone || x["contact:phone"]; row("Phone", ph ? `<a href="tel:${esc(ph.replace(/[^+\d]/g, ""))}">${esc(ph)}</a>` : "");
     const web = x.website || x["contact:website"]; row("Website", web && /^https?:\/\//.test(web) ? `<a href="${esc(web)}" target="_blank" rel="noopener">${esc(web.replace(/^https?:\/\/(www\.)?/, "").slice(0, 34))}</a>` : "");
     row("VHF", esc(x.vhf || x["seamark:radio_station:channel"] || "")); row("Hours", esc(x.opening_hours || "")); row("Depth", x.depth ? `${esc(x.depth)} m` : "");
+    if (p[0].startsWith("s_")) {
+      if (NICHE.has(p[0])) row("Niche find", "Off the usual list. Check access, tides and local rules before you go.");
+      row("Walk", esc(crWalkText(crWalk(p), true)));
+      row(p[0] === "s_wreck" ? "Sunk" : "Built", esc(x["wreck:date_sunk"] || x.start_date || ""));
+      row("Height", x.height ? `${esc(x.height)} m` : "");
+      const wp = x.wikipedia && /^([a-z-]{2,12}):(.+)$/.exec(x.wikipedia);
+      row("Read more", wp ? `<a href="https://${wp[1]}.wikipedia.org/wiki/${encodeURIComponent(wp[2].replace(/ /g, "_"))}" target="_blank" rel="noopener">Wikipedia</a>` : "");
+    }
     row("Source", esc(p[6]));
   }
   const d = p.detail || p;
@@ -7956,7 +8090,8 @@ function crChips() {
     + `<button type="button" class="cr-chip act" id="cr-best">${CR_ICON.anchorage}<span>Where to anchor tonight</span></button>`
     + `<button type="button" class="cr-chip act${AW.on ? " set" : ""}" id="cr-aw">${SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2"/><path d="M12 3v3M12 18v3"/>')}<span>${AW.on ? (AW.alarm ? "ANCHOR ALARM" : "Anchor watch on") : "Anchor watch"}</span></button>`
     + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button></div>`
-    + `<div class="cr-grp"><span class="cr-gl">Show</span>` + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("") + `</div>`
+    + `<div class="cr-grp"><span class="cr-gl">Show</span>` + CR_CATS.filter((c) => !c.group).map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("") + `</div>`
+    + `<div class="cr-grp"><span class="cr-gl">See</span>` + CR_CATS.filter((c) => c.group === "see").map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${CR_ICON[c.icon]}<span>${c.label}</span></button>`).join("") + `</div>`
     + `<div class="cr-grp"><span class="cr-gl">Layers</span><button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
     + `<button type="button" class="cr-chip tog${SB.on ? " on" : ""}" id="cr-sb" aria-pressed="${SB.on}">${SVG('<path d="M3 17c3 0 3-2 6-2s3 2 6 2 3-2 6-2M3 21h18M12 3v8M9 8l3 3 3-3"/>')}<span>Bottom type</span></button>`
     + `<button type="button" class="cr-chip tog${NAV.on ? " on" : ""}" id="cr-nav" aria-pressed="${NAV.on}">${CR_ICON.bridge}<span>Bridges & areas</span></button>`

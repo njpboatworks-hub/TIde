@@ -38,6 +38,10 @@ TYPES = {
     "showers": "Showers", "laundry": "Laundry", "toilets": "Toilets", "provisions": "Provisions",
     "chandler": "Chandlery", "club": "Yacht club", "eat": "Restaurant", "dinghy": "Dinghy landing", "other": "Other service",
     "reef": "Artificial reef", "wreck": "Wreck", "fishing": "Fishing spot",
+    # things to see from the water or a short walk from the dinghy (OpenStreetMap)
+    "s_light": "Lighthouse", "s_fort": "Fort or castle", "s_falls": "Waterfall", "s_view": "Viewpoint", "s_museum": "Maritime museum",
+    "s_wreck": "Historic wreck", "s_ship": "Museum ship", "s_arch": "Natural arch", "s_cave": "Sea cave", "s_spring": "Hot spring",
+    "s_blowhole": "Blowhole", "s_ruins": "Ruins",
 }
 # S-57 CATSCF (category of small craft facility) -> our type
 CATSCF = {
@@ -185,7 +189,7 @@ def from_enc():
     return P
 
 
-OSM_V = 3  # bump when the query changes: every cached square is then fetched again (oldest first)
+OSM_V = 4  # bump when the query changes: every cached square is then fetched again (oldest first)
 OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
 (
   nwr["leisure"="marina"];
@@ -215,6 +219,17 @@ OSM_Q = """[out:json][timeout:240][bbox:{s},{w},{n},{e}];
   nwr["man_made"="pier"]["fishing"="yes"];
   nwr["name"~"(yacht|sailing|boat|corinthian|rowing|canoe|power squadron) club|yacht squadron|sailing (association|center|centre|school|foundation)|community sailing|boating club",i](around.water:1500);
   nwr["amenity"~"^(restaurant|bar|pub|cafe|fast_food|ice_cream)$"]["name"](around.water:400);
+  nwr["man_made"="lighthouse"];
+  nwr["historic"~"^(lighthouse|wreck|ship)$"];
+  nwr["natural"="blowhole"];
+  nwr["tourism"="museum"]["name"~"maritime|nautical|naval|navy|whaling|lighthouse|ship|boat|sea|marine|fisher|harbou?r|yacht|sailing|coast guard|lifesaving|maritim|museo del mar|mus.e de la mer",i];
+  nwr["historic"~"^(fort|castle)$"](around.water:1500);
+  nwr["natural"="arch"](around.water:1500);
+  nwr["natural"="cave_entrance"](around.water:400);
+  nwr["natural"="hot_spring"](around.water:2000);
+  nwr["waterway"="waterfall"](around.water:2000);
+  nwr["tourism"="viewpoint"]["name"](around.water:800);
+  nwr["historic"="ruins"]["name"](around.water:600);
 );
 out tags center;"""
 
@@ -254,8 +269,44 @@ CLUB_RE = re.compile(r"\b(yacht|sailing|boat|corinthian|rowing|canoe|boating)\s+
 EAT = {"restaurant", "bar", "pub", "cafe", "fast_food", "ice_cream"}
 
 
+SIGHT_MUSEUM_RE = re.compile(r"\b(maritime|nautical|naval|navy|whaling|lighthouse|ships?|boats?|sea|seaport|marine|fisher(y|ies|man|men)?|harbou?r|yacht\w*|sailing|coast guard|lifesaving|maritim\w*|museo del mar|mus.e de la mer)\b", re.I)
+
+
+def sight_type(t):
+    """Things worth seeing: lighthouses, forts, waterfalls... and the niche finds (wrecks, arches, sea caves, hot springs)."""
+    h, n = t.get("historic", ""), t.get("natural", "")
+    if t.get("man_made") == "lighthouse" or h == "lighthouse":
+        return "s_light"
+    if h == "wreck":
+        return "s_wreck"
+    if h == "ship":
+        return "s_ship"
+    if n == "blowhole":
+        return "s_blowhole"
+    if t.get("tourism") == "museum" and SIGHT_MUSEUM_RE.search(t.get("name", "")):
+        return "s_museum"
+    if h in ("fort", "castle"):
+        return "s_fort"
+    if n == "arch":
+        return "s_arch"
+    if n == "cave_entrance":
+        return "s_cave"
+    if n == "hot_spring":
+        return "s_spring"
+    if t.get("waterway") == "waterfall":
+        return "s_falls"
+    if t.get("tourism") == "viewpoint" and t.get("name"):
+        return "s_view"
+    if h == "ruins" and t.get("name"):
+        return "s_ruins"
+    return None
+
+
 def osm_type(t):
     sm = t.get("seamark:type", ""); scf = t.get("seamark:small_craft_facility:category", "")
+    st = sight_type(t)
+    if st:
+        return st
     if t.get("amenity") in EAT:
         return "eat" if t.get("name") else None
     if CLUB_RE.search(t.get("name", "")) and not t.get("highway") and t.get("amenity") not in ("parking", "toilets"):
@@ -367,7 +418,8 @@ def from_osm(elements=None):
         cost = "free" if fee == "no" else "paid" if fee in ("yes",) or t.get("charge") else ""
         extra = {k: t[k] for k in ("phone", "contact:phone", "website", "contact:website", "charge", "opening_hours", "capacity",
                                    "mooring", "access", "operator", "depth", "seamark:anchorage:category", "vhf", "seamark:radio_station:channel",
-                                   "amenity", "cuisine", "outdoor_seating") if t.get(k)}
+                                   "amenity", "cuisine", "outdoor_seating", "wikipedia", "start_date", "wreck:date_sunk", "height",
+                                   "historic:period", "access:dinghy") if t.get(k)}
         P.append([ty, round(c["lat"], 5), round(c["lon"], 5), t.get("name", "") or t.get("seamark:name", ""), t.get("description", "")[:300], cost, "OpenStreetMap", extra])
     print(f"  OpenStreetMap: {len(P)} places", flush=True)
     return P
@@ -483,7 +535,13 @@ def main(osm_dir=None):
         import shutil
         OSM_CACHE.mkdir(parents=True, exist_ok=True)
         for f in Path(osm_dir).rglob("*.json.gz"):
-            shutil.copy(f, OSM_CACHE / f.name)
+            dst = OSM_CACHE / f.name
+            try:  # a failed download must not replace a good saved copy (its places would vanish until the next success)
+                if json.loads(gzip.decompress(f.read_bytes())).get("failed") and dst.exists() and not json.loads(gzip.decompress(dst.read_bytes())).get("failed"):
+                    continue
+            except Exception:
+                pass
+            shutil.copy(f, dst)
         osm = load_osm_cache()
     # OpenStreetMap places from the previous build in squares the cache does not cover yet are kept, so coverage only grows
     carried = []
