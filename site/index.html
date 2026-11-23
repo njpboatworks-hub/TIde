@@ -1205,7 +1205,7 @@ body.gx #map { background: #071426; }
 
 .panel { padding: 32px 32px 48px max(24px, env(safe-area-inset-left, 0px)); }
 .panel > .tab, .panel > #loading { max-width: 640px; }
-.panel > #tab-kits, .panel > #tab-puffs { max-width: 1180px; margin-inline: auto; }
+.panel > #tab-kits, .panel > #tab-puffs, .panel > #tab-board { max-width: 1180px; margin-inline: auto; }
 h1 { font-size: 32px; letter-spacing: -.03em; margin-bottom: 8px; }
 .tab > h1:first-child, .tab > h1:first-of-type { border-bottom: 0; padding-bottom: 0; max-width: none; }
 h2 { font-size: 18px; border-top: 1px solid var(--border); padding-top: 22px; margin-top: 30px; }
@@ -1598,6 +1598,33 @@ body.gx #map { background: #0C1B2E !important; }
 /* Puff lab (site theme: navy, orange signal, Space Grotesk / IBM Plex) */
 .pl-wrap { background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; padding: 18px 20px 14px; display: flex; flex-direction: column; gap: 12px; max-width: 1100px; width: 100%; margin: 0 auto; box-sizing: border-box; }
 #tab-puffs { width: 100%; }
+#tab-board { width: 100%; }
+.cb-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.cb-hbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.cb-board { position: relative; border: 1px solid var(--rule); background: #FBFBF8; max-width: min(100%, calc((100vh - 150px) * 1.47)); margin-inline: auto; }
+.cb-board:fullscreen { max-width: none; }
+.cb-board:fullscreen { display: flex; flex-direction: column; justify-content: center; background: #0A1A30; }
+.cb-board:fullscreen #cb-svg { max-height: calc(100vh - 60px); }
+#cb-svg { display: block; width: 100%; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; cursor: default; }
+#cb-svg.pen { cursor: crosshair; } #cb-svg .cb-it { cursor: grab; } #cb-svg .cb-rot, #cb-svg .cb-dial { cursor: alias; }
+#cb-svg text { font-family: var(--f-body); } .cb-mn { font: 800 17px/1 var(--f-body); fill: #0F2A45; } .cb-rc { font: 800 14px/1 var(--f-body); fill: #0F2A45; }
+.cb-dlab { font: 700 12px/1 var(--f-mono); fill: #0F2A45; letter-spacing: .08em; } .cb-rl { font: 700 13px/1 var(--f-body); fill: #fff; } .cb-rs { font: 500 11px/1 var(--f-body); fill: #C9D6E6; }
+.cb-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 8px; border-top: 1px solid var(--rule); background: var(--surface); }
+.cb-tools .seg { margin: 0; }
+.cb-pens { display: flex; gap: 6px; } .cb-pens button { width: 28px; height: 28px; min-width: 0; border-radius: 50% !important; background: var(--c) !important; border: 2px solid rgba(255,255,255,.35) !important; padding: 0; } .cb-pens button.on { border-color: var(--ink); outline: 2px solid var(--c); }
+.cb-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 900px) { .cb-grid { grid-template-columns: 1fr; } }
+.cb-card { border: 1px solid var(--rule); background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.cb-card h3 { margin: 0; font: 600 12px/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cb-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cb-tag { font: 500 12.5px/1.3 var(--f-mono); color: var(--ink-2); }
+.cb-btns { display: flex; gap: 6px; flex-wrap: wrap; } .cb-btns button { padding: 7px 10px; }
+.cb-sl { display: grid; gap: 4px; font-size: 13.5px; } .cb-sl select { margin-top: 2px; }
+.cb-note { margin: 0; font-size: 13.5px; padding: 8px 10px; border-left: 3px solid #3DBE6B; background: rgba(61,190,107,.1); } .cb-note.warn { border-color: #F27A48; background: rgba(242,122,72,.12); }
+.cb-note span { color: var(--muted); }
+.cb-rlist { display: grid; gap: 4px; padding: 0 10px; font-size: 13.5px; } .cb-rlist:not(:empty) { padding: 8px 10px; border-top: 1px solid var(--rule); background: var(--surface); }
+.cb-rlist div { display: flex; gap: 8px; align-items: baseline; } .cb-rn { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 50%; background: #0F2A45; color: #fff; font: 700 11px/1 var(--f-mono); border: 1px solid var(--rule); }
+.cb-steps { display: flex; gap: 6px; flex-wrap: wrap; } .cb-step { min-width: 38px; padding: 7px 0; font: 600 13px/1 var(--f-mono); }
 .pl-wrap.pl-max, .pl-wrap:fullscreen { position: fixed; inset: 0; z-index: 3000; max-width: none; border-radius: 0; overflow: auto; background: var(--page); }
 .pl-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 .pl-kick { font: 500 11.5px/1 var(--f-mono); letter-spacing: .1em; color: var(--signal); text-transform: uppercase; }
@@ -1680,7 +1707,7 @@ body.gx #map { background: #0C1B2E !important; }
 <main>
   <section class="panel">
     <nav class="subnav" id="racing-nav" aria-label="Racing" hidden>
-      <a href="#coast" data-sub="coast">Conditions</a><a href="#race" data-sub="race">Race course</a><a href="#debrief" data-sub="debrief">Coach debrief</a><a href="#puffs" data-sub="puffs">Puff lab</a>
+      <a href="#coast" data-sub="coast">Conditions</a><a href="#race" data-sub="race">Race course</a><a href="#debrief" data-sub="debrief">Coach debrief</a><a href="#board" data-sub="board">Coach board</a><a href="#puffs" data-sub="puffs">Puff lab</a>
     </nav>
     <div id="loading" class="note info">Loading six years of Newport wind history…</div>
 
@@ -2004,6 +2031,35 @@ body.gx #map { background: #0C1B2E !important; }
         <p class="pl-fine">Tap the water to drop a puff. Every boat sails through the same puffs, shifts and current, so the only difference is how it is sailed. Illustrative speeds made for teaching, not official polars; flat water, no waves, no tactics between boats.</p>
       </div>
     </div>
+    <div class="tab" id="tab-board" hidden>
+      <div class="cb-head"><div><div class="pl-kick">Coach board · a digital coaching kit</div><h1 class="pl-big">Coach board</h1>
+        <p class="pl-sub">Move boats and marks, steer each boat, trim its sail, and save steps to play back for your sailors.</p></div>
+        <div class="cb-hbtns"><select id="cb-scen" aria-label="Start from a scenario"><option value="">Start from…</option><option value="start">The start</option><option value="ps">Port–starboard crossing</option><option value="mark">Windward mark rounding</option><option value="gate">Leeward gate</option><option value="clear">Empty board</option></select>
+          <button type="button" id="cb-big">Big screen</button></div></div>
+      <div class="cb-board" id="cb-board">
+        <svg id="cb-svg" viewBox="0 0 1000 680" role="img" aria-label="Coaching board with boats, marks and wind"></svg>
+        <div class="cb-rlist" id="cb-rlist"></div>
+        <div class="cb-tools">
+          <div class="seg" id="cb-tool" role="group" aria-label="Tool"><button type="button" data-v="move" class="active">Move</button><button type="button" data-v="pen">Draw</button></div>
+          <div class="cb-pens" id="cb-pens"><button type="button" data-c="#E04848" class="on" style="--c:#E04848" aria-label="Red pen"></button><button type="button" data-c="#2F7FE0" style="--c:#2F7FE0" aria-label="Blue pen"></button><button type="button" data-c="#0F2A45" style="--c:#0F2A45" aria-label="Black pen"></button><button type="button" data-c="#3DBE6B" style="--c:#3DBE6B" aria-label="Green pen"></button></div>
+          <button type="button" id="cb-undo">Undo line</button><button type="button" id="cb-wipe">Wipe lines</button>
+        </div>
+      </div>
+      <div class="cb-grid">
+        <div class="cb-card"><h3>Selected</h3><div id="cb-sel"></div></div>
+        <div class="cb-card"><h3>Pieces</h3>
+          <div class="cb-btns"><button type="button" id="cb-addboat">+ Boat</button><button type="button" id="cb-addmark">+ Mark</button><button type="button" id="cb-addyel">+ Yellow mark</button></div>
+          <label class="cb-sl">Wind from (drag the arrow too)<input type="range" id="cb-wl" min="0" max="355" step="5" value="0"></label>
+          <label class="check"><input type="checkbox" id="cb-cur"> Show current</label>
+          <label class="cb-sl">Current: <b id="cb-curkt-l">1 kt</b><input type="range" id="cb-curkt" min="0.2" max="4" step="0.1" value="1"></label>
+          <label class="check"><input type="checkbox" id="cb-rules" checked> Right-of-way helper</label>
+          <label class="cb-sl">Board<select id="cb-bg"><option value="white">Whiteboard</option><option value="water">Water</option><option value="night">Dark (for projectors)</option></select></label>
+        </div>
+        <div class="cb-card"><h3>Steps</h3><div class="cb-btns"><button type="button" class="primary" id="cb-save">Save step</button><button type="button" id="cb-play">▶ Play</button><button type="button" id="cb-clearsteps">Clear steps</button></div>
+          <div class="cb-steps" id="cb-steps"></div><div class="note info" id="cb-msg" hidden></div>
+          <p class="hint">Right-of-way helper is simplified: it covers rules 10, 11 and 12 only, not mark-room, tacking or proper course. Sail angles are rules of thumb. Check the Racing Rules of Sailing.</p></div>
+      </div>
+    </div>
     <div class="tab" id="tab-kits" hidden>
       <div class="kits-hero">
         <img src="logo-mark.png" width="72" height="72" alt="">
@@ -2033,6 +2089,7 @@ body.gx #map { background: #0C1B2E !important; }
           <p class="kit-tag">Made by sailors, used by sailors.</p>
           <p>The pieces slide around a whiteboard, so you can show exactly how boats work the course. Much easier to move than magnetic sheets.</p>
           <p>Five boats with sliding sails, numbered marks, wind and current arrows. Everything you need to draw a race and talk it through, from a first regatta to advanced tactics. Made in the USA.</p>
+          <p><b>On a screen instead?</b> The <a href="#board">Coach board</a> (Racing → Coach board) is a digital version: drag the boats, trim the sails, and play back each step on the clubhouse smartboard.</p>
           <div class="kit-buttons">
             <a class="kit-btn" href="https://www.etsy.com/shop/NJPboatworks" target="_blank" rel="noopener">Buy on Etsy</a>
             <a class="kit-btn" href="https://www.amazon.com/dp/B0FJKP17SW" target="_blank" rel="noopener">Buy on Amazon</a>
@@ -6476,6 +6533,223 @@ function initGlobal() {
   renderFxPicker();
 }
 
+/* =================== Coach board: a digital coaching kit (boats with sails, marks, wind and current) =================== */
+// Board units: 1000 x 680. Headings and wind in degrees clockwise from the top of the board; wind is where it blows FROM.
+const CB_COLS = [["Orange", "#F27A48"], ["Gray", "#9AA3AD"], ["Green", "#3DBE6B"], ["Blue", "#2F7FE0"], ["Red", "#E04848"], ["Purple", "#9B6BF0"], ["Teal", "#1FB5A8"], ["Yellow", "#E6C229"]];
+const CB_LEN = 66; // boat length in board units
+const CB = { st: null, sel: null, tool: "move", drag: null, steps: [], play: null, rules: true, bg: "white" };
+const cbWrap = (a) => ((a % 360) + 540) % 360 - 180;
+const cbTWA = (b) => Math.abs(cbWrap(b.h - CB.st.wind));
+const cbTack = (b) => (cbWrap(CB.st.wind - b.h) > 0 ? "starboard" : "port"); // wind over the starboard (right) side = starboard tack
+const cbIdeal = (twa) => Math.max(4, Math.min(85, (twa - 30) * 0.6)); // rule-of-thumb boom angle off the centerline
+function cbPoint(twa) { return twa < 35 ? "No-go zone (in irons)" : twa < 60 ? "Close-hauled" : twa < 80 ? "Close reach" : twa < 110 ? "Beam reach" : twa < 160 ? "Broad reach" : "Run"; }
+function cbBoom(b) { return b.auto !== false ? cbIdeal(cbTWA(b)) : b.trim; }
+function cbTrimNote(b) {
+  const twa = cbTWA(b);
+  if (twa < 35) return ["warn", "Head down to fill the sail: you can't sail this close to the wind."];
+  if (b.auto !== false) return ["ok", "Auto trim: the sail is set for this angle."];
+  const d = b.trim - cbIdeal(twa);
+  if (d > 12) return ["warn", "Luffing: the sail is too far out. Sheet in."];
+  if (d < -12) return ["warn", "Over-trimmed: the sail is stalling. Ease the sheet."];
+  return ["ok", "Trimmed well."];
+}
+function cbDefault() {
+  return { wind: 0, cur: { on: false, dir: 200, kt: 1 }, draw: [], items: [
+    { k: "boat", id: "b1", c: 0, x: 380, y: 520, h: 315, auto: true, trim: 10, shape: 1 },
+    { k: "boat", id: "b2", c: 1, x: 470, y: 540, h: 315, auto: true, trim: 10, shape: 1 },
+    { k: "boat", id: "b3", c: 2, x: 560, y: 520, h: 45, auto: true, trim: 10, shape: 1 },
+    { k: "boat", id: "b4", c: 3, x: 650, y: 545, h: 45, auto: true, trim: 10, shape: 1 },
+    { k: "boat", id: "b5", c: 4, x: 300, y: 560, h: 315, auto: true, trim: 10, shape: 1 },
+    { k: "mark", id: "m1", n: "1", x: 500, y: 110, col: "#F27A48" }, { k: "mark", id: "m2", n: "2", x: 500, y: 430, col: "#F27A48" },
+    { k: "mark", id: "m3", n: "3", x: 800, y: 270, col: "#F27A48" }, { k: "mark", id: "m4", n: "4", x: 200, y: 270, col: "#F27A48" },
+    { k: "mark", id: "y1", n: "", x: 250, y: 610, col: "#F2D33A" }, { k: "rc", id: "rc", x: 750, y: 610 } ] };
+}
+function cbLoad() { try { const j = JSON.parse(localStorage.getItem("nockdBoard") || "null"); if (j && j.items) { CB.st = j; CB.steps = j.steps || []; return; } } catch (_) {} CB.st = cbDefault(); }
+function cbSave() { try { localStorage.setItem("nockdBoard", JSON.stringify({ ...CB.st, steps: CB.steps })); } catch (_) {} }
+const cbItem = (id) => CB.st.items.find((i) => i.id === id);
+
+/* ----- drawing ----- */
+function cbBoatSVG(b, sel) {
+  const col = CB_COLS[b.c % CB_COLS.length][1], L = CB_LEN, W = L * 0.36;
+  const twa = cbTWA(b), tack = cbTack(b), boom = cbBoom(b), side = tack === "starboard" ? -1 : 1; // boom goes to leeward
+  const mast = -L * 0.18, bl = L * 0.62, a = (boom * side * Math.PI) / 180;
+  const ex = Math.sin(a) * bl, ey = mast + Math.cos(a) * bl; // boom end (the boat points up in its own frame: bow at y = -L/2)
+  const depth = [0.06, 0.12, 0.2][b.shape ?? 1] * bl * (twa < 35 ? 0.15 : 1), mx = ex / 2, my = (mast + ey) / 2, len = Math.hypot(ex, ey - mast) || 1;
+  const nx = ((ey - mast) / len) * side * -1, ny = (-ex / len) * side * -1; // bulge to leeward
+  const luff = twa < 35 ? ` stroke-dasharray="4 3"` : "";
+  return `<g class="cb-it" data-id="${b.id}" transform="translate(${b.x} ${b.y}) rotate(${b.h})">
+    ${sel ? `<circle r="${L * 0.72}" fill="none" stroke="#F27A48" stroke-width="2" stroke-dasharray="5 4"/><line x1="0" y1="${-L / 2}" x2="0" y2="${-L * 0.95}" stroke="#F27A48" stroke-width="2"/><circle class="cb-rot" data-id="${b.id}" cx="0" cy="${-L * 0.95}" r="11" fill="#F27A48" stroke="#fff" stroke-width="2"/>` : ""}
+    <path d="M0 ${-L / 2} C ${W * 0.75} ${-L * 0.2} ${W * 0.55} ${L * 0.38} ${W * 0.42} ${L / 2} L ${-W * 0.42} ${L / 2} C ${-W * 0.55} ${L * 0.38} ${-W * 0.75} ${-L * 0.2} 0 ${-L / 2} Z" fill="${col}" stroke="#0F2A45" stroke-width="2"/>
+    <path d="M0 ${mast} Q ${mx + nx * depth * 2} ${my + ny * depth * 2} ${ex} ${ey}" fill="none" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round"${luff}/>
+    <path d="M0 ${mast} Q ${mx + nx * depth * 2} ${my + ny * depth * 2} ${ex} ${ey}" fill="none" stroke="#0F2A45" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>
+    <circle cx="0" cy="${mast}" r="3" fill="#0F2A45"/></g>`;
+}
+function cbArrow(cx, cy, dir, col, label, r = 38) { // dir: where it comes FROM (wind) or goes TO (current)
+  return `<g class="cb-dial" data-dial="${label}" transform="translate(${cx} ${cy})"><circle r="${r + 8}" fill="rgba(255,255,255,.85)" stroke="${col}" stroke-width="2"/>
+    <g transform="rotate(${dir})"><line x1="0" y1="${-r}" x2="0" y2="${r - 10}" stroke="${col}" stroke-width="5" stroke-linecap="round"/><path d="M-11 ${r - 16} L0 ${r + 2} L11 ${r - 16}Z" fill="${col}"/></g>
+    <text y="${r + 26}" text-anchor="middle" class="cb-dlab">${label}</text></g>`;
+}
+function cbRules() {
+  const boats = CB.st.items.filter((i) => i.k === "boat"), out = [];
+  for (let i = 0; i < boats.length; i++) for (let j = i + 1; j < boats.length; j++) {
+    const A = boats[i], B = boats[j], d = Math.hypot(B.x - A.x, B.y - A.y);
+    if (d > CB_LEN * 2.6 || cbTWA(A) < 35 || cbTWA(B) < 35) continue;
+    let row, rule;
+    if (cbTack(A) !== cbTack(B)) { row = cbTack(A) === "starboard" ? A : B; rule = "Rule 10: port gives way to starboard"; }
+    else {
+      const along = (P, Q) => (Q.x - P.x) * Math.sin(P.h * Math.PI / 180) - (Q.y - P.y) * Math.cos(P.h * Math.PI / 180); // how far Q is ahead of P
+      const ab = along(A, B), ba = along(B, A);
+      if (ab > CB_LEN) { row = B; rule = "Rule 12: clear astern keeps clear"; }
+      else if (ba > CB_LEN) { row = A; rule = "Rule 12: clear astern keeps clear"; }
+      else { const w = CB.st.wind * Math.PI / 180, down = (P) => -(P.x * Math.sin(w) - P.y * Math.cos(w)); row = down(A) > down(B) ? A : B; rule = "Rule 11: windward keeps clear"; }
+    }
+    out.push({ A, B, row, rule });
+  }
+  return out;
+}
+function cbRender(noPanel) {
+  const svg = $("#cb-svg"); if (!svg || !CB.st) return;
+  const S = CB.st, bgs = { white: "#FBFBF8", water: "#CFE6F5", night: "#0F2A45" };
+  let h = `<rect x="0" y="0" width="1000" height="680" fill="${bgs[CB.bg] || bgs.white}"/>`;
+  if (CB.bg !== "night") for (let x = 50; x < 1000; x += 50) h += `<line x1="${x}" y1="0" x2="${x}" y2="680" stroke="#0F2A45" stroke-opacity=".05"/>`;
+  if (CB.bg !== "night") for (let y = 40; y < 680; y += 50) h += `<line x1="0" y1="${y}" x2="1000" y2="${y}" stroke="#0F2A45" stroke-opacity=".05"/>`;
+  // start line between the committee boat and the first yellow mark
+  const rc = cbItem("rc"), pin = cbItem("y1");
+  if (rc && pin) h += `<line x1="${rc.x}" y1="${rc.y}" x2="${pin.x}" y2="${pin.y}" stroke="${CB.bg === "night" ? "#fff" : "#0F2A45"}" stroke-width="2" stroke-dasharray="8 6" opacity=".6"/>`;
+  for (const d of S.draw) h += `<path d="${d.d}" fill="none" stroke="${d.c}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const RL = CB.rules ? cbRules() : [];
+  RL.forEach((r, i) => {
+    const mx = (r.A.x + r.B.x) / 2, my = (r.A.y + r.B.y) / 2, col = CB_COLS[r.row.c % CB_COLS.length][1];
+    h += `<line x1="${r.A.x}" y1="${r.A.y}" x2="${r.B.x}" y2="${r.B.y}" stroke="#E04848" stroke-width="1.5" stroke-dasharray="3 4"/>
+      <g transform="translate(${mx} ${my})"><circle r="11" fill="#0F2A45" stroke="${col}" stroke-width="3"/><text y="4.5" text-anchor="middle" class="cb-rl">${i + 1}</text></g>`;
+  });
+  const rlBox = $("#cb-rlist");
+  if (rlBox) rlBox.innerHTML = RL.length ? RL.map((r, i) => { const w = CB_COLS[r.row.c % CB_COLS.length], o = CB_COLS[(r.row === r.A ? r.B : r.A).c % CB_COLS.length];
+    return `<div><b class="cb-rn">${i + 1}</b><span><b style="color:${w[1]}">${w[0]}</b> has right of way over <b style="color:${o[1]}">${o[0]}</b>. ${r.rule}.</span></div>`; }).join("") : "";
+  for (const it of S.items) {
+    if (it.k === "mark") h += `<g class="cb-it" data-id="${it.id}" transform="translate(${it.x} ${it.y})"><circle r="17" fill="${it.col}" stroke="#0F2A45" stroke-width="2"/>${it.n ? `<text y="6" text-anchor="middle" class="cb-mn">${it.n}</text>` : ""}${CB.sel === it.id ? `<circle r="24" fill="none" stroke="#F27A48" stroke-width="2" stroke-dasharray="5 4"/>` : ""}</g>`;
+    if (it.k === "rc") h += `<g class="cb-it" data-id="rc" transform="translate(${it.x} ${it.y})"><rect x="-30" y="-14" width="60" height="28" rx="8" fill="#FFFFFF" stroke="#0F2A45" stroke-width="2"/><text y="5" text-anchor="middle" class="cb-rc">RC</text>${CB.sel === "rc" ? `<rect x="-36" y="-20" width="72" height="40" rx="10" fill="none" stroke="#F27A48" stroke-width="2" stroke-dasharray="5 4"/>` : ""}</g>`;
+  }
+  for (const it of S.items) if (it.k === "boat") h += cbBoatSVG(it, CB.sel === it.id);
+  h += cbArrow(70, 80, S.wind, "#0F2A45", "WIND");
+  if (S.cur.on) h += cbArrow(930, 80, S.cur.dir, "#1B8FD1", `CURRENT ${S.cur.kt} kt`, 30);
+  svg.innerHTML = h;
+  const wl = $("#cb-wl"); if (wl && document.activeElement !== wl) wl.value = S.wind;
+  if (!noPanel) cbPanel();
+}
+function cbPanel() {
+  const box = $("#cb-sel"), it = CB.sel && cbItem(CB.sel);
+  if (!it) { box.innerHTML = `<p class="hint" style="margin:0">Tap a boat to steer it and trim its sail. Drag anything to move it. Drag the round handle at a boat's bow to turn it.</p>`; return; }
+  if (it.k !== "boat") { box.innerHTML = `<div class="cb-row"><b>${it.k === "rc" ? "Committee boat" : it.n ? `Mark ${esc(it.n)}` : "Yellow mark"}</b><button type="button" id="cb-del">Remove</button></div>`; $("#cb-del").onclick = () => { CB.st.items = CB.st.items.filter((x) => x !== it); CB.sel = null; cbSave(); cbRender(); }; return; }
+  const [name, col] = CB_COLS[it.c % CB_COLS.length], twa = cbTWA(it), [cls, note] = cbTrimNote(it);
+  box.innerHTML = `<div class="cb-row"><b style="color:${col}">● ${name} boat</b><span class="cb-tag">${cbTack(it) === "starboard" ? "Starboard tack" : "Port tack"} · ${cbPoint(twa)} · ${Math.round(twa)}° off the wind</span></div>
+    <div class="cb-row cb-btns"><button type="button" data-turn="-45">⟲ 45°</button><button type="button" data-turn="-5">⟲ 5°</button><button type="button" data-turn="5">5° ⟳</button><button type="button" data-turn="45">45° ⟳</button>
+      <button type="button" id="cb-tack">${twa < 90 ? "Tack" : "Gybe"}</button><button type="button" id="cb-del">Remove</button></div>
+    <label class="check" style="margin:8px 0 0"><input type="checkbox" id="cb-auto" ${it.auto !== false ? "checked" : ""}> Auto trim the sail</label>
+    <label class="cb-sl">Sheet (sail angle): <b>${Math.round(cbBoom(it))}°</b><input type="range" id="cb-trim" min="0" max="90" step="1" value="${Math.round(cbBoom(it))}"></label>
+    <div class="cb-row"><span>Sail shape</span><div class="seg" id="cb-shape" style="margin:0">${["Flat", "Medium", "Full"].map((t, i) => `<button type="button" data-v="${i}" class="${(it.shape ?? 1) === i ? "active" : ""}">${t}</button>`).join("")}</div></div>
+    <p class="cb-note ${cls}">${note} <span>${["Flat sails point higher and depower in a breeze.", "", "Full sails give more power in light air and chop."][it.shape ?? 1]}</span></p>`;
+  box.querySelectorAll("[data-turn]").forEach((bt) => (bt.onclick = () => { it.h = (it.h + +bt.dataset.turn + 360) % 360; cbSave(); cbRender(); }));
+  $("#cb-tack").onclick = () => { it.h = (2 * CB.st.wind - it.h + 720) % 360; cbSave(); cbRender(); }; // mirror across the wind
+  $("#cb-del").onclick = () => { CB.st.items = CB.st.items.filter((x) => x !== it); CB.sel = null; cbSave(); cbRender(); };
+  $("#cb-auto").onchange = (e) => { it.auto = e.target.checked; if (!it.auto) it.trim = Math.round(cbIdeal(twa)); cbSave(); cbRender(); };
+  $("#cb-trim").oninput = (e) => { it.auto = false; it.trim = +e.target.value; $("#cb-auto").checked = false; cbSave(); cbRender(true);
+    e.target.previousElementSibling.textContent = `${it.trim}°`; const [c2, n2] = cbTrimNote(it), nt = box.querySelector(".cb-note"); nt.className = `cb-note ${c2}`; nt.firstChild.textContent = n2 + " "; };
+  $("#cb-shape").querySelectorAll("button").forEach((bt) => (bt.onclick = () => { it.shape = +bt.dataset.v; cbSave(); cbRender(); }));
+}
+
+/* ----- pointer: move, turn, draw, set wind ----- */
+function cbPt(e) { const svg = $("#cb-svg"), r = svg.getBoundingClientRect(); return { x: ((e.clientX - r.left) / r.width) * 1000, y: ((e.clientY - r.top) / r.height) * 680 }; }
+function cbDown(e) {
+  if (CB.play) return;
+  const p = cbPt(e), t = e.target;
+  if (CB.tool === "pen") { CB.drag = { pen: [p] }; e.preventDefault(); return; }
+  const dial = t.closest && t.closest(".cb-dial"); if (dial) { CB.drag = { dial: dial.dataset.dial.startsWith("WIND") ? "wind" : "cur" }; e.preventDefault(); return; }
+  const rot = t.closest && t.closest(".cb-rot"); if (rot) { CB.drag = { rot: rot.dataset.id }; e.preventDefault(); return; }
+  const g = t.closest && t.closest(".cb-it");
+  if (g) { const it = cbItem(g.dataset.id); CB.sel = it.id; CB.drag = { id: it.id, dx: p.x - it.x, dy: p.y - it.y }; cbRender(); e.preventDefault(); return; }
+  CB.sel = null; cbRender();
+}
+function cbMove(e) {
+  const D = CB.drag; if (!D) return; const p = cbPt(e);
+  if (D.pen) { D.pen.push(p); const d = "M" + D.pen.map((q) => `${q.x.toFixed(0)} ${q.y.toFixed(0)}`).join(" L"); let tmp = $("#cb-svg").querySelector(".cb-tmp"); if (!tmp) { tmp = document.createElementNS("http://www.w3.org/2000/svg", "path"); tmp.setAttribute("class", "cb-tmp"); tmp.setAttribute("fill", "none"); tmp.setAttribute("stroke-width", "4"); tmp.setAttribute("stroke-linecap", "round"); $("#cb-svg").appendChild(tmp); } tmp.setAttribute("stroke", CB.pen); tmp.setAttribute("d", d); return; }
+  if (D.dial) { const c = D.dial === "wind" ? { x: 70, y: 80 } : { x: 930, y: 80 }, a = (Math.atan2(p.x - c.x, -(p.y - c.y)) * 180) / Math.PI;
+    if (D.dial === "wind") CB.st.wind = Math.round(((a + 180 + 360) % 360) / 5) * 5; else CB.st.cur.dir = Math.round(((a + 180 + 360) % 360) / 5) * 5; cbRender(); return; }
+  if (D.rot) { const it = cbItem(D.rot); it.h = Math.round(((Math.atan2(p.x - it.x, -(p.y - it.y)) * 180) / Math.PI + 360) % 360); cbRender(); return; }
+  const it = cbItem(D.id); if (!it) return; it.x = Math.max(20, Math.min(980, p.x - D.dx)); it.y = Math.max(20, Math.min(660, p.y - D.dy)); cbRender();
+}
+function cbUp() {
+  const D = CB.drag; CB.drag = null; if (!D) return;
+  if (D.pen && D.pen.length > 1) CB.st.draw.push({ c: CB.pen, d: "M" + D.pen.map((q) => `${q.x.toFixed(0)} ${q.y.toFixed(0)}`).join(" L") });
+  cbSave(); cbRender();
+}
+
+/* ----- steps: save positions, then play them back ----- */
+const cbSnap = () => JSON.parse(JSON.stringify({ wind: CB.st.wind, items: CB.st.items }));
+function cbSteps() {
+  $("#cb-steps").innerHTML = CB.steps.length ? CB.steps.map((_, i) => `<button type="button" class="cb-step" data-i="${i}">${i + 1}</button>`).join("") : `<span class="hint">No steps yet: set up the boats, then "Save step".</span>`;
+  $("#cb-steps").querySelectorAll(".cb-step").forEach((b) => (b.onclick = () => { const s = CB.steps[+b.dataset.i]; CB.st.wind = s.wind; CB.st.items = JSON.parse(JSON.stringify(s.items)); cbSave(); cbRender(); }));
+}
+function cbPlay() {
+  if (CB.steps.length < 2) { showMsg($("#cb-msg"), "Save at least two steps to play them."); return; }
+  cancelAnimationFrame(CB.play); CB.sel = null; const T = 1400, t0 = performance.now();
+  const lerpA = (a, b, f) => a + cbWrap(b - a) * f;
+  const frame = (now) => {
+    const k = (now - t0) / T, i = Math.min(CB.steps.length - 2, Math.floor(k)), f0 = Math.min(1, k - i), f = f0 < 0.5 ? 2 * f0 * f0 : 1 - Math.pow(-2 * f0 + 2, 2) / 2;
+    const A = CB.steps[i], B = CB.steps[i + 1]; if (!A || !B) { CB.play = null; return; }
+    CB.st.wind = (lerpA(A.wind, B.wind, f) + 360) % 360;
+    CB.st.items = B.items.map((b) => { const a = A.items.find((x) => x.id === b.id) || b; return { ...b, x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, h: b.k === "boat" ? (lerpA(a.h, b.h, f) + 360) % 360 : b.h, trim: a.trim != null && b.trim != null ? a.trim + (b.trim - a.trim) * f : b.trim }; });
+    cbRender(); $("#cb-msg").hidden = false; $("#cb-msg").textContent = `Step ${i + 1 + (f0 >= 1 ? 1 : 0)} of ${CB.steps.length}`;
+    if (k < CB.steps.length - 1) CB.play = requestAnimationFrame(frame); else { CB.play = null; cbSave(); }
+  };
+  CB.play = requestAnimationFrame(frame);
+}
+
+/* ----- ready-made scenarios ----- */
+function cbScenario(n) {
+  if (CB.play) { cancelAnimationFrame(CB.play); CB.play = null; }
+  const S = cbDefault(), B = (id, x, y, h, c) => ({ k: "boat", id, c, x, y, h, auto: true, trim: 10, shape: 1 });
+  const marks = (list) => list.map(([id, n, x, y, col]) => ({ k: "mark", id, n, x, y, col: col || "#F27A48" }));
+  CB.steps = [];
+  if (n === "start") { S.items = [...marks([["m1", "1", 500, 90], ["y1", "", 330, 470, "#F2D33A"]]), { k: "rc", id: "rc", x: 680, y: 470 },
+    B("b1", 400, 540, 315, 0), B("b2", 480, 545, 318, 1), B("b3", 560, 540, 20, 2), B("b4", 620, 520, 45, 3), B("b5", 350, 520, 300, 4)]; }
+  if (n === "ps") { S.items = [...marks([["m1", "1", 500, 70]]), B("b1", 430, 360, 315, 0), B("b2", 560, 340, 45, 3)]; }
+  if (n === "mark") { S.items = [...marks([["m1", "1", 520, 200]]), B("b1", 470, 290, 45, 0), B("b2", 430, 330, 45, 1), B("b3", 640, 260, 315, 2), B("b4", 560, 330, 45, 3)]; }
+  if (n === "gate") { S.wind = 0; S.items = [...marks([["m3", "3s", 430, 560], ["m4", "3p", 570, 560]]), B("b1", 450, 400, 170, 0), B("b2", 520, 380, 190, 1), B("b3", 590, 430, 200, 2), B("b4", 400, 450, 160, 3)]; }
+  if (n === "clear") { S.items = []; }
+  CB.st = { ...S, draw: [] }; CB.sel = null; cbSave(); cbRender(); cbSteps();
+}
+
+function cbEnter() {
+  if (!CB.st) cbLoad();
+  if (!cbEnter.done) {
+    cbEnter.done = true; CB.pen = "#E04848";
+    const svg = $("#cb-svg");
+    svg.addEventListener("pointerdown", (e) => { svg.setPointerCapture(e.pointerId); cbDown(e); });
+    svg.addEventListener("pointermove", cbMove); svg.addEventListener("pointerup", cbUp); svg.addEventListener("pointercancel", cbUp);
+    $("#cb-tool").querySelectorAll("button").forEach((b) => (b.onclick = () => { CB.tool = b.dataset.v; $("#cb-tool").querySelectorAll("button").forEach((x) => x.classList.toggle("active", x === b)); svg.classList.toggle("pen", CB.tool === "pen"); }));
+    $("#cb-pens").querySelectorAll("button").forEach((b) => (b.onclick = () => { CB.pen = b.dataset.c; CB.tool = "pen"; svg.classList.add("pen"); $("#cb-tool").querySelectorAll("button").forEach((x) => x.classList.toggle("active", x.dataset.v === "pen")); $("#cb-pens").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); }));
+    $("#cb-undo").onclick = () => { CB.st.draw.pop(); cbSave(); cbRender(); };
+    $("#cb-wipe").onclick = () => { CB.st.draw = []; cbSave(); cbRender(); };
+    $("#cb-addboat").onclick = () => { const n = CB.st.items.filter((i) => i.k === "boat").length; const id = "b" + Date.now(); CB.st.items.push({ k: "boat", id, c: n % CB_COLS.length, x: 500, y: 340, h: (CB.st.wind + 315) % 360, auto: true, trim: 10, shape: 1 }); CB.sel = id; cbSave(); cbRender(); };
+    $("#cb-addmark").onclick = () => { const n = CB.st.items.filter((i) => i.k === "mark" && i.n).length + 1; CB.st.items.push({ k: "mark", id: "m" + Date.now(), n: String(n), x: 500, y: 300, col: "#F27A48" }); cbSave(); cbRender(); };
+    $("#cb-addyel").onclick = () => { CB.st.items.push({ k: "mark", id: "y" + Date.now(), n: "", x: 520, y: 320, col: "#F2D33A" }); cbSave(); cbRender(); };
+    $("#cb-cur").onchange = (e) => { CB.st.cur.on = e.target.checked; cbSave(); cbRender(); };
+    $("#cb-curkt").oninput = (e) => { CB.st.cur.kt = +e.target.value; $("#cb-curkt-l").textContent = `${CB.st.cur.kt} kt`; cbSave(); cbRender(); };
+    $("#cb-rules").onchange = (e) => { CB.rules = e.target.checked; cbRender(); };
+    $("#cb-bg").onchange = (e) => { CB.bg = e.target.value; cbRender(); };
+    $("#cb-save").onclick = () => { CB.steps.push(cbSnap()); cbSave(); cbSteps(); showMsg($("#cb-msg"), `Saved step ${CB.steps.length}. Move the boats, then save the next step.`); };
+    $("#cb-play").onclick = cbPlay;
+    $("#cb-clearsteps").onclick = () => { CB.steps = []; cbSave(); cbSteps(); showMsg($("#cb-msg"), ""); };
+    $("#cb-scen").onchange = (e) => { if (e.target.value) cbScenario(e.target.value); e.target.value = ""; };
+    $("#cb-big").onclick = () => { const w = $("#cb-board"); try { if (!document.fullscreenElement) w.requestFullscreen(); else document.exitFullscreen(); } catch (_) {} };
+    $("#cb-wl").oninput = (e) => { CB.st.wind = +e.target.value; cbSave(); cbRender(); };
+  }
+  $("#cb-cur").checked = CB.st.cur.on; $("#cb-curkt").value = CB.st.cur.kt; $("#cb-curkt-l").textContent = `${CB.st.cur.kt} kt`;
+  cbRender(); cbSteps();
+}
+function cbLeave() { if (CB.play) { cancelAnimationFrame(CB.play); CB.play = null; } }
+
 /* =================== routing & boot =================== */
 let activeTab = "planner";
 let PENDING_LINK = null; // "#wind/41.45,-71.37" or "#cruise/<place key>" from a shared link
@@ -6483,23 +6757,24 @@ function showTab(name) {
   if (name && name.includes("/")) { const i = name.indexOf("/"); PENDING_LINK = { tab: name.slice(0, i), arg: decodeURIComponent(name.slice(i + 1)) }; name = name.slice(0, i); }
   if (name === "weather") { location.replace("#wind"); return; } // old Forecast tab and Day Planner were merged away; keep old links working
   if (name === "plan") { location.replace("#coast"); return; }
-  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather", "cruise", "puffs"].includes(name)) name = "wind";
+  if (!["coast", "race", "plan", "debrief", "kits", "wind", "weather", "cruise", "puffs", "board"].includes(name)) name = "wind";
   if (CRUISE.on && name !== "cruise") leaveCruise();
   const global = name === "wind" || name === "weather";
   if (GX.on && !global) leaveGlobal();
   const overlay = name === "race" || name === "plan" ? name : null, race = overlay === "race"; if (overlay) name = "coast";
   planMode = overlay === "plan"; if (!planMode) drawPlanPin();
   if (raceMode && !race) leaveRace();
-  document.querySelector("main").classList.toggle("wide", name === "kits" || name === "puffs");
+  document.querySelector("main").classList.toggle("wide", name === "kits" || name === "puffs" || name === "board");
   if (name === "puffs") setTimeout(plEnter, 0); else plLeave();
-  if (name !== "kits" && name !== "puffs") map.invalidateSize({ animate: false });  // the map may have been hidden
+  if (name === "board") setTimeout(cbEnter, 0); else cbLeave();
+  if (name !== "kits" && name !== "puffs" && name !== "board") map.invalidateSize({ animate: false });  // the map may have been hidden
   const wasCoast = activeTab === "coast";
   activeTab = name;
   if (wasCoast && name !== "coast") { leaveCoast(); coastFitted = false; }
   $("#liftmap-btn").hidden = name === "coast" || name === "cruise";
   document.body.classList.toggle("cruise", name === "cruise");
   $("#brand-venue").textContent = "Wind · Water · Racing · Cruising";
-  const top = ["coast", "race", "debrief", "puffs"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
+  const top = ["coast", "race", "debrief", "puffs", "board"].includes(overlay || name) ? "racing" : (overlay || name); // Racing holds conditions, course and debrief
   document.querySelectorAll(".tabs a").forEach((a) => a.classList.toggle("active", a.dataset.tab === top));
   $("#racing-nav").hidden = top !== "racing";
   $("#race-bar").hidden = !race; document.body.classList.toggle("race-on", race);
