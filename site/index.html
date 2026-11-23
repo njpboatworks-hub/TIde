@@ -1564,6 +1564,15 @@ body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacit
 body.gx #map { background: #0C1B2E !important; }
 /* live radar: soften the speckle and the square pixels of the radar picture */
 .leaflet-radarPane-pane img { filter: blur(.6px) saturate(1.15); }
+.rt-pin-wrap { background: none; border: 0; }
+.rt-pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); display: grid; place-items: center; }
+.rt-pin { font: 700 11px/1 var(--f-body); color: #071426; }
+.rt-pin.a { background: #5BE09A; } .rt-pin.b { background: #F0642D; } .rt-pin.w { background: #F5B83D; }
+.rt-pin span { transform: rotate(45deg); }
+.pl-legs { display: flex; flex-direction: column; gap: 6px; }
+.pl-leg { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; border-left: 3px solid #F5B83D; background: var(--surface); border-radius: 0 8px 8px 0; font-size: 13px; }
+.pl-leg span { color: var(--ink-2); font-size: 12px; } .pl-leg.bad { border-color: #FF5A60; } .pl-leg em { color: #FF8A8F; font-style: normal; font-size: 12px; }
+#rt-plot { display: flex; align-items: center; gap: 6px; } #rt-plot svg { width: 16px; height: 16px; color: #F5B83D; }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
 </style>
 
@@ -6490,7 +6499,7 @@ function crDraw() {
     if (g.length === 1 || !cell) {
       for (const p of g) {
         const st = crStatus(p), m = L.marker([p[1], p[2]], { icon: L.divIcon({ className: "crp-wrap", html: crIconHtml(p, st), iconSize: [30, 30], iconAnchor: [15, 15] }), keyboard: false, riseOnHover: true });
-        m.on("click", (e) => (ROUTE.picking ? routePick([p[1], p[2]], crName(p)) : CRUISE.adding ? crAddForm(e.latlng) : crOpen(p))); m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -14], className: "cr-tip" });
+        m.on("click", (e) => (ROUTE.plotting ? plotAdd(L.latLng(p[1], p[2])) : ROUTE.picking ? routePick([p[1], p[2]], crName(p)) : CRUISE.adding ? crAddForm(e.latlng) : crOpen(p))); m.bindTooltip(esc(crName(p)), { direction: "top", offset: [0, -14], className: "cr-tip" });
         CRUISE.layer.addLayer(m);
       }
     } else {
@@ -6545,6 +6554,7 @@ async function crOpen(p) {
     if (CRUISE.sel === p) crRenderDetail(p, null);
   }
   if (!["food", "eat"].includes(p[0]) && p.mfc === undefined) { p.mfc = null; crMarineFcst(p).then((m) => { p.mfc = m; if (m && CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
+  if (["anchorage", "mooring", "mooring_field"].includes(p[0]) && p.bottom === undefined) { p.bottom = null; sbNear(p[1], p[2], 800).then((l) => { p.bottom = sbSummary(l.slice(0, 15)) || false; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (p[0] !== "food" && p.here === undefined) { p.here = null; crHereNow(p).then((h) => { p.here = h; if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (CR_TONIGHT_TYPES.has(p[0]) && p.tonight === undefined) { crTonight(p).then(() => { if (CRUISE.sel === p) crRenderDetail(p, p.lastReports ?? null); }); }
   if (p[0] !== "food") {
@@ -6553,7 +6563,7 @@ async function crOpen(p) {
   }
 }
 function crClose() {
-  if (CRUISE.sel && CRUISE.sel.route) { routeClear(); ROUTE.picking = null; ROUTE.job = (ROUTE.job || 0) + 1; }
+  if (CRUISE.sel && CRUISE.sel.route) { routeClear(); ROUTE.picking = null; ROUTE.job = (ROUTE.job || 0) + 1; plotStop(); if (ROUTE.pins) { map.removeLayer(ROUTE.pins); ROUTE.pins = null; } }
   CRUISE.sel = null; $("#cr-detail").hidden = true; $("#cr-main").hidden = false;
   if (CRUISE.selPin) { map.removeLayer(CRUISE.selPin); CRUISE.selPin = null; }
   crDraw();
@@ -6601,7 +6611,7 @@ function crRenderDetail(p, reports, offline) {
   }
   $("#cr-detail").innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
     <div class="cr-dh"><span class="cr-ic big" style="--c:${col}">${CR_ICON[ic]}</span><div><h2>${esc(crName(p))}</h2><span class="cr-type">${esc(p[0] === "food" ? (d.kind || "Restaurant") : p[0] === "eat" ? ({ bar: "Bar", pub: "Pub", cafe: "Café", fast_food: "Takeout", ice_cream: "Ice cream" }[x.amenity] || "Restaurant") + (x.cuisine ? ` · ${x.cuisine.split(";")[0].replace(/_/g, " ")}` : "") : crTypeName(p[0]))}</span></div></div>
-    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length ? `<div class="cr-rows cr-here">${p.here.map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
+    ${p[0] !== "food" ? warnBanner(warnAt(p[1], p[2])) : ""}${head}${actions}<div id="cr-form"></div>${p.here && p.here.length || p.bottom ? `<div class="cr-rows cr-here">${p.bottom ? `<div class="cr-row"><span>Bottom</span><div><b style="color:${SB_COL[p.bottom.rate]}">${SB_NAME[p.bottom.rate]}</b>: ${esc(p.bottom.text.toLowerCase())}<small>${p.bottom.n} charted sample${p.bottom.n > 1 ? "s" : ""} within 800 m</small></div></div>` : ""}${(p.here || []).map(([k, v]) => `<div class="cr-row"><span>${k}</span><div>${v}</div></div>`).join("")}</div>` : ""}${CR_TONIGHT_TYPES.has(p[0]) ? (p.tonight ? crTonightHtml(p.tonight) : p.tonight === undefined ? `<div class="cr-tonight loading">Loading the forecast here…</div>` : "") : ""}${crMarineHtml(p.mfc)}${rows.length ? `<div class="cr-rows">${rows.join("")}</div>` : ""}${comm}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#cr-dir").addEventListener("click", () => routeStart([p[1], p[2]], crName(p)));
   $("#cr-share").addEventListener("click", (e) => shareLink(`cruise/${encodeURIComponent(crKey(p))}`, `${crName(p)} on Nockd`, e.currentTarget));
@@ -6829,7 +6839,7 @@ async function routeGrid(a, b, endR, padF = 0.35) { // one A* search on a grid s
     const polys = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
     ctx.beginPath();
     for (const poly of polys) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath(); }
-    ctx.fill("evenodd");
+    ctx.fill("evenodd"); ctx.strokeStyle = "#000"; ctx.lineWidth = 0.8; ctx.stroke(); // the outline too, so a sand spit thinner than a cell still blocks
   });
   // bridges and cables too low for my boat (and fixed) block the way
   const nav = await navLoad();
@@ -6840,65 +6850,99 @@ async function routeGrid(a, b, endR, padF = 0.35) { // one A* search on a grid s
     for (const c of nav.cables) if (c[0] > s && c[0] < n && c[1] > w && c[1] < e && clearStatus(c[3], false) === "blocked") block(c[4]);
   }
   const px = ctx.getImageData(0, 0, W, H).data, N = W * H, land = new Uint8Array(N);
-  for (let i = 0; i < N; i++) land[i] = px[i * 4 + 3] > 100 ? 1 : 0;
-  // cells next to land cost more, so routes keep off the shore
-  const near = new Uint8Array(N);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (!land[i]) continue;
-    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && yy < H && xx >= 0 && xx < W) near[yy * W + xx] = 1; } }
-  const snap = (p) => { // nearest water cell
-    const x0 = Math.round(X(p.lng)), y0 = Math.round(Y(p.lat));
-    for (let r = 0; r < 60; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const x = x0 + dx, y = y0 + dy;
-      if (x >= 0 && y >= 0 && x < W && y < H && !land[y * W + x]) return y * W + x; }
-    return -1; };
-  const D = [[1, 0, 1], [-1, 0, 1], [0, 1, 1], [0, -1, 1], [1, 1, 1.4142], [1, -1, 1.4142], [-1, 1, 1.4142], [-1, -1, 1.4142]];
-  let S = snap(a), T = snap(b);
-  if (S < 0 || T < 0) throw new Error(`Could not find open water near the ${S < 0 ? "start" : "destination"}. Pick a spot on the water.`);
-  // an end that landed in a pond or a closed-off basin moves to the nearest water that connects to the other end
-  const flood = (i0) => { const seen = new Uint8Array(N), st = [i0]; seen[i0] = 1; let cnt = 0;
-    while (st.length) { const i = st.pop(); cnt++; const x = i % W, y = (i / W) | 0;
-      for (const [dx, dy] of D) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const j = yy * W + xx;
-        if (seen[j] || land[j] || (dx && dy && (land[y * W + xx] || land[yy * W + x]))) continue; seen[j] = 1; st.push(j); } }
-    return { seen, cnt }; };
-  const nearIn = (seen, p, maxR) => { const x0 = Math.round(X(p.lng)), y0 = Math.round(Y(p.lat));
-    for (let r = 0; r <= maxR; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const x = x0 + dx, y = y0 + dy;
-      if (x >= 0 && y >= 0 && x < W && y < H && seen[y * W + x]) return y * W + x; }
-    return -1; };
-  const fs = flood(S);
-  if (!fs.seen[T]) {
-    const ft = flood(T), maxR = Math.ceil(endR / cell); // move an end by up to endR metres
-    if (fs.cnt >= ft.cnt) T = nearIn(fs.seen, b, maxR); else S = nearIn(ft.seen, a, maxR);
-    if (S < 0 || T < 0) throw new Error(BOAT.air ? "No water route found. A bridge or cable too low for your boat may block the only way through." : "No water route found between these points. One of them may be in a closed-off pond or harbor.");
-  }
-  // A* with 8 neighbours
-  const g = new Float32Array(N).fill(Infinity), came = new Int32Array(N).fill(-1), closed = new Uint8Array(N);
-  const tx = T % W, ty = (T / W) | 0, hh = (i) => { const dx = Math.abs((i % W) - tx), dy = Math.abs(((i / W) | 0) - ty); return Math.max(dx, dy) + 0.4142 * Math.min(dx, dy); };
-  const heap = [], push = (f, i) => { heap.push([f, i]); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (heap[p][0] <= heap[c][0]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; c = p; } };
-  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let c = 0; for (;;) { const l = 2 * c + 1, r = l + 1; let m = c; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; c = m; } } return top; };
-  g[S] = 0; push(hh(S), S); let found = false, steps = 0;
-  while (heap.length) {
-    const [, i] = pop(); if (closed[i]) continue; closed[i] = 1;
-    if (i === T) { found = true; break; }
-    if (++steps > 4e6) break;
-    const x = i % W, y = (i / W) | 0;
-    for (const [dx, dy, c] of D) {
-      const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
-      const j = yy * W + xx; if (land[j] || closed[j]) continue;
-      if (dx && dy && (land[y * W + xx] || land[yy * W + x])) continue; // no corner cutting through land
-      const ng = g[i] + c * (near[j] ? 2 : 1);
-      if (ng < g[j]) { g[j] = ng; came[j] = i; push(ng + hh(j), j); }
-    }
-  }
-  if (!found) throw new Error(BOAT.air ? "No water route found. A bridge or cable too low for your boat may block the only way through." : "No water route found between these points.");
-  let path = []; for (let i = T; i >= 0; i = came[i]) path.push(i); path.reverse();
-  // straighten: keep a point only when the straight line to the next one would cross land
-  const los = (i, j) => { let x0 = i % W, y0 = (i / W) | 0; const x1 = j % W, y1 = (j / W) | 0, dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy;
-    for (;;) { if (land[y0 * W + x0]) return false; if (x0 === x1 && y0 === y1) return true; const e2 = 2 * err; if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } } };
-  const keep = [path[0]]; let k = 0;
-  while (k < path.length - 1) { let j = path.length - 1; while (j > k + 1 && !los(path[k], path[j])) j = Math.max(k + 1, j - Math.max(1, ((j - k) / 8) | 0)); keep.push(path[j]); k = j; }
+  for (let i = 0; i < N; i++) land[i] = px[i * 4 + 3] > 40 ? 1 : 0;
+  const sx = (p) => [Math.round(X(p.lng)), Math.round(Y(p.lat))];
+  const res = await routeWorkerRun({ land, W, H, a: sx(a), b: sx(b), endR: Math.ceil(endR / cell) });
+  if (res.err === "nowater") throw new Error(`Could not find open water near the ${res.which}. Pick a spot on the water.`);
+  if (res.err) throw new Error(BOAT.air ? "No water route found. A bridge or cable too low for your boat may block the only way through." : "No water route found between these points. One of them may be in a closed-off pond or harbor.");
   const toLL = (i) => [n - ((((i / W) | 0) + 0.5) * cell) / ky, w + (((i % W) + 0.5) * cell) / kx];
-  return { pts: keep.map(toLL), cell };
+  return { pts: Array.from(res.keep, toLL), cell };
+}
+/* the A* search, run off the main thread so the page never freezes */
+const ROUTE_WORKER_SRC = `
+onmessage = (ev) => {
+  const { land, W, H, a, b, endR, id } = ev.data, N = W * H;
+  const near = new Uint8Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { if (!land[y * W + x]) continue;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && yy < H && xx >= 0 && xx < W) near[yy * W + xx] = 1; } }
+  const snap = ([x0, y0]) => { for (let r = 0; r < 80; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const x = x0 + dx, y = y0 + dy;
+      if (x >= 0 && y >= 0 && x < W && y < H && !land[y * W + x]) return y * W + x; } return -1; };
+  const DX = [1, -1, 0, 0, 1, 1, -1, -1], DY = [0, 0, 1, -1, 1, -1, 1, -1], DC = [1, 1, 1, 1, 1.4142, 1.4142, 1.4142, 1.4142];
+  let S = snap(a), T = snap(b);
+  if (S < 0 || T < 0) { postMessage({ id, err: "nowater", which: S < 0 ? "start" : "destination" }); return; }
+  const flood = (i0) => { const seen = new Uint8Array(N), st = new Int32Array(N); let top = 0, cnt = 0; st[top++] = i0; seen[i0] = 1;
+    while (top) { const i = st[--top]; cnt++; const x = i % W, y = (i / W) | 0;
+      for (let d = 0; d < 8; d++) { const xx = x + DX[d], yy = y + DY[d]; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; const j = yy * W + xx;
+        if (seen[j] || land[j] || (d > 3 && (land[y * W + xx] || land[yy * W + x]))) continue; seen[j] = 1; st[top++] = j; } }
+    return { seen, cnt }; };
+  const nearIn = (seen, [x0, y0], maxR) => { for (let r = 0; r <= maxR; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue; const x = x0 + dx, y = y0 + dy;
+      if (x >= 0 && y >= 0 && x < W && y < H && seen[y * W + x]) return y * W + x; } return -1; };
+  const fs = flood(S);
+  if (!fs.seen[T]) { const ft = flood(T); if (fs.cnt >= ft.cnt) T = nearIn(fs.seen, b, endR); else S = nearIn(ft.seen, a, endR);
+    if (S < 0 || T < 0) { postMessage({ id, err: "noroute" }); return; } }
+  const g = new Float32Array(N).fill(Infinity), came = new Int32Array(N).fill(-1), closed = new Uint8Array(N);
+  const tx = T % W, ty = (T / W) | 0;
+  // binary heap in typed arrays
+  let cap = 1 << 16, hf = new Float32Array(cap), hi = new Int32Array(cap), hn = 0;
+  const push = (f, i) => { if (hn === cap) { cap *= 2; const a2 = new Float32Array(cap), b2 = new Int32Array(cap); a2.set(hf); b2.set(hi); hf = a2; hi = b2; }
+    let c = hn++; while (c > 0) { const pp = (c - 1) >> 1; if (hf[pp] <= f) break; hf[c] = hf[pp]; hi[c] = hi[pp]; c = pp; } hf[c] = f; hi[c] = i; };
+  const pop = () => { const top = hi[0], lf = hf[--hn], li = hi[hn]; let c = 0;
+    for (;;) { const l = 2 * c + 1; if (l >= hn) break; const r = l + 1, m = r < hn && hf[r] < hf[l] ? r : l; if (hf[m] >= lf) break; hf[c] = hf[m]; hi[c] = hi[m]; c = m; }
+    hf[c] = lf; hi[c] = li; return top; };
+  const hh = (i) => { const dx = Math.abs((i % W) - tx), dy = Math.abs(((i / W) | 0) - ty); return Math.max(dx, dy) + 0.4142 * Math.min(dx, dy); };
+  g[S] = 0; push(hh(S), S); let found = false, steps = 0;
+  while (hn) { const i = pop(); if (closed[i]) continue; closed[i] = 1; if (i === T) { found = true; break; } if (++steps > 6e6) break;
+    const x = i % W, y = (i / W) | 0;
+    for (let d = 0; d < 8; d++) { const xx = x + DX[d], yy = y + DY[d]; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const j = yy * W + xx; if (land[j] || closed[j]) continue; if (d > 3 && (land[y * W + xx] || land[yy * W + x])) continue;
+      const ng = g[i] + DC[d] * (near[j] ? 2 : 1); if (ng < g[j]) { g[j] = ng; came[j] = i; push(ng + hh(j), j); } } }
+  if (!found) { postMessage({ id, err: "noroute" }); return; }
+  const path = []; for (let i = T; i >= 0; i = came[i]) path.push(i); path.reverse();
+  // straight line of sight that also never touches a cell next to land diagonally
+  const los = (i, j) => { let x0 = i % W, y0 = (i / W) | 0; const x1 = j % W, y1 = (j / W) | 0, dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let err = dx + dy;
+    for (;;) { if (land[y0 * W + x0]) return false; if (x0 === x1 && y0 === y1) return true; const e2 = 2 * err;
+      if (e2 >= dy && e2 <= dx && (land[y0 * W + x0 + sx] || land[(y0 + sy) * W + x0])) return false;
+      if (e2 >= dy) { err += dy; x0 += sx; } if (e2 <= dx) { err += dx; y0 += sy; } } };
+  const keep = [path[0]]; let k = 0;
+  while (k < path.length - 1) { let lo = k + 1, hi2 = path.length - 1, best = k + 1; // farthest visible point: binary search, then step back
+    while (lo <= hi2) { const mid = (lo + hi2) >> 1; if (los(path[k], path[mid])) { best = mid; lo = mid + 1; } else hi2 = mid - 1; }
+    while (best > k + 1 && !los(path[k], path[best])) best--;
+    keep.push(path[best]); k = best; }
+  postMessage({ id, keep: Int32Array.from(keep) });
+};`;
+let ROUTE_WORKER = null, ROUTE_JOB = 0;
+function routeWorkerRun(msg) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!ROUTE_WORKER) ROUTE_WORKER = new Worker(URL.createObjectURL(new Blob([ROUTE_WORKER_SRC], { type: "text/javascript" })));
+      const id = ++ROUTE_JOB, w = ROUTE_WORKER;
+      const on = (e) => { if (e.data.id !== id) return; w.removeEventListener("message", on); resolve(e.data); };
+      w.addEventListener("message", on); w.onerror = (e) => reject(new Error(e.message || "Route search failed."));
+      w.postMessage({ ...msg, id }, [msg.land.buffer]);
+    } catch (e) { reject(e); }
+  });
+}
+/* Does a straight leg cross land? Checked on a fine raster of the detailed shoreline (about 25 m). */
+async function legCrossesLand(p1, p2) {
+  const idx = await routeIndex(), midLat = (p1[0] + p2[0]) / 2, kx = 111320 * Math.cos(rad(midLat)), ky = 111320;
+  const s0 = Math.min(p1[0], p2[0]) - 0.002, n0 = Math.max(p1[0], p2[0]) + 0.002, w0 = Math.min(p1[1], p2[1]) - 0.003, e0 = Math.max(p1[1], p2[1]) + 0.003;
+  const cell = Math.max(25, Math.max((e0 - w0) * kx, (n0 - s0) * ky) / 1600), W = Math.ceil(((e0 - w0) * kx) / cell), H = Math.ceil(((n0 - s0) * ky) / cell);
+  const X = (lon) => ((lon - w0) * kx) / cell, Y = (lat) => ((n0 - lat) * ky) / cell;
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const ctx = cv.getContext("2d", { willReadFrequently: true }); ctx.fillStyle = "#000";
+  let any = false;
+  for (let la = Math.floor(s0); la <= Math.floor(n0); la++) for (let lo = Math.floor(w0); lo <= Math.floor(e0); lo++) {
+    const k = `${la}_${lo}`;
+    if (idx.land.has(k)) { any = true; ctx.fillRect(X(lo), Y(la + 1), kx / cell + 1, ky / cell + 1); continue; }
+    if (!idx.detail.has(k)) continue; const g = await routeTile(k); if (!g) continue; any = true;
+    const polys = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
+    ctx.beginPath(); for (const poly of polys) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath(); } ctx.fill("evenodd");
+  }
+  if (!any) return false;
+  const d = ctx.getImageData(0, 0, W, H).data, x0 = X(p1[1]), y0 = Y(p1[0]), x1 = X(p2[1]), y1 = Y(p2[0]), n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2) + 1;
+  for (let q = 0; q <= n; q++) { const x = Math.round(x0 + ((x1 - x0) * q) / n), y = Math.round(y0 + ((y1 - y0) * q) / n); if (x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 60) return true; }
+  return false;
 }
 async function routeCompute(a, b) {
   const inRegion = (p) => Object.values(REGIONS).some((r) => r.has(p.lat, p.lng));
@@ -6919,6 +6963,20 @@ async function routeCompute(a, b) {
       const ra = await routeGrid(a, A.p, 4000).catch(() => routeGrid(a, A.p, 4000, 1.1)), rb = await routeGrid(B.p, b, 4000).catch(() => routeGrid(B.p, b, 4000, 1.1));
       grid = [...ra.pts, [A.p.lat, A.p.lng], ...grid.slice(A.i, B.i + 1), [B.p.lat, B.p.lng], ...rb.pts]; fine = Math.max(ra.cell, rb.cell);
     }
+  }
+  // final check: legs that cut a corner of land at the grid's resolution are re-routed on a fine grid
+  for (let pass = 0; pass < 2; pass++) {
+    const out = [grid[0]]; let changed = false;
+    for (let q = 1; q < grid.length; q++) {
+      const p1 = grid[q - 1], p2 = grid[q];
+      if (ROUTE.cancel) throw new Error("cancelled");
+      await new Promise((r) => setTimeout(r, 0));
+      if (await legCrossesLand(p1, p2)) {
+        try { const rr = await routeGrid(L.latLng(p1[0], p1[1]), L.latLng(p2[0], p2[1]), 800, 0.6); out.push(...rr.pts, p2); changed = true; fine = Math.min(fine, rr.cell); continue; } catch (_) {}
+      }
+      out.push(p2);
+    }
+    grid = out; if (!changed) break;
   }
   const pts = [[a.lat, a.lng], ...grid, [b.lat, b.lng]];
   const moved = [map.distance(pts[0], pts[1]) > fine * 3, map.distance(pts[pts.length - 2], pts[pts.length - 1]) > fine * 3];
@@ -6995,17 +7053,19 @@ function routePanel(msg) {
       <button type="button" class="rt-end" id="rt-from"><i class="a"></i><span><small>From</small>${esc(f ? f.name : "Choose start")}</span></button>
       <button type="button" class="rt-swap" id="rt-swap" title="Swap">${SVG('<path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/>')}</button>
       <button type="button" class="rt-end" id="rt-to"><i class="b"></i><span><small>To</small>${esc(t ? t.name : "Choose destination")}</span></button>
-    </div>${msg ? `<div class="cr-hint strong">${esc(msg)}</div>` : ""}${ROUTE.picking === "from" && navigator.geolocation ? `<button type="button" class="rt-boat" id="rt-geo">Use my location</button>` : ""}${body}`;
+    </div>${msg ? `<div class="cr-hint strong">${esc(msg)}</div>` : ""}${ROUTE.picking === "from" && navigator.geolocation ? `<button type="button" class="rt-boat" id="rt-geo">Use my location</button>` : ""}
+    <button type="button" class="rt-boat" id="rt-plot">${CR_ICON.route}<span> Plot my own route point by point</span></button>${body}`;
   $("#cr-back").addEventListener("click", crClose);
   $("#rt-from").addEventListener("click", () => { ROUTE.picking = "from"; routePanel("Tap the map or a place where you are starting from."); });
   $("#rt-to").addEventListener("click", () => { ROUTE.picking = "to"; routePanel("Tap the map or a place where you are going."); });
   $("#rt-swap").addEventListener("click", () => { [ROUTE.from, ROUTE.to] = [ROUTE.to, ROUTE.from]; routeNext(); });
   const rb = $("#rt-boat"); if (rb) rb.addEventListener("click", () => boatForm(true));
+  $("#rt-plot").addEventListener("click", plotStart); routePins();
   const rg = $("#rt-geo"); if (rg) rg.addEventListener("click", () => { ROUTE.from = null; ROUTE.picking = null; routeStart(ROUTE.to ? [ROUTE.to.latlng.lat, ROUTE.to.latlng.lng] : null, ROUTE.to && ROUTE.to.name); });
 }
 async function routeGo() {
   if (!ROUTE.from || !ROUTE.to) { routeNext(); return; }
-  ROUTE.last = null; routePanel("Finding a route on the water…");
+  ROUTE.last = null; routePins(); routePanel("Finding a route on the water…");
   const job = (ROUTE.job = (ROUTE.job || 0) + 1);
   await new Promise((r) => setTimeout(r, 30));
   try {
@@ -7023,14 +7083,66 @@ function routeRender() {
   ROUTE.layer = L.layerGroup([
     L.polyline(core, { color: "#071426", weight: 8, opacity: 0.6, interactive: false }),
     L.polyline(core, { color: "#4FB3FF", weight: 4.5, opacity: 1, interactive: false }), ...dash,
-    L.circleMarker(r.pts[0], { radius: 7, color: "#fff", weight: 2.5, fillColor: "#5BE09A", fillOpacity: 1, interactive: false }),
-    L.circleMarker(r.pts[r.pts.length - 1], { radius: 7, color: "#fff", weight: 2.5, fillColor: "#F0642D", fillOpacity: 1, interactive: false }),
-  ]).addTo(map);
+  ]).addTo(map); routePins();
 }
 function routePick(ll, name) { // a map or place tap while choosing the start or the destination
+  if (ROUTE.plotting) { plotAdd(L.latLng(ll)); return; }
   const which = ROUTE.picking; ROUTE.picking = null;
   ROUTE[which] = { latlng: L.latLng(ll), name: name || `${L.latLng(ll).lat.toFixed(4)}, ${L.latLng(ll).lng.toFixed(4)}` };
-  routeNext();
+  routePins(); routeNext();
+}
+const pinIcon = (cls, txt) => L.divIcon({ className: "rt-pin-wrap", html: `<div class="rt-pin ${cls}"><span>${txt || ""}</span></div>`, iconSize: [26, 34], iconAnchor: [13, 32] });
+function routePins() { // start (green) and destination (orange) pins, draggable
+  if (ROUTE.pins) { map.removeLayer(ROUTE.pins); ROUTE.pins = null; }
+  if (ROUTE.plotting || !(CRUISE.sel && CRUISE.sel.route)) return;
+  ROUTE.pins = L.layerGroup().addTo(map);
+  for (const [k, cls] of [["from", "a"], ["to", "b"]]) {
+    const e = ROUTE[k]; if (!e) continue;
+    const m = L.marker(e.latlng, { icon: pinIcon(cls, k === "from" ? "A" : "B"), draggable: true, zIndexOffset: 1000, keyboard: false });
+    m.on("dragend", () => { ROUTE[k] = { latlng: m.getLatLng(), name: `${m.getLatLng().lat.toFixed(4)}, ${m.getLatLng().lng.toFixed(4)}` }; routeNext(); });
+    ROUTE.pins.addLayer(m);
+  }
+}
+/* ---- plot your own route: tap to drop waypoints, drag to move them; distances, bearings, time and fuel per leg ---- */
+function plotStart() {
+  routeClear(); ROUTE.picking = null; ROUTE.plotting = true; ROUTE.plot = ROUTE.plot || [];
+  if (!ROUTE.plot.length && ROUTE.from) ROUTE.plot.push(ROUTE.from.latlng);
+  routePins(); plotDraw(); plotPanel();
+}
+function plotStop() { ROUTE.plotting = false; if (ROUTE.plotLayer) { map.removeLayer(ROUTE.plotLayer); ROUTE.plotLayer = null; } }
+function plotAdd(ll) { ROUTE.plot.push(ll); plotDraw(); plotPanel(); }
+function plotDraw() {
+  if (ROUTE.plotLayer) map.removeLayer(ROUTE.plotLayer);
+  const P = ROUTE.plot; ROUTE.plotLayer = L.layerGroup().addTo(map);
+  if (P.length > 1) { ROUTE.plotLayer.addLayer(L.polyline(P, { color: "#071426", weight: 7, opacity: 0.6, interactive: false })); ROUTE.plotLayer.addLayer(L.polyline(P, { color: "#F5B83D", weight: 3.5, interactive: false })); }
+  (ROUTE.plotBad || []).forEach((bad, i) => { if (bad && P[i + 1]) ROUTE.plotLayer.addLayer(L.polyline([P[i], P[i + 1]], { color: "#FF5A60", weight: 4, dashArray: "6 6", interactive: false })); });
+  P.forEach((ll, i) => {
+    const m = L.marker(ll, { icon: pinIcon(i === 0 ? "a" : i === P.length - 1 && P.length > 1 ? "b" : "w", String(i + 1)), draggable: true, zIndexOffset: 1000, keyboard: false });
+    m.on("dragend", () => { P[i] = m.getLatLng(); plotDraw(); plotPanel(); });
+    m.on("click", () => { if (P.length > 1 && confirm(`Remove point ${i + 1}?`)) { P.splice(i, 1); plotDraw(); plotPanel(); } });
+    ROUTE.plotLayer.addLayer(m);
+  });
+}
+async function plotPanel() {
+  const P = ROUTE.plot, box = $("#cr-detail"); let tot = 0; const legs = [];
+  for (let i = 1; i < P.length; i++) { const d = map.distance(P[i - 1], P[i]) / 1852, br = (deg(Math.atan2((P[i].lng - P[i - 1].lng) * Math.cos(rad(P[i].lat)), P[i].lat - P[i - 1].lat)) + 360) % 360; tot += d; legs.push([d, br]); }
+  const hrs = BOAT.speed ? tot / BOAT.speed : NaN, fuel = BOAT.burn && Number.isFinite(hrs) ? hrs * BOAT.burn : NaN, bad = ROUTE.plotBad || [];
+  box.innerHTML = `<button type="button" class="cr-back" id="cr-back">${SVG('<path d="M15 18l-6-6 6-6"/>')}Back</button>
+    <div class="cr-dh"><span class="cr-ic big" style="--c:#F5B83D">${CR_ICON.route}</span><div><h2>Plot my route</h2><span class="cr-type">Tap the map to add points. Drag a point to move it, tap it to remove it.</span></div></div>
+    <div class="rt-sum"><div><b>${tot < 10 ? tot.toFixed(1) : Math.round(tot)} nm</b><span>${P.length} point${P.length === 1 ? "" : "s"}</span></div>
+      <div><b>${Number.isFinite(hrs) && tot ? routeFmtTime(hrs) : "–"}</b><span>${BOAT.speed ? `at ${BOAT.speed} kt` : "set your speed"}</span></div>
+      <div><b>${Number.isFinite(fuel) && tot ? `${fuel < 10 ? fuel.toFixed(1) : Math.round(fuel)} ${fuelUnit()}` : "–"}</b><span>fuel</span></div></div>
+    <div class="cr-form-b" style="justify-content:flex-start"><button type="button" id="pl-undo"${P.length ? "" : " disabled"}>Undo last</button><button type="button" id="pl-clear"${P.length ? "" : " disabled"}>Clear</button><button type="button" id="pl-auto">Auto route instead</button></div>
+    ${legs.length ? `<div class="pl-legs">${legs.map(([d, br], i) => `<div class="pl-leg${bad[i] ? " bad" : ""}"><b>${i + 1} → ${i + 2}</b><span>${d < 10 ? d.toFixed(2) : d.toFixed(1)} nm · ${String(Math.round(br)).padStart(3, "0")}° true${BOAT.speed ? ` · ${routeFmtTime(d / BOAT.speed)}` : ""}</span>${bad[i] ? `<em>Crosses land on the chart</em>` : ""}</div>`).join("")}</div>` : `<div class="cr-hint strong">Tap the map where you start.</div>`}
+    <p class="cr-fine">Straight lines between your points. Legs drawn in red cross land on our shoreline map. Bearings are true, not magnetic. Not for navigation.</p>`;
+  $("#cr-back").addEventListener("click", () => { plotStop(); crClose(); });
+  $("#pl-undo").addEventListener("click", () => { P.pop(); ROUTE.plotBad = (ROUTE.plotBad || []).slice(0, Math.max(0, P.length - 1)); plotDraw(); plotPanel(); });
+  $("#pl-clear").addEventListener("click", () => { P.length = 0; ROUTE.plotBad = []; plotDraw(); plotPanel(); });
+  $("#pl-auto").addEventListener("click", () => { const f = P[0], t = P[P.length - 1]; plotStop(); if (f) ROUTE.from = { latlng: f, name: `${f.lat.toFixed(4)}, ${f.lng.toFixed(4)}` }; if (t && P.length > 1) ROUTE.to = { latlng: t, name: `${t.lat.toFixed(4)}, ${t.lng.toFixed(4)}` }; routePins(); routeNext(); });
+  // check the legs against the shoreline (after drawing, so the panel never waits)
+  const job = (ROUTE.plotJob = (ROUTE.plotJob || 0) + 1), res = [];
+  for (let i = 1; i < P.length; i++) { res.push(await legCrossesLand([P[i - 1].lat, P[i - 1].lng], [P[i].lat, P[i].lng]).catch(() => false)); if (job !== ROUTE.plotJob) return; }
+  if (JSON.stringify(res) !== JSON.stringify(bad)) { ROUTE.plotBad = res; plotDraw(); plotPanel(); }
 }
 
 
@@ -7150,12 +7262,77 @@ async function cruiseWater() {
   c.beginPath(); LM.boxes(c); c.fill();
   c.globalCompositeOperation = "destination-out"; c.drawImage(LM.mask, 0, 0); c.globalCompositeOperation = "source-over";
 }
+
+/* Bottom type for anchoring: charted seabed samples (NOAA charts) in site/seabed/{lat}_{lon}.json.
+   Sand, mud, clay and silt hold an anchor well; shells, gravel and weed are fair; rock, coral and stones are poor. */
+const SB = { on: store("crSeabed") ?? false, idx: null, mat: null, tiles: new Map(), layer: null, seq: 0 };
+const SB_GOOD = ["mud", "sand", "clay", "silt", "ooze"], SB_FAIR = ["shells", "gravel", "pebbles", "weed"], SB_POOR = ["rock", "coral", "stones", "boulder", "cobbles", "lava"];
+async function sbIndex() { if (!SB.idx) { const j = await fetch("seabed/index.json").then((r) => (r.ok ? r.json() : null)).catch(() => null); SB.idx = new Set(j ? j.tiles : []); SB.mat = j ? j.mat : []; } return SB.idx; }
+function sbTile(k) { if (!SB.tiles.has(k)) SB.tiles.set(k, fetch(`seabed/${k}.json`).then((r) => (r.ok ? r.json() : [])).catch(() => [])); return SB.tiles.get(k); }
+const sbWords = (c) => SB.mat.filter((_, i) => c & (1 << i));
+function sbRate(c) { // 2 good, 1 fair, 0 poor
+  const w = sbWords(c);
+  if (w.some((x) => SB_POOR.includes(x))) return w.some((x) => SB_GOOD.includes(x)) ? 1 : 0;
+  if (w.some((x) => SB_GOOD.includes(x))) return 2;
+  return 1;
+}
+const SB_COL = ["#FF5A60", "#F5B83D", "#5BE09A"], SB_NAME = ["Poor holding", "Fair holding", "Good holding"];
+async function sbNear(lat, lon, rM) { // samples within rM metres
+  await sbIndex(); const out = [], cl = Math.cos(rad(lat)), dl = rM / 111320, dn = rM / (111320 * cl);
+  for (let la = Math.floor(lat - dl); la <= Math.floor(lat + dl); la++) for (let lo = Math.floor(lon - dn); lo <= Math.floor(lon + dn); lo++) {
+    const k = `${la}_${lo}`; if (!SB.idx.has(k)) continue;
+    for (const q of await sbTile(k)) { const m = Math.hypot((q[0] - lat) * 111320, (q[1] - lon) * 111320 * cl); if (m <= rM) out.push([q, m]); } }
+  return out.sort((a, b) => a[1] - b[1]);
+}
+function sbSummary(list) { // {rate, text} for a set of samples
+  if (!list.length) return null;
+  const cnt = new Map(), r = [0, 0, 0];
+  for (const [q] of list) { r[sbRate(q[2])]++; for (const w of sbWords(q[2])) cnt.set(w, (cnt.get(w) || 0) + 1); }
+  const top = [...cnt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([w]) => w);
+  const rate = r[0] > list.length * 0.34 ? 0 : r[2] >= list.length * 0.6 ? 2 : 1;
+  return { rate, text: `${top.join(", ").replace(/^./, (c) => c.toUpperCase())}`, n: list.length };
+}
+async function sbDraw() {
+  if (!CRUISE.on) return;
+  const seq = ++SB.seq;
+  if (!SB.on || map.getZoom() < 11) { if (SB.layer && map.hasLayer(SB.layer)) map.removeLayer(SB.layer); return; }
+  await sbIndex(); const b = map.getBounds().pad(0.1), keys = [];
+  for (let la = Math.floor(b.getSouth()); la <= Math.floor(b.getNorth()); la++) for (let lo = Math.floor(b.getWest()); lo <= Math.floor(b.getEast()); lo++) if (SB.idx.has(`${la}_${lo}`)) keys.push(`${la}_${lo}`);
+  const all = (await Promise.all(keys.slice(0, 12).map(sbTile))).flat().filter((q) => b.contains([q[0], q[1]]));
+  if (seq !== SB.seq || !CRUISE.on) return;
+  if (SB.layer) map.removeLayer(SB.layer);
+  if (!map.getPane("sbPane")) map.createPane("sbPane").style.zIndex = 380;
+  const rend = L.canvas({ pane: "sbPane", padding: 0.2 }); SB.layer = L.layerGroup();
+  // good-holding areas: ~300 m cells with at least 2 samples, nearly all good
+  const cell = 0.003, grid = new Map();
+  for (const q of all) { const k = `${Math.round(q[0] / cell)},${Math.round(q[1] / (cell / Math.cos(rad(q[0]))))}`; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(q); }
+  for (const g of grid.values()) {
+    if (g.length < 2) continue; const good = g.filter((q) => sbRate(q[2]) === 2).length; if (good < g.length * 0.8) continue;
+    const la = g.reduce((a, q) => a + q[0], 0) / g.length, lo = g.reduce((a, q) => a + q[1], 0) / g.length;
+    SB.layer.addLayer(L.circle([la, lo], { renderer: rend, radius: 220, color: "#5BE09A", weight: 1, fillColor: "#5BE09A", fillOpacity: 0.12, dashArray: "3 4", interactive: false }));
+  }
+  for (const q of all.slice(0, 4000)) {
+    const rt = sbRate(q[2]), m = L.circleMarker([q[0], q[1]], { renderer: rend, radius: map.getZoom() >= 14 ? 5 : 3.5, color: "#071426", weight: 1, fillColor: SB_COL[rt], fillOpacity: 0.95 });
+    m.bindTooltip(`${esc(sbWords(q[2]).join(", ").replace(/^./, (c) => c.toUpperCase()))} · ${SB_NAME[rt].toLowerCase()}`, { className: "cr-tip" });
+    SB.layer.addLayer(m);
+  }
+  SB.layer.addTo(map);
+  setLegend(`<b>Bottom type</b><div class="dz-key"><span><i style="background:#5BE09A"></i>Sand, mud, clay: good holding</span><span><i style="background:#F5B83D"></i>Shells, gravel, weed: fair</span><span><i style="background:#FF5A60"></i>Rock, coral, stones: poor</span><span><i style="background:transparent;border:1px dashed #5BE09A"></i>Area of good holding</span></div><div class="fine">Bottom samples from NOAA nautical charts. Tap the water to check a spot. Charts sample the bottom sparsely and it can change: check depth, swing room and your set before trusting the hook.</div>`);
+}
+async function sbCheck(ll) { // tap on the water with Bottom type on
+  const near = await sbNear(ll.lat, ll.lng, 600), sm = sbSummary(near.slice(0, 12));
+  const html = sm ? `<div class="cr-pop"><b style="color:${SB_COL[sm.rate]}">${SB_NAME[sm.rate]}</b><p>${esc(sm.text)} from ${sm.n} charted sample${sm.n > 1 ? "s" : ""} within ${Math.round(near[Math.min(near.length, 12) - 1][1] / 10) * 10} m.</p></div>`
+    : `<div class="cr-pop"><b>No bottom samples charted here</b><p>None within 600 m on NOAA charts. Try nearby, or check a chart or cruising guide.</p></div>`;
+  L.popup({ maxWidth: 260, className: "cr-popup" }).setLatLng(ll).setContent(html).openOn(map);
+}
+
 /* ---- chips, search, enter / leave ---- */
 function crChips() {
   $("#cr-chips").innerHTML = `<button type="button" class="cr-chip act" id="cr-route">${CR_ICON.route}<span>Directions</span></button>`
     + `<button type="button" class="cr-chip act${boatSet() ? " set" : ""}" id="cr-boat">${CR_ICON.boat}<span>${boatSet() ? esc(BOAT.name || "My boat") : "Add my boat"}</span></button>`
     + CR_CATS.map((c) => `<button type="button" role="tab" class="cr-chip${CRUISE.cat === c.id ? " on" : ""}" data-c="${c.id}" aria-selected="${CRUISE.cat === c.id}">${c.icon ? CR_ICON[c.icon] : ""}<span>${c.label}</span></button>`).join("")
     + `<button type="button" class="cr-chip tog${WARN.on ? " on" : ""}" id="cr-warn" aria-pressed="${WARN.on}">${SVG('<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/>')}<span>Marine warnings${WARN.byZone.size ? ` · ${WARN.byZone.size}` : ""}</span></button>`
+    + `<button type="button" class="cr-chip tog${SB.on ? " on" : ""}" id="cr-sb" aria-pressed="${SB.on}">${SVG('<path d="M3 17c3 0 3-2 6-2s3 2 6 2 3-2 6-2M3 21h18M12 3v8M9 8l3 3 3-3"/>')}<span>Bottom type</span></button>`
     + `<button type="button" class="cr-chip tog${NAV.on ? " on" : ""}" id="cr-nav" aria-pressed="${NAV.on}">${CR_ICON.bridge}<span>Bridges & areas</span></button>`
     + `<button type="button" class="cr-chip tog${DZ.on ? " on" : ""}" id="cr-dz" aria-pressed="${DZ.on}">${CR_ICON.discharge}<span>Discharge zones</span></button>`
     + `<button type="button" class="cr-chip add" id="cr-addbtn">${SVG('<path d="M12 5v14M5 12h14"/>')}<span>Add a spot</span></button>`;
@@ -7163,6 +7340,7 @@ function crChips() {
   $("#cr-dz").addEventListener("click", () => { DZ.on = !DZ.on; store("crDz", DZ.on); crChips(); dzDraw(); });
   $("#cr-nav").addEventListener("click", () => { NAV.on = !NAV.on; store("crNav", NAV.on); crChips(); navDraw(); if (NAV.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in to see bridges and restricted areas."); });
   $("#cr-route").addEventListener("click", () => routeStart(null));
+  $("#cr-sb").addEventListener("click", () => { SB.on = !SB.on; store("crSeabed", SB.on); if (SB.on && DZ.on) { DZ.on = false; store("crDz", false); dzDraw(); } crChips(); sbDraw(); if (SB.on && map.getZoom() < 11) showMsg($("#cr-msg"), "Zoom in on a harbor to see the bottom type."); if (!SB.on) setLegend(null); });
   $("#cr-warn").addEventListener("click", () => { WARN.on = !WARN.on; store("crWarn", WARN.on); crChips(); warnDraw(); });
   $("#cr-boat").addEventListener("click", () => boatForm(false));
   $("#cr-addbtn").addEventListener("click", () => crAddMode(!CRUISE.adding));
@@ -7178,7 +7356,7 @@ async function enterCruise() {
     const v = store("crView"); if (v) map.setView([v.lat, v.lng], v.z, { animate: false }); else map.setView([41.49, -71.33], 13, { animate: false });
     loadComm().then(() => crDraw());
   }
-  crDraw(); dzDraw(); crFood(); cruiseWaterSoon();
+  crDraw(); dzDraw(); crFood(); cruiseWaterSoon(); sbDraw();
   navLoad().then(() => { if (CRUISE.on) { crDraw(); navDraw(); } });
   warnLoad().then(() => { if (!CRUISE.on) return; warnDraw(); if (CRUISE.sel && CRUISE.sel[1] != null && !CRUISE.sel.route) crRenderDetail(CRUISE.sel, CRUISE.sel.lastReports ?? null); });
   if (PENDING_LINK && PENDING_LINK.tab === "cruise") {
@@ -7244,6 +7422,7 @@ function leaveCruise() {
   if (DZ.layer && map.hasLayer(DZ.layer)) map.removeLayer(DZ.layer);
   if (NAV.layer && map.hasLayer(NAV.layer)) map.removeLayer(NAV.layer);
   if (WARN.layer && map.hasLayer(WARN.layer)) map.removeLayer(WARN.layer);
+  if (SB.layer && map.hasLayer(SB.layer)) map.removeLayer(SB.layer);
   if (CRUISE.sel && CRUISE.sel.route) crClose();
   if (CRUISE.selPin) { map.removeLayer(CRUISE.selPin); CRUISE.selPin = null; }
 }
@@ -7254,8 +7433,8 @@ function initCruise() {
   let qt = null;
   $("#cr-q").addEventListener("input", (e) => { clearTimeout(qt); qt = setTimeout(() => { CRUISE.q = e.target.value.trim(); if (CRUISE.sel) crClose(); else crDraw(); }, 150); });
   $("#cr-list").addEventListener("click", (e) => { const b = e.target.closest(".cr-card"); if (b) { const p = crFind(b.dataset.k); if (p) crOpen(p); } });
-  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); cruiseWaterSoon(); });
-  map.on("click", (e) => { if (!CRUISE.on) return; if (ROUTE.picking) { routePick(e.latlng); return; } if (CRUISE.adding) { crAddForm(e.latlng); return; } if (DZ.on) dzCheck(e.latlng); });
+  map.on("moveend", () => { if (!CRUISE.on) return; const c = map.getCenter(); store("crView", { lat: c.lat, lng: c.lng, z: map.getZoom() }); crDraw(); crFood(); navDraw(); cruiseWaterSoon(); sbDraw(); });
+  map.on("click", (e) => { if (!CRUISE.on) return; if (ROUTE.plotting) { plotAdd(e.latlng); return; } if (ROUTE.picking) { routePick(e.latlng); return; } if (CRUISE.adding) { crAddForm(e.latlng); return; } if (SB.on) { sbCheck(e.latlng); return; } if (DZ.on) dzCheck(e.latlng); });
 }
 
 async function boot() {

@@ -39,9 +39,9 @@ jobs:
       - name: Spain and Portugal - latest readings and MET Norway forecast
         run: python -m scripts.iberia_build live
 
-      - name: Spain and Portugal - recalculate tides (Mondays, or when run by hand; predictions run 30 days ahead)
+      - name: Spain and Portugal - recalculate tides (scheduled Monday runs only; predictions run 30 days ahead)
         run: |
-          if [ "$(date -u +%u)" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "$(date -u +%u)" = "1" ] && [ "${{ github.event_name }}" = "schedule" ]; then
             pip install utide && python -m scripts.iberia_build tides
           else
             echo "Not Monday: keeping last week's tide predictions"

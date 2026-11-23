@@ -478,6 +478,11 @@ def main(osm_dir=None):
                     q[7] = q[7] or {}; carried.append(q)
         print(f"  kept {len(carried)} OpenStreetMap places from the last build for squares not fetched yet", flush=True)
     P = from_enc() + from_enc_fishing() + from_osm(osm) + (carried if osm_dir else [])
+    cur = ROOT / "data" / "curated_places.json"
+    if cur.exists():  # hand-checked places (for example Bahamas mooring fields) always included
+        cp = json.loads(cur.read_text())["places"]
+        P += [[t, la, lo, n, note, "", "Cruising guide list", {}] for t, la, lo, n, note in cp]
+        print(f"  {len(cp)} hand-checked places", flush=True)
     # dump stations without a boat tag: keep the ones within ~400 m of a marina (marina pump-outs), drop the rest (RV sites)
     marinas = [(p[1], p[2]) for p in P if p[0] == "marina"]
     mgrid = {}
