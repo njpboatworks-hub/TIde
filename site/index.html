@@ -2536,6 +2536,7 @@ async function loadTerrain(c, path) {
     const x = cv.getContext("2d", { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
     const d = x.getImageData(0, 0, bmp.width, bmp.height).data, h = new Uint8Array(bmp.width * bmp.height);
     for (let k = 0; k < h.length; k++) h[k] = d[k * 4];
+    freeCanvas(cv);
     c.terr = { lat0: meta.lat0, lon0: meta.lon0, res: meta.res, nx: bmp.width, ny: bmp.height, h };
     if (COAST === c && activeTab === "coast") refreshArrows();
   } catch (_) {}
@@ -2804,7 +2805,7 @@ function renderHeat(canvas) {
   const ctx = canvas.getContext("2d"), size = map.getSize();
   ctx.clearRect(0, 0, size.x, size.y);
   if (!heat) return;
-  const off = document.createElement("canvas"); off.width = heat.gx; off.height = heat.gy;
+  const off = scratchCanvas("heat", heat.gx, heat.gy);
   const oc = off.getContext("2d"), img = oc.createImageData(heat.gx, heat.gy);
   const lift = hex(css("--lift")), head = hex(css("--header")), neu = hex(css("--neutral"));
   for (let k = 0; k < heat.gx * heat.gy; k++) {
@@ -2876,11 +2877,22 @@ function startAnimation() { if (animId) cancelAnimationFrame(animId); animId = r
 document.addEventListener("visibilitychange", () => { if (!document.hidden) startAnimation(); });
 reduceMotion.addEventListener("change", startAnimation);
 // Pixel-accurate land mask for the current view, from the same shoreline polygons that are drawn.
+// iPhone Safari (and the app) cap the total memory of drawing canvases; a canvas that is thrown away keeps its memory
+// until the browser gets round to it. So scratch canvases are reused by name, and one-off canvases are emptied after use.
+const SCRATCH = new Map();
+function scratchCanvas(key, w, h) { let c = SCRATCH.get(key); if (!c) { c = document.createElement("canvas"); SCRATCH.set(key, c); }
+  w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } else c.getContext("2d").clearRect(0, 0, w, h);
+  const x = c.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.filter = "none"; return c; }
+function freeCanvas(c) { if (c) { c.width = 0; c.height = 0; } }
+// Leaflet's own canvas layers (coastlines, nav lines, warnings): free their memory when they come off the map
+if (window.L && L.Canvas && !L.Canvas.__freed) { const rm = L.Canvas.prototype.onRemove; L.Canvas.__freed = true;
+  L.Canvas.include({ onRemove() { if (this._container) { this._container.width = 0; this._container.height = 0; } return rm.call(this); } }); }
+function dropCanvas(c) { if (c) { freeCanvas(c); c.remove(); } } // take a drawing layer off the map and free its memory
 let landMask = null, curLandPath = null;
 function buildLandMask() {
-  const size = map.getSize(), c = document.createElement("canvas");
+  const size = map.getSize();
   if (!size.x || !size.y) { landMask = null; curLandPath = null; return; }  // map hidden (e.g. Coach Kits tab)
-  c.width = size.x; c.height = size.y;
+  const c = scratchCanvas("landmask", size.x, size.y);
   const ctx = c.getContext("2d", { willReadFrequently: true });
   curLandPath = landPath(); ctx.fillStyle = "#000"; ctx.fill(curLandPath, "evenodd");
   landMask = { w: size.x, h: size.y, data: ctx.getImageData(0, 0, size.x, size.y).data };
@@ -2891,7 +2903,7 @@ function onLandPx(x, y) { // true/false from the drawn shoreline, null if outsid
   if (x < 0 || y < 0 || x >= landMask.w || y >= landMask.h) return null;
   return landMask.data[(y * landMask.w + x) * 4 + 3] > 127;
 }
-function sizeCanvas(c, maxDpr = 4) {
+function sizeCanvas(c, maxDpr = 2) {
   const s = map.getSize(), dpr = Math.min(maxDpr, window.devicePixelRatio || 1);
   L.DomUtil.setPosition(c, map.containerPointToLayerPoint([0, 0]));
   c._tl = map.containerPointToLatLng([0, 0]); c._z = map.getZoom();
@@ -2918,7 +2930,7 @@ const ArrowLayer = L.Layer.extend({
     this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", pane);
     m.on(this._zoomEvents(), this); this.redraw();
   },
-  onRemove(m) { this._h.remove(); this._c.remove(); m.off(this._zoomEvents(), this); },
+  onRemove(m) { dropCanvas(this._h); dropCanvas(this._c); m.off(this._zoomEvents(), this); },
   redraw() {
     if (!this._c) return;
     if (!map.getSize().x) return;  // map hidden
@@ -3923,7 +3935,7 @@ const CurrentLayer = L.Layer.extend({
   includes: ZoomCanvasMixin,
   _canvases() { return [this._c]; },
   onAdd(m) { this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("currentPane")); m.on(this._zoomEvents(), this); this.redraw(); },
-  onRemove(m) { this._c.remove(); m.off(this._zoomEvents(), this); },
+  onRemove(m) { dropCanvas(this._c); m.off(this._zoomEvents(), this); },
   _paint(t) {
     const ctx = this._c.getContext("2d"), size = map.getSize(), still = reduceMotion.matches;
     ctx.clearRect(0, 0, size.x, size.y);
@@ -3950,7 +3962,7 @@ const CurrentLayer = L.Layer.extend({
   redraw() {
     if (!this._c) return;
     sizeCanvas(this._c);
-    const size = map.getSize(), dpr = window.devicePixelRatio || 1; currentPts = []; curStates = []; this._flow = []; this._dots = [];
+    const size = map.getSize(), dpr = Math.min(2, window.devicePixelRatio || 1); currentPts = []; curStates = []; this._flow = []; this._dots = [];
     const st = this._st || (this._st = document.createElement("canvas"));
     st.width = size.x * dpr; st.height = size.y * dpr;
     const ctx = st.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);   // stations, labels and tide markers (redrawn only on change)
@@ -4051,7 +4063,8 @@ async function loadDepthTile(name, lat1, lon0, res) {
   const bmp = await createImageBitmap(await r.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
   const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
   const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(bmp, 0, 0);
-  return { d: x.getImageData(0, 0, bmp.width, bmp.height).data, w: bmp.width, h: bmp.height, lat1, lon0, res, used: performance.now() };
+  const dd = x.getImageData(0, 0, bmp.width, bmp.height).data; freeCanvas(c); if (bmp.close) bmp.close();
+  return { d: dd, w: bmp.width, h: bmp.height, lat1, lon0, res, used: performance.now() };
 }
 async function updateDepth() {
   if (!DEPTH || activeTab !== "coast") return;
@@ -4392,6 +4405,7 @@ function setBasemap(kind) {
       minZoom: 9, maxNativeZoom: 16, maxZoom: 19, bounds: [[17.5, -125.5], [49.5, -64.5]],
       attribution: 'Imagery: <a href="https://www.usgs.gov/programs/national-geospatial-program/national-map" target="_blank" rel="noopener">USGS The National Map</a>',
     });
+    us.on("tileunload", (e) => freeCanvas(e.tile)); // free each satellite square's drawing memory when it leaves the screen
     baseLayer = L.layerGroup([world, us]).addTo(map);
   } else if (basemap.startsWith("mb-")) {
     baseLayer = L.tileLayer(`https://api.mapbox.com/styles/v1/mapbox/${MB_STYLES[basemap]}/tiles/512/{z}/{x}/{y}@2x?access_token=${encodeURIComponent(mapboxToken())}`, {
@@ -5247,7 +5261,7 @@ const LabelLayer = L.Layer.extend({
   includes: ZoomCanvasMixin,
   _canvases() { return [this._c]; },
   onAdd(m) { this._c = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("labelPane")); m.on(this._zoomEvents(), this); this.redraw(); },
-  onRemove(m) { this._c.remove(); m.off(this._zoomEvents(), this); },
+  onRemove(m) { dropCanvas(this._c); m.off(this._zoomEvents(), this); },
   redraw() {
     if (!this._c) return;
     sizeCanvas(this._c);
@@ -5648,7 +5662,7 @@ async function gxLoadMeta() {
   return GX.meta;
 }
 function gxImage(url) {
-  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); res({ w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }); }; img.onerror = () => rej(new Error("could not load " + url)); img.crossOrigin = "anonymous"; img.src = window.NOCKD_DATA ? new URL(url, window.NOCKD_DATA).href : url; }); // in the iPhone app the data comes from the website
+  return new Promise((res, rej) => { const img = new Image(); img.onload = () => { const c = scratchCanvas("imgread", img.width, img.height); const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0); res({ w: img.width, h: img.height, d: x.getImageData(0, 0, img.width, img.height).data }); }; img.onerror = () => rej(new Error("could not load " + url)); img.crossOrigin = "anonymous"; img.src = window.NOCKD_DATA ? new URL(url, window.NOCKD_DATA).href : url; }); // in the iPhone app the data comes from the website
 }
 function gxStep(src, k) {
   const key = src + k; if (GX.cache.has(key)) { const v = GX.cache.get(key); GX.cache.delete(key); GX.cache.set(key, v); return v; }
@@ -5803,9 +5817,9 @@ async function gxRender() {
       const k = (j * W + i) * 4; img.data[k] = c[0]; img.data[k + 1] = c[1]; img.data[k + 2] = c[2]; img.data[k + 3] = c[3] * op;
     }
   }
-  const off = document.createElement("canvas"); off.width = W; off.height = H; off.getContext("2d").putImageData(img, 0, 0);
+  const off = scratchCanvas("gxoff", W, H); off.getContext("2d").putImageData(img, 0, 0);
   // swap in the new picture in one step (no blank frame)
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   L.DomUtil.setPosition(cv, map.containerPointToLayerPoint([-px, -py]));
   cv._tl = map.containerPointToLatLng([-px, -py]); cv._z = map.getZoom();
   cv.width = CW * dpr; cv.height = CH * dpr; cv.style.width = CW + "px"; cv.style.height = CH + "px";
@@ -5821,7 +5835,7 @@ async function gxRender() {
     for (let j = 0; j < bh; j++) { const la = map.containerPointToLatLng([0, j * BS + BS / 2 - by]).lat; if (la > 85.05 || la < -85.05) continue;
       for (let i = 0; i < bw; i++) { const lo = map.containerPointToLatLng([i * BS + BS / 2 - bx, 0]).lng, c2 = col(gxValue(F.main, la, lo)); if (!c2) continue;
         const k = (j * bw + i) * 4; bimg.data[k] = c2[0]; bimg.data[k + 1] = c2[1]; bimg.data[k + 2] = c2[2]; bimg.data[k + 3] = c2[3] * op; } }
-    const o2 = document.createElement("canvas"); o2.width = bw; o2.height = bh; o2.getContext("2d").putImageData(bimg, 0, 0);
+    const o2 = scratchCanvas("gxo2", bw, bh); o2.getContext("2d").putImageData(bimg, 0, 0);
     const bv = GX.bv; L.DomUtil.setPosition(bv, map.containerPointToLayerPoint([-bx, -by])); bv._tl = tl; bv._z = map.getZoom();
     bv.width = Math.round(BW / 2); bv.height = Math.round(BH / 2); bv.style.width = BW + "px"; bv.style.height = BH + "px";
     const bc = bv.getContext("2d"); bc.imageSmoothingEnabled = true; bc.drawImage(o2, 0, 0, bv.width, bv.height);
@@ -5871,7 +5885,7 @@ const GxLayer = L.Layer.extend({
     GX.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
     m.on("movestart zoomstart", this._pause, this); m.on("moveend", this._show, this); m.on("zoomanim", this._anim, this); m.on("zoom", this._zoom, this);
   },
-  onRemove(m) { cancelAnimationFrame(GX.anim); GX.cv.remove(); GX.pv.remove(); if (GX.bv) GX.bv.remove(); GX.cv = GX.pv = GX.bv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
+  onRemove(m) { cancelAnimationFrame(GX.anim); dropCanvas(GX.cv); dropCanvas(GX.pv); dropCanvas(GX.bv); GX.cv = GX.pv = GX.bv = null; m.off("movestart zoomstart", this._pause, this); m.off("moveend", this._show, this); m.off("zoomanim", this._anim, this); m.off("zoom", this._zoom, this); },
   _pause() { cancelAnimationFrame(GX.anim); GX.anim = null; if (GX.pv) { GX.pv.style.transition = "opacity .15s"; GX.pv.style.opacity = 0; } },
   _anim(e) { zoomCanvas(GX.cv, e.center, e.zoom); zoomCanvas(GX.bv, e.center, e.zoom); },
   _zoom() { if (!map._animatingZoom) { zoomCanvas(GX.cv, map.getCenter(), map.getZoom()); zoomCanvas(GX.bv, map.getCenter(), map.getZoom()); } }, // no redraw mid-pinch: it would hold up the gesture
@@ -6110,7 +6124,7 @@ async function shoreMaskFor(z, px, py, CW, CH, stale) {
   }
   if (stale()) return null;
   const dpr = Math.min(2, window.devicePixelRatio || 1), Wp = Math.round(CW * dpr), Hp = Math.round(CH * dpr);
-  const mask = document.createElement("canvas"); mask.width = Wp; mask.height = Hp;
+  const mask = scratchCanvas("gxlmask", Wp, Hp);
   const m = mask.getContext("2d"); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.fillStyle = "#000";
   const P = (lon, lat) => { const q = map.latLngToContainerPoint([lat, lon]); return [q.x + px, q.y + py]; };
   const ring = (r) => { r.forEach(([x, y], j) => { const [a, b] = P(x, y); j ? m.lineTo(a, b) : m.moveTo(a, b); }); m.closePath(); };
@@ -6144,10 +6158,10 @@ async function gxLandDraw() {
   const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== GXL.seq || !GX.on); if (!LM) return;
   const { mask, dpr, Wp, Hp } = LM;
   // coastline: the land's edge, found by shifting the land a pixel each way
-  const edge = document.createElement("canvas"); edge.width = Wp; edge.height = Hp; const e = edge.getContext("2d");
+  const edge = scratchCanvas("gxedge", Wp, Hp); const e = edge.getContext("2d");
   const w = Math.max(1, Math.round(dpr * (z >= 9 ? 1.3 : 1)));
   for (const [dx, dy] of [[w, 0], [-w, 0], [0, w], [0, -w]]) {
-    const t = document.createElement("canvas"); t.width = Wp; t.height = Hp; const tc = t.getContext("2d");
+    const t = scratchCanvas("gxedget", Wp, Hp); const tc = t.getContext("2d");
     tc.drawImage(mask, 0, 0); tc.globalCompositeOperation = "destination-out"; tc.drawImage(mask, dx, dy);
     e.drawImage(t, 0, 0);
   }
@@ -6167,7 +6181,7 @@ async function gxLandBackdrop(seq) {
   if (!GXL.bb) GXL.bb = GXL.w50.map((poly) => { let a = 180, b = -180, c = 90, d = -90; for (const [x, y] of poly[0]) { a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, y); d = Math.max(d, y); } return [a, b, c, d]; });
   const size = map.getSize(), bx = size.x * 2, by = size.y * 2, BW = size.x + 2 * bx, BH = size.y + 2 * by, sc = 0.5, Wp = Math.round(BW * sc), Hp = Math.round(BH * sc);
   const nw = map.containerPointToLatLng([-bx, -by]), se = map.containerPointToLatLng([size.x + bx, size.y + by]);
-  const mask = document.createElement("canvas"); mask.width = Wp; mask.height = Hp; const m = mask.getContext("2d"); m.setTransform(sc, 0, 0, sc, 0, 0); m.fillStyle = "#000"; m.beginPath();
+  const mask = scratchCanvas("gxbmask", Wp, Hp); const m = mask.getContext("2d"); m.setTransform(sc, 0, 0, sc, 0, 0); m.fillStyle = "#000"; m.beginPath();
   GXL.w50.forEach((poly, i) => { const [a, b, c, d] = GXL.bb[i]; if (b < nw.lng || a > se.lng || d < se.lat || c > nw.lat) return;
     for (const r of poly) { r.forEach(([x, y], j) => { const q = map.latLngToContainerPoint([y, x]); j ? m.lineTo(q.x + bx, q.y + by) : m.moveTo(q.x + bx, q.y + by); }); m.closePath(); } });
   m.fill("evenodd");
@@ -7045,7 +7059,7 @@ function plDraw() {
   const sc = Math.min(W / (PL.L * 1.15), H / (PL.L * 1.12)), X = (x) => W / 2 + x * sc, Y = (y) => H / 2 + y * sc;
   c.fillStyle = "#0C1F36"; c.fillRect(0, 0, W, H);
   // pressure: brighter where the wind is stronger (drawn on a coarse grid, then softened)
-  const g = 22, off = document.createElement("canvas"); off.width = Math.ceil(W / g); off.height = Math.ceil(H / g); const oc = off.getContext("2d"), im = oc.createImageData(off.width, off.height), base = PL.w * PKT;
+  const g = 22, off = scratchCanvas("ploff", Math.ceil(W / g), Math.ceil(H / g)); const oc = off.getContext("2d"), im = oc.createImageData(off.width, off.height), base = PL.w * PKT;
   for (let j = 0; j < off.height; j++) for (let i = 0; i < off.width; i++) {
     const [ws] = plWind((i * g + g / 2 - W / 2) / sc, (j * g + g / 2 - H / 2) / sc, PL.t), d = (ws - base) / (base * 0.6 + 0.01), k = (j * off.width + i) * 4;
     if (d > 0) { im.data[k] = 40; im.data[k + 1] = 150; im.data[k + 2] = 210; im.data[k + 3] = Math.min(190, d * 220); } else { im.data[k] = 2; im.data[k + 1] = 8; im.data[k + 2] = 18; im.data[k + 3] = Math.min(170, -d * 280); }
@@ -7759,7 +7773,7 @@ async function routeGrid(a, b, endR, padF = 0.35) { // one A* search on a grid s
     for (const br of nav.bridges) if (br[0] > s && br[0] < n && br[1] > w && br[1] < e && clearStatus(bridgeClear(br), bridgeOpens(br)) === "blocked") block(br[8]);
     for (const c of nav.cables) if (c[0] > s && c[0] < n && c[1] > w && c[1] < e && clearStatus(c[3], false) === "blocked") block(c[4]);
   }
-  const px = ctx.getImageData(0, 0, W, H).data, N = W * H, land = new Uint8Array(N);
+  const px = ctx.getImageData(0, 0, W, H).data, N = W * H, land = new Uint8Array(N); freeCanvas(cv);
   for (let i = 0; i < N; i++) land[i] = px[i * 4 + 3] > 40 ? 1 : 0;
   const sx = (p) => [Math.round(X(p.lng)), Math.round(Y(p.lat))];
   const res = await routeWorkerRun({ land, W, H, a: sx(a), b: sx(b), endR: Math.ceil(endR / cell) });
@@ -7849,8 +7863,8 @@ async function legCrossesLand(p1, p2) {
     const polys = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
     ctx.beginPath(); for (const poly of polys) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath(); } ctx.fill("evenodd");
   }
-  if (!any) return false;
-  const d = ctx.getImageData(0, 0, W, H).data, x0 = X(p1[1]), y0 = Y(p1[0]), x1 = X(p2[1]), y1 = Y(p2[0]), n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2) + 1;
+  if (!any) { freeCanvas(cv); return false; }
+  const d = ctx.getImageData(0, 0, W, H).data; freeCanvas(cv); const x0 = X(p1[1]), y0 = Y(p1[0]), x1 = X(p2[1]), y1 = Y(p2[0]), n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2) + 1;
   for (let q = 0; q <= n; q++) { const x = Math.round(x0 + ((x1 - x0) * q) / n), y = Math.round(y0 + ((y1 - y0) * q) / n); if (x >= 0 && y >= 0 && x < W && y < H && d[(y * W + x) * 4 + 3] > 60) return true; }
   return false;
 }
@@ -8261,8 +8275,8 @@ async function crFetch(lat, lon) { // km of open water in 16 directions (capped 
       const polys = g.type === "MultiPolygon" ? g.coordinates : g.type === "Polygon" ? [g.coordinates] : [];
       ctx.beginPath(); for (const poly of polys) for (const ring of poly) { ring.forEach(([x, y], j) => (j ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath(); } ctx.fill("evenodd");
     }
-    if (!any) return null; // no detailed shoreline here
-    const d = ctx.getImageData(0, 0, W, H).data, cx = W / 2, cy = H / 2, out = [];
+    if (!any) { freeCanvas(cv); return null; } // no detailed shoreline here
+    const d = ctx.getImageData(0, 0, W, H).data; freeCanvas(cv); const cx = W / 2, cy = H / 2, out = [];
     for (let k = 0; k < 16; k++) { const a = rad(k * 22.5); let r = 2; // skip the first cells: the spot itself may sit on the shoreline
       for (; r < W / 2; r++) { const x = Math.round(cx + Math.sin(a) * r), y = Math.round(cy - Math.cos(a) * r); if (d[(y * W + x) * 4 + 3] > 100) break; }
       out.push(Math.min(8, (r * cell) / 1000)); }
