@@ -818,6 +818,7 @@ body.cruise #arrow-tools, body.cruise #tide-tools, body.cruise #liftmap-btn { di
 .crp.usr { border-style: dashed; }
 .crp b { position: absolute; top: -3px; right: -3px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #0B1B30; }
 .crp b.ok { background: #5BE09A; } .crp b.gone { background: #FF5A60; } .crp b.old { background: #E6C36A; }
+.crc.crc-wait { --c: #7F93AD; opacity: .85; border-style: dashed; }
 .crc { border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 88%, #071426); color: #071426; font: 700 12.5px/1 var(--f-body);
   border: 3px solid rgba(255,255,255,.85); box-shadow: 0 2px 8px rgba(0,0,0,.45); cursor: pointer; }
 .cr-tip { background: #071426; color: #F4F4F0; border: 1px solid #2B4468; font: 600 12px/1.2 var(--f-body); box-shadow: none; }
@@ -952,6 +953,12 @@ body.gx #map { background: #0C1B2E !important; }
 #tab-board.cb-full .cb-grid { grid-column: 2; grid-template-columns: 1fr; margin: 0; overflow-y: auto; align-content: start; }
 #tab-board.cb-full .cb-grid .cb-card { padding: 10px 12px; }
 .cb-exit { display: none; } #tab-board.cb-full .cb-exit { display: inline-flex; }
+.cb-side { display: none; }
+#tab-board.cb-full .cb-board { position: relative; }
+#tab-board.cb-full .cb-side { display: grid; place-items: center; position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 3; width: 30px; height: 84px; padding: 0;
+  border-radius: 10px 0 0 10px; background: #F27A48; color: #071426; font: 800 22px/1 var(--f-body); border: 0; box-shadow: -2px 2px 10px rgba(0,0,0,.35); }
+#tab-board.cb-full.cb-nopanel { grid-template-columns: minmax(0, 1fr); }
+#tab-board.cb-full.cb-nopanel .cb-grid { display: none; }
 .cb-rcard { display: none; }
 @media (max-height: 560px) { #tab-board.cb-full .cb-board .cb-rlist { display: none; } #tab-board.cb-full .cb-rcard { display: grid; }
   #tab-board.cb-full .cb-tools { gap: 5px; } #tab-board.cb-full .cb-tools button { padding: 5px 8px; font-size: 12px; } #tab-board.cb-full .cb-pens button { width: 22px; height: 22px; } }
@@ -1403,6 +1410,7 @@ body.gx #map { background: #0C1B2E !important; }
           <div class="cb-qadd"><button type="button" data-q="cb-addboat">+ Boat</button><button type="button" data-q="cb-addmark">+ Mark</button><button type="button" data-q="cb-addyel">+ Yellow</button><button type="button" data-q="cb-save">Save step</button><button type="button" data-q="cb-play">▶ Play</button>
             <button type="button" class="primary cb-exit" id="cb-exit">Exit big screen</button></div>
         </div>
+        <button type="button" class="cb-side" id="cb-side" aria-expanded="true" title="Hide or show the controls">›</button>
       </div>
       <div class="cb-grid">
         <div class="cb-card"><h3>Selected</h3><div id="cb-sel"></div></div>
@@ -6122,10 +6130,12 @@ function cbEnter() {
     $("#cb-clearsteps").onclick = () => { CB.steps = []; cbSave(); cbSteps(); showMsg($("#cb-msg"), ""); };
     $("#cb-scen").onchange = (e) => { if (e.target.value) cbScenario(e.target.value); e.target.value = ""; };
     // big screen = the whole Coach board (board + controls); real fullscreen where the browser allows it (not on iPhone)
-    const full = (on) => { const t = $("#tab-board"); t.classList.toggle("cb-full", on); $("#cb-big").textContent = on ? "Exit big screen" : "Big screen";
+    const full = (on) => { const t = $("#tab-board"); t.classList.toggle("cb-full", on); if (!on) { t.classList.remove("cb-nopanel"); $("#cb-side").textContent = "›"; } $("#cb-big").textContent = on ? "Exit big screen" : "Big screen";
       try { if (on && t.requestFullscreen && !document.fullscreenElement) t.requestFullscreen().catch(() => {}); else if (!on && document.fullscreenElement) document.exitFullscreen(); } catch (_) {} };
     $("#cb-big").onclick = () => full(!$("#tab-board").classList.contains("cb-full"));
     $("#cb-exit").onclick = () => full(false);
+    $("#cb-side").onclick = () => { const t = $("#tab-board"), hide = !t.classList.contains("cb-nopanel"); t.classList.toggle("cb-nopanel", hide);
+      $("#cb-side").textContent = hide ? "‹" : "›"; $("#cb-side").setAttribute("aria-expanded", String(!hide)); $("#cb-side").title = hide ? "Show the controls" : "Hide the controls"; };
     document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && $("#tab-board").classList.contains("cb-full")) full(false); });
     document.querySelectorAll(".cb-qadd [data-q]").forEach((b) => (b.onclick = () => $("#" + b.dataset.q).click()));
     $("#cb-wl").oninput = (e) => { CB.st.wind = +e.target.value; cbSave(); cbRender(); };
@@ -6632,7 +6642,7 @@ function crNearNames(list) { // unnamed services take the name of the place they
 async function loadCruise() {
   if (CRUISE.data) return CRUISE.data;
   const r = await fetch("boating/index.json");
-  if (r.ok) { const j = await r.json(); CRUISE.data = { types: j.types, built: j.built, p: [], size: j.size || 5, tiles: new Set(Object.keys(j.tiles)), loaded: new Map() }; return CRUISE.data; }
+  if (r.ok) { const j = await r.json(); CRUISE.data = { types: j.types, built: j.built, p: [], size: j.size || 5, tiles: new Set(Object.keys(j.tiles)), counts: j.tiles, loaded: new Map(), done: new Set() }; return CRUISE.data; }
   const r2 = await fetch("boating.json"); if (!r2.ok) throw new Error("The cruising places have not been built yet."); // older builds: one file
   const d = await r2.json(); crNearNames(d.p); d.tiles = null; CRUISE.data = d; return d;
 }
@@ -6641,10 +6651,16 @@ async function crTiles(bounds) { // load the squares covering these bounds (and 
   const S = d.size, b = bounds.pad(0.3), want = [];
   for (let la = Math.floor(b.getSouth() / S) * S; la <= b.getNorth(); la += S) for (let lo = Math.floor(b.getWest() / S) * S; lo <= b.getEast(); lo += S) {
     const k = `${la}_${(((lo + 180) % 360) + 360) % 360 - 180}`; if (d.tiles.has(k) && !d.loaded.has(k)) want.push(k); }
-  if (!want.length || want.length > 16) return false;
-  for (const k of want) d.loaded.set(k, fetch(`boating/${k}.json`).then((r) => (r.ok ? r.json() : [])).catch(() => []));
-  const got = await Promise.all(want.map((k) => d.loaded.get(k)));
-  got.forEach((list) => { crNearNames(list); d.p.push(...list); });
+  if (!want.length) return false;
+  // zoomed far out: load the squares nearest the middle of the screen first (the rest show as gray counts until loaded)
+  const c = bounds.getCenter(), mid = (k) => { const [a, o] = k.split("_").map(Number); return Math.hypot(a + S / 2 - c.lat, (o + S / 2 - c.lng) * Math.cos(c.lat * Math.PI / 180)); };
+  const pick = want.sort((x, y) => mid(x) - mid(y)).slice(0, 16);
+  for (const k of pick) d.loaded.set(k, fetch(`boating/${k}.json`).then((r) => (r.ok ? r.json() : [])).catch(() => { d.loaded.delete(k); return []; }));
+  const got = await Promise.all(pick.map((k) => d.loaded.get(k)));
+  got.forEach((list, i) => { crNearNames(list); d.p.push(...list); if (d.loaded.has(pick[i])) d.done.add(pick[i]); });
+  if (want.length > pick.length && (crTiles.depth || 0) < 3 && CRUISE.on) { // more squares in view: show these, then load the next batch
+    CRUISE.landGrid = null; crDraw(); crTiles.depth = (crTiles.depth || 0) + 1;
+    try { await crTiles(map.getBounds()); } finally { crTiles.depth--; } return true; }
   CRUISE.landGrid = null; return got.some((l) => l.length);
 }
 async function crTilesAt(lat, lon) { const d = CRUISE.data; if (d && d.tiles) await crTiles(L.latLngBounds([lat - 0.01, lon - 0.01], [lat + 0.01, lon + 0.01])); }
@@ -6697,7 +6713,7 @@ function crDraw() {
   if (!CRUISE.layer) CRUISE.layer = L.layerGroup();
   CRUISE.layer.clearLayers();
   const z = map.getZoom(), b = map.getBounds().pad(0.15), items = crAll().filter((p) => b.contains([p[1], p[2]]) && crMatches(p, CRUISE.cat));
-  const cell = z < 8 ? 70 : z < 11 ? 52 : z < 13 ? 34 : 0; // cluster size in pixels; none when zoomed in
+  const cell = z < 8 ? 70 : z < 11 ? 52 : z < 13 ? 34 : items.length > 500 && z < 16 ? 22 : 0; // cluster size in pixels; none when zoomed in (unless very crowded)
   const groups = new Map();
   for (const p of items) {
     const pt = map.latLngToContainerPoint([p[1], p[2]]), k = cell ? `${Math.floor(pt.x / cell)},${Math.floor(pt.y / cell)}` : String(p.i ?? crKey(p));
@@ -6721,6 +6737,17 @@ function crDraw() {
       m.on("click", (e) => ROUTE.picking ? routePick(e.latlng) : CRUISE.adding ? crAddForm(e.latlng) : map.fitBounds(L.latLngBounds(g.map((p) => [p[1], p[2]])).pad(0.3), { maxZoom: Math.min(16, z + 3) }));
       CRUISE.layer.addLayer(m);
     }
+  }
+  // squares not loaded yet: a gray count so the map never looks empty while they load
+  const D = CRUISE.data;
+  if (D.tiles && D.counts) {
+    const vb = map.getBounds(), S = D.size;
+    for (const k of D.tiles) { if (D.done.has(k)) continue; const [a, o] = k.split("_").map(Number);
+      if (!vb.intersects(L.latLngBounds([a, o], [a + S, o + S]))) continue;
+      const cnt = D.counts[k] || 0, sz = cnt > 999 ? 44 : 38, at = [Math.max(vb.getSouth(), Math.min(vb.getNorth(), a + S / 2)), Math.max(vb.getWest(), Math.min(vb.getEast(), o + S / 2))];
+      const m = L.marker(at, { icon: L.divIcon({ className: "crp-wrap", html: `<div class="crc crc-wait" style="width:${sz}px;height:${sz}px">${cnt > 999 ? (cnt / 1000).toFixed(1) + "k" : cnt}</div>`, iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2] }), keyboard: false });
+      m.bindTooltip("Places here are loading. Tap to zoom in.", { direction: "top", className: "cr-tip" });
+      m.on("click", () => map.fitBounds(L.latLngBounds([a, o], [a + S, o + S]))); CRUISE.layer.addLayer(m); }
   }
   if (!map.hasLayer(CRUISE.layer)) CRUISE.layer.addTo(map);
   crList(items);
