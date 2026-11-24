@@ -926,6 +926,8 @@ body.gx .leaflet-gx-pane canvas, body.gx .leaflet-tile-pane { transition: opacit
 body.gx #map { background: #0C1B2E !important; }
 /* live radar: soften the speckle and the square pixels of the radar picture */
 .leaflet-radarPane-pane img { filter: blur(.6px) saturate(1.15); }
+/* the extra-large backdrops (they fill the edges while zooming out) are only drawn on screen during a zoom */
+canvas.gx-backdrop { visibility: hidden; } .leaflet-zoom-anim canvas.gx-backdrop { visibility: visible; }
 .rt-pin-wrap { background: none; border: 0; }
 .rt-pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5); display: grid; place-items: center; }
 .rt-pin { font: 700 11px/1 var(--f-body); color: #071426; }
@@ -2222,6 +2224,12 @@ const SCRATCH = new Map();
 function scratchCanvas(key, w, h) { let c = SCRATCH.get(key); if (!c) { c = document.createElement("canvas"); SCRATCH.set(key, c); }
   w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h)); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } else c.getContext("2d").clearRect(0, 0, w, h);
   const x = c.getContext("2d"); x.setTransform(1, 0, 0, 1, 0, 0); x.globalCompositeOperation = "source-over"; x.globalAlpha = 1; x.filter = "none"; return c; }
+// Fast lat/lon -> screen position for drawing many points (same Web Mercator math Leaflet uses, without its per-call overhead)
+function fastProj() {
+  const z = map.getZoom(), sc = 256 * Math.pow(2, z), po = map.getPixelOrigin(), pp = map._getMapPanePos ? map._getMapPanePos() : L.point(0, 0);
+  const ox = pp.x - po.x, oy = pp.y - po.y, R = Math.PI / 180, MAXL = 85.0511287798;
+  return (lat, lon) => { const la = Math.max(-MAXL, Math.min(MAXL, lat)) * R; return [sc * (lon / 360 + 0.5) + ox, sc * (0.5 - Math.log(Math.tan(Math.PI / 4 + la / 2)) / (2 * Math.PI)) + oy]; };
+}
 function freeCanvas(c) { if (c) { c.width = 0; c.height = 0; } }
 // Leaflet's own canvas layers (coastlines, nav lines, warnings): free their memory when they come off the map
 if (window.L && L.Canvas && !L.Canvas.__freed) { const rm = L.Canvas.prototype.onRemove; L.Canvas.__freed = true;
@@ -5142,7 +5150,7 @@ async function gxRender() {
   const cv = GX.cv, size = map.getSize();
   // the colour canvas is drawn 30% bigger than the view on every side, so panning shows colour, not gaps, and it is
   // scaled along with Leaflet's zoom animation (see GxLayer); it is only replaced once the new picture is ready
-  const px = Math.round(size.x * 0.6), py = Math.round(size.y * 0.6), CW = size.x + 2 * px, CH = size.y + 2 * py;
+  const px = Math.round(size.x * 0.25), py = Math.round(size.y * 0.25), CW = size.x + 2 * px, CH = size.y + 2 * py;
   $("#gx-nodata").hidden = !!(F && F.main);
   if (!F || !F.main) { $("#gx-nodata").textContent = GX.layer === "current" ? "Ocean-current forecast reaches about 8 days ahead. Move the time back to see currents." : GX.layer === "sst" ? "Water temperature forecast reaches about 8 days ahead. Move the time back to see it." : "No forecast for this time."; cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); return; }
   const S = Math.max(4, Math.ceil(Math.sqrt((CW * CH) / 260000))), W = Math.ceil(CW / S), H = Math.ceil(CH / S), img = new ImageData(W, H), col = gxColorFn(), op = SET.opacity;
@@ -5198,8 +5206,11 @@ function gxParticlesRestart() {
   const spawn = (p) => { p.x = Math.random() * size.x; p.y = Math.random() * size.y; p.age = Math.floor(Math.random() * 80); };
   GX.parts = Array.from({ length: n }, () => { const p = {}; spawn(p); return p; });
   const dark = !["temp", "rain"].includes(GX.layer);
-  const step = () => {
+  let lastT = 0;
+  const step = (now) => {
     if (!GX.on) return;
+    if (document.hidden || (now && now - lastT < 31)) { GX.anim = requestAnimationFrame(step); return; } // 30 frames a second is plenty
+    lastT = now || performance.now();
     ctx.globalCompositeOperation = "destination-in"; ctx.fillStyle = "rgba(0,0,0,0.9)"; ctx.fillRect(0, 0, size.x, size.y);
     ctx.globalCompositeOperation = "source-over"; ctx.lineWidth = 1.1; ctx.strokeStyle = dark ? "rgba(255,255,255,0.75)" : "rgba(20,20,30,0.55)";
     ctx.beginPath();
@@ -5220,7 +5231,7 @@ function gxParticlesRestart() {
 // Leaflet's zoom animation (like the map tiles), then redrawn sharp at the end. Only the moving lines pause.
 const GxLayer = L.Layer.extend({
   onAdd(m) {
-    GX.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane"));
+    GX.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-backdrop", m.getPane("gxPane"));
     GX.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", m.getPane("gxPane")); GX.pv = L.DomUtil.create("canvas", "wind-canvas", m.getPane("gxPane"));
     m.on("movestart zoomstart", this._pause, this); m.on("moveend", this._show, this); m.on("zoomanim", this._anim, this); m.on("zoom", this._zoom, this);
   },
@@ -5272,7 +5283,7 @@ async function gxOutlines(on) {
   if (!GXO.group) {
     map.createPane("gxLinePane").style.zIndex = 430; map.getPane("gxLinePane").style.pointerEvents = "none";
     map.createPane("gxLabelPane").style.zIndex = 440; map.getPane("gxLabelPane").style.pointerEvents = "none";
-    GXO.renderer = L.canvas({ pane: "gxLinePane", padding: 0.5 }); GXO.group = L.layerGroup();
+    GXO.renderer = L.canvas({ pane: "gxLinePane", padding: 0.25 }); GXO.group = L.layerGroup();
     GXO.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated", map.getPane("gxLabelPane"));
     map.on("zoomanim", (e) => GXO.on && zoomCanvas(GXO.cv, e.center, e.zoom));
     map.on("moveend", () => { if (GXO.on) { gxFineTiles(); gxDrawLabels(); } });
@@ -5465,8 +5476,8 @@ async function shoreMaskFor(z, px, py, CW, CH, stale) {
   const dpr = Math.min(2, window.devicePixelRatio || 1), Wp = Math.round(CW * dpr), Hp = Math.round(CH * dpr);
   const mask = scratchCanvas("gxlmask", Wp, Hp);
   const m = mask.getContext("2d"); m.setTransform(dpr, 0, 0, dpr, 0, 0); m.fillStyle = "#000";
-  const P = (lon, lat) => { const q = map.latLngToContainerPoint([lat, lon]); return [q.x + px, q.y + py]; };
-  const ring = (r) => { r.forEach(([x, y], j) => { const [a, b] = P(x, y); j ? m.lineTo(a, b) : m.moveTo(a, b); }); m.closePath(); };
+  const FP = fastProj(), P = (lon, lat) => { const q = FP(lat, lon); return [q[0] + px, q[1] + py]; };
+  const ring = (r) => { r.forEach(([x, y], j) => { const [a, b] = P(x, y); j ? m.lineTo(a, b) : m.moveTo(a, b); }); }; // no closePath: fill closes each ring, and closePath is very slow with thousands of rings
   const boxPath = (k) => { const [la, lo] = k.split("_").map(Number); const [a, b] = P(lo, la + 1), [c, d] = P(lo + 1, la); m.rect(a, b, c - a, d - b); };
   m.save();
   if (detail.length) { m.beginPath(); m.rect(0, 0, CW, CH); for (const [k] of detail) boxPath(k); m.clip("evenodd"); } // coarse land everywhere except where the detail is
@@ -5484,14 +5495,14 @@ async function gxLandDraw() {
   if (!GX.on) return;
   if (!GXL.cv) {
     if (!map.getPane("gxLandPane")) { map.createPane("gxLandPane").style.zIndex = 425; map.getPane("gxLandPane").style.pointerEvents = "none"; }
-    GXL.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
+    GXL.bv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land gx-backdrop", map.getPane("gxLandPane"));
     GXL.cv = L.DomUtil.create("canvas", "wind-canvas leaflet-zoom-animated gx-land", map.getPane("gxLandPane"));
     map.on("zoomanim", (e) => { if (GX.on) { zoomCanvas(GXL.cv, e.center, e.zoom); zoomCanvas(GXL.bv, e.center, e.zoom); } });
     map.on("zoom", () => { if (GX.on && !map._animatingZoom) { zoomCanvas(GXL.cv, map.getCenter(), map.getZoom()); zoomCanvas(GXL.bv, map.getCenter(), map.getZoom()); } });
     map.on("moveend", () => GX.on && gxLandSoon());
   }
   map.getPane("gxLandPane").style.zIndex = gxUnder() ? 415 : 425;
-  const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.5), py = Math.round(size.y * 0.5);
+  const seq = ++GXL.seq, z = map.getZoom(), size = map.getSize(), px = Math.round(size.x * 0.25), py = Math.round(size.y * 0.25);
   const CW = size.x + 2 * px, CH = size.y + 2 * py;
   const nw = map.containerPointToLatLng([-px, -py]);
   const LM = await shoreMaskFor(z, px, py, CW, CH, () => seq !== GXL.seq || !GX.on); if (!LM) return;
@@ -5520,15 +5531,15 @@ async function gxLandBackdrop(seq) {
   if (!GXL.bb) GXL.bb = GXL.w50.map((poly) => { let a = 180, b = -180, c = 90, d = -90; for (const [x, y] of poly[0]) { a = Math.min(a, x); b = Math.max(b, x); c = Math.min(c, y); d = Math.max(d, y); } return [a, b, c, d]; });
   const size = map.getSize(), bx = size.x * 2, by = size.y * 2, BW = size.x + 2 * bx, BH = size.y + 2 * by, sc = 0.5, Wp = Math.round(BW * sc), Hp = Math.round(BH * sc);
   const nw = map.containerPointToLatLng([-bx, -by]), se = map.containerPointToLatLng([size.x + bx, size.y + by]);
-  const mask = scratchCanvas("gxbmask", Wp, Hp); const m = mask.getContext("2d"); m.setTransform(sc, 0, 0, sc, 0, 0); m.fillStyle = "#000"; m.beginPath();
+  const FP = fastProj(); const mask = scratchCanvas("gxbmask", Wp, Hp); const m = mask.getContext("2d"); m.setTransform(sc, 0, 0, sc, 0, 0); m.fillStyle = "#000"; m.beginPath();
   GXL.w50.forEach((poly, i) => { const [a, b, c, d] = GXL.bb[i]; if (b < nw.lng || a > se.lng || d < se.lat || c > nw.lat) return;
-    for (const r of poly) { r.forEach(([x, y], j) => { const q = map.latLngToContainerPoint([y, x]); j ? m.lineTo(q.x + bx, q.y + by) : m.moveTo(q.x + bx, q.y + by); }); m.closePath(); } });
+    for (const r of poly) { r.forEach(([x, y], j) => { const q = FP(y, x); j ? m.lineTo(q[0] + bx, q[1] + by) : m.moveTo(q[0] + bx, q[1] + by); }); } });
   m.fill("evenodd");
   const bv = GXL.bv; L.DomUtil.setPosition(bv, map.containerPointToLayerPoint([-bx, -by])); bv._tl = nw; bv._z = map.getZoom();
   bv.width = Wp; bv.height = Hp; bv.style.width = BW + "px"; bv.style.height = BH + "px";
   const c = bv.getContext("2d"); c.drawImage(mask, 0, 0); c.globalCompositeOperation = "source-in"; c.fillStyle = gxLandVeil(); c.fillRect(0, 0, Wp, Hp);
   // the detailed land is drawn on top for the area around the view: cut a hole there so the veil is not doubled
-  const pxm = size.x * 0.5, pym = size.y * 0.5; c.globalCompositeOperation = "destination-out"; c.fillRect((bx - pxm) * sc, (by - pym) * sc, (size.x + 2 * pxm) * sc, (size.y + 2 * pym) * sc);
+  const pxm = size.x * 0.25, pym = size.y * 0.25; c.globalCompositeOperation = "destination-out"; c.fillRect((bx - pxm) * sc, (by - pym) * sc, (size.x + 2 * pxm) * sc, (size.y + 2 * pym) * sc);
 }
 // light veil over coloured layers; on layers that leave land empty (radar, rain...) a solid grey land
 const gxLandVeil = () => (GX.layer === "cloud" ? "rgba(58,74,64,.95)" : gxUnder() ? "rgba(120,132,146,.55)" : gxLightBase() ? "rgb(88,100,114)" : "rgba(232,236,241,.38)");
