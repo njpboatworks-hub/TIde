@@ -1535,6 +1535,24 @@ canvas.gx-backdrop { visibility: hidden; } .leaflet-zoom-anim canvas.gx-backdrop
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 <script src="config.js"></script>
 <script>
+/* Diagnostics: open the site with ?diag (e.g. https://nockd.pages.dev/?diag#wind) to list errors and map status on screen */
+window.__errs = [];
+addEventListener("error", (e) => __errs.push((e.message || "error") + (e.filename ? " @ line " + e.lineno : "")));
+addEventListener("unhandledrejection", (e) => __errs.push("promise: " + ((e.reason && (e.reason.stack || e.reason.message)) || e.reason)));
+if (/[?&]diag/.test(location.search)) addEventListener("load", () => {
+  const box = document.createElement("div"); box.style.cssText = "position:fixed;left:8px;bottom:8px;z-index:99999;max-width:min(560px,95vw);max-height:45vh;overflow:auto;background:#200;color:#fff;font:12px/1.4 monospace;padding:8px 10px;border:2px solid #f55;border-radius:6px;white-space:pre-wrap";
+  document.body.appendChild(box);
+  const ink = (c) => { try { if (!c || !c.width) return "none"; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4000) if (d[i]) n++; return c.width + "x" + c.height + " ink " + n; } catch (e) { return "err " + e.message; } };
+  setInterval(() => { try {
+    box.textContent = "Nockd diagnostics (send a screenshot)\n" + navigator.userAgent + "\n" +
+      "tab " + (typeof activeTab !== "undefined" ? activeTab : "?") + " | Leaflet " + (typeof L) + " | zoom " + (window.map ? map.getZoom().toFixed(1) : "?") + "\n" +
+      "forecast on " + (typeof GX !== "undefined" && GX.on) + " | borders " + (typeof GXL !== "undefined" ? ink(GXL.cv) : "?") + " | land data " + (typeof GXL !== "undefined" ? (GXL.w50 ? GXL.w50.length : "not loaded") : "?") + "\n" +
+      "cruise places loaded " + (typeof CRUISE !== "undefined" && CRUISE.data ? CRUISE.data.p.length : "?") + " | place names " + (typeof PLACES !== "undefined" && PLACES ? PLACES.length : "?") + "\n" +
+      "errors (" + __errs.length + "):\n" + __errs.slice(-12).join("\n");
+  } catch (e) { box.textContent = "diag error " + e.message; } }, 1500);
+});
+</script>
+<script>
 "use strict";
 /* =================== helpers =================== */
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
